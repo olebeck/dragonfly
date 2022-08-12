@@ -2,11 +2,13 @@ package world
 
 import (
 	"fmt"
+	"image/color"
+	"math"
+	"math/rand"
+
 	"github.com/brentp/intintmap"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world/chunk"
-	"math"
-	"math/rand"
 )
 
 // Block is a block that may be placed or found in a world. In addition, the block may also be added to an
@@ -23,6 +25,8 @@ type Block interface {
 	Hash() uint64
 	// Model returns the BlockModel of the Block.
 	Model() BlockModel
+	// Color returns an RGBA color used to represent this block on a map
+	Color() color.RGBA
 }
 
 // Liquid represents a block that can be moved through and which can flow in the world after placement. There

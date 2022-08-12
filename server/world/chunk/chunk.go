@@ -98,9 +98,10 @@ func (chunk *Chunk) ApplySubChunkEntry(y int, sub *protocol.SubChunkEntry) error
 			return err
 		}
 
-		idx := y + int(index)
-		if idx < len(chunk.sub) && idx > 0 /* TODO wat. */ {
-			chunk.sub[idx] = dec
+		if int(index) < len(chunk.sub) {
+			chunk.sub[index] = dec
+		} else {
+			fmt.Printf("index: %d\n", index)
 		}
 
 		if sub.HeightMapType == protocol.HeightMapDataHasData {

@@ -4,12 +4,14 @@ import (
 	"bytes"
 	_ "embed"
 	"fmt"
-	"github.com/df-mc/dragonfly/server/world/chunk"
-	"github.com/sandertv/gophertunnel/minecraft/nbt"
+	"image/color"
 	"math"
 	"sort"
 	"strings"
 	"unsafe"
+
+	"github.com/df-mc/dragonfly/server/world/chunk"
+	"github.com/sandertv/gophertunnel/minecraft/nbt"
 )
 
 var (
@@ -103,6 +105,10 @@ func (unknownBlock) Model() BlockModel {
 // Hash ...
 func (b unknownBlock) Hash() uint64 {
 	return math.MaxUint64
+}
+
+func (b unknownBlock) Color() color.RGBA {
+	return color.RGBA{255, 0, 255, 255}
 }
 
 // blockState holds a combination of a name and properties, together with a version.
