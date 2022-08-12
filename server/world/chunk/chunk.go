@@ -1,8 +1,12 @@
 package chunk
 
 import (
-	"github.com/df-mc/dragonfly/server/block/cube"
+	"bytes"
+	"fmt"
 	"sync"
+
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/sandertv/gophertunnel/minecraft/protocol"
 )
 
 // Chunk is a segment in the world with a size of 16x16x256 blocks. A chunk contains multiple sub chunks
@@ -75,6 +79,40 @@ func (chunk *Chunk) SetBlock(x uint8, y int16, z uint8, layer uint8, block uint3
 	}
 	sub.Layer(layer).Set(x, uint8(y), z, block)
 	chunk.recalculateHeightMap = true
+}
+
+// ApplySubChunkEntry sets the subchunk at a given y
+func (chunk *Chunk) ApplySubChunkEntry(y int, sub *protocol.SubChunkEntry) error {
+	if sub.Result == protocol.SubChunkResultSuccessAllAir {
+		return nil
+	}
+	if sub.Result == protocol.SubChunkResultSuccess {
+		index := uint8(0)
+		dec, err := decodeSubChunk(
+			bytes.NewBuffer(sub.RawPayload),
+			chunk,
+			&index,
+			NetworkEncoding,
+		)
+		if err != nil {
+			return err
+		}
+
+		idx := y + int(index)
+		if idx < len(chunk.sub) && idx > 0 /* TODO wat. */ {
+			chunk.sub[idx] = dec
+		}
+
+		if sub.HeightMapType == protocol.HeightMapDataHasData {
+			for i, v := range sub.HeightMapData {
+				x, z := uint8(i/16), uint8(i%16)
+				chunk.heightMap.Set(x, z, int16(v))
+			}
+		}
+	} else {
+		fmt.Printf("sub.Result: %d", sub.Result)
+	}
+	return nil
 }
 
 // Biome returns the biome ID at a specific column in the chunk.
