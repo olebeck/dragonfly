@@ -5,6 +5,12 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"math"
+	"os"
+	"path/filepath"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/chunk"
@@ -13,11 +19,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
-	"io/ioutil"
-	"math"
-	"os"
-	"path/filepath"
-	"time"
 )
 
 // Provider implements a world provider for the Minecraft world format, which is based on a leveldb database.
@@ -69,6 +70,10 @@ func New(dir string, compression opt.Compression) (*Provider, error) {
 	}
 	p.db = db
 	return p, nil
+}
+
+func (p *Provider) LevelDat() *data {
+	return &p.d
 }
 
 // initDefaultLevelDat initialises a default level.dat file.
