@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"strings"
+
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 )
@@ -20,7 +22,7 @@ type (
 	// (for example, blocks or biomes) differently.
 	paletteEncoding interface {
 		encode(buf *bytes.Buffer, v uint32)
-		decode(buf *bytes.Buffer) (uint32, error)
+		decode(buf *bytes.Buffer, e Encoding) (uint32, error)
 	}
 )
 
@@ -42,7 +44,7 @@ type biomePaletteEncoding struct{}
 func (biomePaletteEncoding) encode(buf *bytes.Buffer, v uint32) {
 	_ = binary.Write(buf, binary.LittleEndian, v)
 }
-func (biomePaletteEncoding) decode(buf *bytes.Buffer) (uint32, error) {
+func (biomePaletteEncoding) decode(buf *bytes.Buffer, e Encoding) (uint32, error) {
 	var v uint32
 	return v, binary.Read(buf, binary.LittleEndian, &v)
 }
@@ -56,9 +58,17 @@ func (blockPaletteEncoding) encode(buf *bytes.Buffer, v uint32) {
 	name, props, _ := RuntimeIDToState(v)
 	_ = nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian).Encode(blockEntry{Name: name, State: props, Version: CurrentBlockVersion})
 }
-func (blockPaletteEncoding) decode(buf *bytes.Buffer) (uint32, error) {
+func (blockPaletteEncoding) decode(buf *bytes.Buffer, e Encoding) (uint32, error) {
 	var m map[string]any
-	if err := nbt.NewDecoderWithEncoding(buf, nbt.LittleEndian).Decode(&m); err != nil {
+
+	var nbt_e nbt.Encoding
+	if e.network() == 1 {
+		nbt_e = nbt.NetworkLittleEndian
+	} else {
+		nbt_e = nbt.LittleEndian
+	}
+
+	if err := nbt.NewDecoderWithEncoding(buf, nbt_e).Decode(&m); err != nil {
 		return 0, fmt.Errorf("error decoding block palette entry: %w", err)
 	}
 
@@ -87,6 +97,10 @@ func (blockPaletteEncoding) decode(buf *bytes.Buffer) (uint32, error) {
 	entry := blockEntry{Name: name, State: state, Version: version}
 	if updatedEntry, ok := upgradeAliasEntry(entry); ok {
 		entry = updatedEntry
+	}
+
+	if !strings.Contains(entry.Name, ":") { // why is this needed?
+		entry.Name = "minecraft:" + entry.Name
 	}
 
 	v, ok := StateToRuntimeID(entry.Name, entry.State)
@@ -119,7 +133,7 @@ func (diskEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, e pa
 	var err error
 	palette := newPalette(blockSize, make([]uint32, paletteCount))
 	for i := uint32(0); i < paletteCount; i++ {
-		palette.values[i], err = e.decode(buf)
+		palette.values[i], err = e.decode(buf, DiskEncoding)
 		if err != nil {
 			return nil, err
 		}
@@ -139,7 +153,7 @@ func (networkEncoding) encodePalette(buf *bytes.Buffer, p *Palette, _ paletteEnc
 		_ = protocol.WriteVarint32(buf, int32(val))
 	}
 }
-func (networkEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, _ paletteEncoding) (*Palette, error) {
+func (networkEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, e paletteEncoding) (*Palette, error) {
 	var paletteCount int32 = 1
 	if blockSize != 0 {
 		if err := protocol.Varint32(buf, &paletteCount); err != nil {
@@ -150,12 +164,28 @@ func (networkEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, _
 		}
 	}
 
-	blocks, temp := make([]uint32, paletteCount), int32(0)
-	for i := int32(0); i < paletteCount; i++ {
-		if err := protocol.Varint32(buf, &temp); err != nil {
-			return nil, fmt.Errorf("error decoding palette entry: %w", err)
+	magic := buf.Bytes()[0:2]
+
+	if bytes.Equal(magic, []byte{0x0A, 0x00}) { // is using nbt data
+		var err error
+		palette := newPalette(blockSize, make([]uint32, paletteCount))
+		for i := int32(0); i < paletteCount; i++ {
+			palette.values[i], err = e.decode(buf, NetworkEncoding)
+			if err != nil {
+				return nil, err
+			}
 		}
-		blocks[i] = uint32(temp)
+		return palette, nil
+	} else { // regular block rid list
+		blocks, temp := make([]uint32, paletteCount), int32(0)
+
+		for i := int32(0); i < paletteCount; i++ {
+			if err := protocol.Varint32(buf, &temp); err != nil {
+				return nil, fmt.Errorf("error decoding palette entry: %w", err)
+			}
+			blocks[i] = uint32(temp)
+		}
+
+		return &Palette{values: blocks, size: blockSize}, nil
 	}
-	return &Palette{values: blocks, size: blockSize}, nil
 }
