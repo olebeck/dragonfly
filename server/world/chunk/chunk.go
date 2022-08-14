@@ -88,7 +88,7 @@ func (chunk *Chunk) ApplySubChunkEntry(y uint8, sub *protocol.SubChunkEntry) err
 	}
 	if sub.Result == protocol.SubChunkResultSuccess {
 		index := y
-		dec, err := decodeSubChunk(
+		dec, _, err := decodeSubChunk(
 			bytes.NewBuffer(sub.RawPayload),
 			chunk,
 			&index,

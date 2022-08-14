@@ -15,7 +15,7 @@ type (
 	// NetworkEncoding, which can be used to encode a Chunk to an intermediate disk or network representation respectively.
 	Encoding interface {
 		encodePalette(buf *bytes.Buffer, p *Palette, e paletteEncoding)
-		decodePalette(buf *bytes.Buffer, blockSize paletteSize, e paletteEncoding) (*Palette, error)
+		decodePalette(buf *bytes.Buffer, blockSize paletteSize, e paletteEncoding) (*Palette, bool, error)
 		network() byte
 	}
 	// paletteEncoding is an encoding type used for Chunk encoding. It is used to encode different types of palettes
@@ -122,11 +122,11 @@ func (diskEncoding) encodePalette(buf *bytes.Buffer, p *Palette, e paletteEncodi
 		e.encode(buf, v)
 	}
 }
-func (diskEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, e paletteEncoding) (*Palette, error) {
+func (diskEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, e paletteEncoding) (*Palette, bool, error) {
 	paletteCount := uint32(1)
 	if blockSize != 0 {
 		if err := binary.Read(buf, binary.LittleEndian, &paletteCount); err != nil {
-			return nil, fmt.Errorf("error reading palette entry count: %w", err)
+			return nil, false, fmt.Errorf("error reading palette entry count: %w", err)
 		}
 	}
 
@@ -135,10 +135,10 @@ func (diskEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, e pa
 	for i := uint32(0); i < paletteCount; i++ {
 		palette.values[i], err = e.decode(buf, DiskEncoding)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 	}
-	return palette, nil
+	return palette, false, nil
 }
 
 // networkEncoding implements the Chunk encoding for sending over network.
@@ -153,39 +153,40 @@ func (networkEncoding) encodePalette(buf *bytes.Buffer, p *Palette, _ paletteEnc
 		_ = protocol.WriteVarint32(buf, int32(val))
 	}
 }
-func (networkEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, e paletteEncoding) (*Palette, error) {
+func (networkEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, e paletteEncoding) (*Palette, bool, error) {
 	var paletteCount int32 = 1
 	if blockSize != 0 {
 		if err := protocol.Varint32(buf, &paletteCount); err != nil {
-			return nil, fmt.Errorf("error reading palette entry count: %w", err)
+			return nil, false, fmt.Errorf("error reading palette entry count: %w", err)
 		}
 		if paletteCount <= 0 {
-			return nil, fmt.Errorf("invalid palette entry count %v", paletteCount)
+			return nil, false, fmt.Errorf("invalid palette entry count %v", paletteCount)
 		}
 	}
 
 	magic := buf.Bytes()[0:2]
+	is_legacy := bytes.Equal(magic, []byte{0x0A, 0x00})
 
-	if bytes.Equal(magic, []byte{0x0A, 0x00}) { // is using nbt data
+	if is_legacy { // is using nbt data
 		var err error
 		palette := newPalette(blockSize, make([]uint32, paletteCount))
 		for i := int32(0); i < paletteCount; i++ {
 			palette.values[i], err = e.decode(buf, NetworkEncoding)
 			if err != nil {
-				return nil, err
+				return nil, is_legacy, err
 			}
 		}
-		return palette, nil
+		return palette, is_legacy, nil
 	} else { // regular block rid list
 		blocks, temp := make([]uint32, paletteCount), int32(0)
 
 		for i := int32(0); i < paletteCount; i++ {
 			if err := protocol.Varint32(buf, &temp); err != nil {
-				return nil, fmt.Errorf("error decoding palette entry: %w", err)
+				return nil, false, fmt.Errorf("error decoding palette entry: %w", err)
 			}
 			blocks[i] = uint32(temp)
 		}
 
-		return &Palette{values: blocks, size: blockSize}, nil
+		return &Palette{values: blocks, size: blockSize}, false, nil
 	}
 }
