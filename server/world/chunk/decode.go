@@ -3,6 +3,7 @@ package chunk
 import (
 	"bytes"
 	"fmt"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 )
 
@@ -12,7 +13,7 @@ var StateToRuntimeID func(name string, properties map[string]any) (runtimeID uin
 // NetworkDecode decodes the network serialised data passed into a Chunk if successful. If not, the chunk
 // returned is nil and the error non-nil.
 // The sub chunk count passed must be that found in the LevelChunk packet.
-//noinspection GoUnusedExportedFunction
+// noinspection GoUnusedExportedFunction
 func NetworkDecode(air uint32, data []byte, count int, r cube.Range) (*Chunk, error) {
 	var (
 		c   = New(air, r)
@@ -26,24 +27,38 @@ func NetworkDecode(air uint32, data []byte, count int, r cube.Range) (*Chunk, er
 			return nil, err
 		}
 	}
-	var last *PalettedStorage
-	for i := 0; i < len(c.sub); i++ {
-		b, err := decodePalettedStorage(buf, NetworkEncoding, BiomePaletteEncoding)
-		if err != nil {
-			return nil, err
+
+	if buf.Len() < 256*len(c.sub) { // pre 1.18?
+		biome := buf.Next(256)
+		biome_uints := make([]uint32, 256)
+		for i := range biome_uints {
+			biome_uints[i] = uint32(biome[i])
 		}
-		if b == nil {
-			// b == nil means this paletted storage had the flag pointing to the previous one. It basically means we should
-			// inherit whatever palette we decoded last.
-			if i == 0 {
-				// This should never happen and there is no way to handle this.
-				return nil, fmt.Errorf("first biome storage pointed to previous one")
+		size := paletteSizeFor(256)
+		biome_palette := newPalettedStorage(make([]uint32, size.uint32s()), newPalette(size, biome_uints))
+		for i := range c.biomes {
+			c.biomes[i] = biome_palette
+		}
+	} else {
+		var last *PalettedStorage
+		for i := 0; i < len(c.sub); i++ {
+			b, err := decodePalettedStorage(buf, NetworkEncoding, BiomePaletteEncoding)
+			if err != nil {
+				return nil, err
 			}
-			b = last
-		} else {
-			last = b
+			if b == nil {
+				// b == nil means this paletted storage had the flag pointing to the previous one. It basically means we should
+				// inherit whatever palette we decoded last.
+				if i == 0 {
+					// This should never happen and there is no way to handle this.
+					return nil, fmt.Errorf("first biome storage pointed to previous one")
+				}
+				b = last
+			} else {
+				last = b
+			}
+			c.biomes[i] = b
 		}
-		c.biomes[i] = b
 	}
 	return c, nil
 }

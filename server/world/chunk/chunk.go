@@ -82,12 +82,12 @@ func (chunk *Chunk) SetBlock(x uint8, y int16, z uint8, layer uint8, block uint3
 }
 
 // ApplySubChunkEntry sets the subchunk at a given y
-func (chunk *Chunk) ApplySubChunkEntry(y int, sub *protocol.SubChunkEntry) error {
+func (chunk *Chunk) ApplySubChunkEntry(y uint8, sub *protocol.SubChunkEntry) error {
 	if sub.Result == protocol.SubChunkResultSuccessAllAir {
 		return nil
 	}
 	if sub.Result == protocol.SubChunkResultSuccess {
-		index := uint8(0)
+		index := y
 		dec, err := decodeSubChunk(
 			bytes.NewBuffer(sub.RawPayload),
 			chunk,

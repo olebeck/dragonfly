@@ -93,14 +93,14 @@ func (blockPaletteEncoding) decode(buf *bytes.Buffer, e Encoding) (uint32, error
 		return 0, fmt.Errorf("invalid state in block entry")
 	}
 
+	if !strings.Contains(name, ":") { // why is this needed?
+		name = "minecraft:" + name
+	}
+
 	// If the entry is an alias, then we need to resolve it.
 	entry := blockEntry{Name: name, State: state, Version: version}
 	if updatedEntry, ok := upgradeAliasEntry(entry); ok {
 		entry = updatedEntry
-	}
-
-	if !strings.Contains(entry.Name, ":") { // why is this needed?
-		entry.Name = "minecraft:" + entry.Name
 	}
 
 	v, ok := StateToRuntimeID(entry.Name, entry.State)
