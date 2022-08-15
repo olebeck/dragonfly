@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 )
 
@@ -82,20 +83,21 @@ func (chunk *Chunk) SetBlock(x uint8, y int16, z uint8, layer uint8, block uint3
 }
 
 // ApplySubChunkEntry sets the subchunk at a given y
-func (chunk *Chunk) ApplySubChunkEntry(y uint8, sub *protocol.SubChunkEntry) error {
+func (chunk *Chunk) ApplySubChunkEntry(y uint8, sub *protocol.SubChunkEntry) ([]map[string]any, error) {
 	if sub.Result == protocol.SubChunkResultSuccessAllAir {
-		return nil
+		return nil, nil
 	}
 	if sub.Result == protocol.SubChunkResultSuccess {
+		buf := bytes.NewBuffer(sub.RawPayload)
 		index := y
-		dec, _, err := decodeSubChunk(
-			bytes.NewBuffer(sub.RawPayload),
+		dec, err := decodeSubChunk(
+			buf,
 			chunk,
 			&index,
 			NetworkEncoding,
 		)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		if int(index) < len(chunk.sub) {
@@ -104,16 +106,31 @@ func (chunk *Chunk) ApplySubChunkEntry(y uint8, sub *protocol.SubChunkEntry) err
 			fmt.Printf("index: %d\n", index)
 		}
 
+		var blockNBTs []map[string]any = nil
+		if buf.Len() > 0 {
+			dec := nbt.NewDecoderWithEncoding(buf, nbt.NetworkLittleEndian)
+			for buf.Len() > 0 {
+				blockNBT := make(map[string]any, 0)
+				err = dec.Decode(&blockNBT)
+				if err != nil {
+					return nil, err
+				}
+				blockNBTs = append(blockNBTs, blockNBT)
+			}
+		}
+
 		if sub.HeightMapType == protocol.HeightMapDataHasData {
 			for i, v := range sub.HeightMapData {
 				x, z := uint8(i/16), uint8(i%16)
 				chunk.heightMap.Set(x, z, int16(v))
 			}
 		}
+
+		return blockNBTs, nil
 	} else {
 		fmt.Printf("sub.Result: %d", sub.Result)
 	}
-	return nil
+	return nil, nil
 }
 
 // Biome returns the biome ID at a specific column in the chunk.
