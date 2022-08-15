@@ -100,6 +100,7 @@ const (
 	hashMud
 	hashMudBricks
 	hashMuddyMangroveRoots
+	hashMushroomBlock
 	hashNetherBrickFence
 	hashNetherBricks
 	hashNetherGoldOre
@@ -133,6 +134,7 @@ const (
 	hashSandstone
 	hashSeaLantern
 	hashSeaPickle
+	hashSeagrass
 	hashShroomlight
 	hashSign
 	hashSkull
@@ -555,6 +557,10 @@ func (m MuddyMangroveRoots) Hash() uint64 {
 	return hashMuddyMangroveRoots | uint64(m.Axis)<<8
 }
 
+func (m MushroomBlock) Hash() uint64 {
+	return hashMushroomBlock | uint64(m.Type.Uint8())<<8 | uint64(m.HugeBits)<<12
+}
+
 func (NetherBrickFence) Hash() uint64 {
 	return hashNetherBrickFence
 }
@@ -685,6 +691,10 @@ func (SeaLantern) Hash() uint64 {
 
 func (s SeaPickle) Hash() uint64 {
 	return hashSeaPickle | uint64(s.AdditionalCount)<<8 | uint64(boolByte(s.Dead))<<16
+}
+
+func (s Seagrass) Hash() uint64 {
+	return hashSeagrass | uint64(s.Type.Uint8())<<8
 }
 
 func (Shroomlight) Hash() uint64 {

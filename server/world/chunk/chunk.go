@@ -24,6 +24,11 @@ type Chunk struct {
 	recalculateHeightMap bool
 	// heightMap is the height map of the chunk.
 	heightMap HeightMap
+	// recalculateHeightMapLiquid is true if the chunk's height map should be recalculated on the next call to the heightMapLiquid
+	// function.
+	recalculateHeightMapLiquid bool
+	// heightMap is the height map of the chunk.
+	heightMapLiquid HeightMap
 	// sub holds all sub chunks part of the chunk. The pointers held by the array are nil if no sub chunk is
 	// allocated at the indices.
 	sub []*SubChunk
@@ -40,12 +45,14 @@ func New(air uint32, r cube.Range) *Chunk {
 		biomes[i] = emptyStorage(0)
 	}
 	return &Chunk{
-		r:                    r,
-		air:                  air,
-		sub:                  sub,
-		biomes:               biomes,
-		recalculateHeightMap: true,
-		heightMap:            make(HeightMap, 256),
+		r:                          r,
+		air:                        air,
+		sub:                        sub,
+		biomes:                     biomes,
+		recalculateHeightMap:       true,
+		recalculateHeightMapLiquid: true,
+		heightMap:                  make(HeightMap, 256),
+		heightMapLiquid:            make(HeightMap, 256),
 	}
 }
 
@@ -80,6 +87,7 @@ func (chunk *Chunk) SetBlock(x uint8, y int16, z uint8, layer uint8, block uint3
 	}
 	sub.Layer(layer).Set(x, uint8(y), z, block)
 	chunk.recalculateHeightMap = true
+	chunk.recalculateHeightMapLiquid = true
 }
 
 // ApplySubChunkEntry sets the subchunk at a given y
@@ -125,6 +133,9 @@ func (chunk *Chunk) ApplySubChunkEntry(y uint8, sub *protocol.SubChunkEntry) ([]
 				chunk.heightMap.Set(x, z, int16(v))
 			}
 		}
+
+		chunk.recalculateHeightMap = true
+		chunk.recalculateHeightMapLiquid = true
 
 		return blockNBTs, nil
 	} else {
@@ -181,11 +192,23 @@ func (chunk *Chunk) HighestLightBlocker(x, z uint8) int16 {
 // HighestBlock iterates from the highest non-empty sub chunk downwards to find the Y value of the highest
 // non-air block at an x and z. If no blocks are present in the column, the minimum height is returned.
 func (chunk *Chunk) HighestBlock(x, z uint8) int16 {
+	return chunk.HighestBlockLayer(x, z, 0)
+}
+
+// HighestLiquid finds the first non air liquid
+func (chunk *Chunk) HighestLiquid(x, z uint8) int16 {
+	return chunk.HighestBlockLayer(x, z, 1)
+}
+
+// HighestBlockLayer returns the highest block that isnt air in a layer
+func (chunk *Chunk) HighestBlockLayer(x, z, layer uint8) int16 {
 	for index := int16(len(chunk.sub) - 1); index >= 0; index-- {
 		if sub := chunk.sub[index]; !sub.Empty() {
-			for y := 15; y >= 0; y-- {
-				if rid := sub.storages[0].At(x, uint8(y), z); rid != chunk.air {
-					return int16(y) | chunk.SubY(index)
+			if len(sub.storages) > int(layer) {
+				for y := 15; y >= 0; y-- {
+					if rid := sub.storages[layer].At(x, uint8(y), z); rid != chunk.air {
+						return int16(y) | chunk.SubY(index)
+					}
 				}
 			}
 		}
@@ -205,6 +228,20 @@ func (chunk *Chunk) HeightMap() HeightMap {
 		chunk.recalculateHeightMap = false
 	}
 	return chunk.heightMap
+}
+
+// LiquidHeightMap returns the height map of the chunk. If the chunk is edited, the height map will be recalculated on the
+// next call to this function.
+func (chunk *Chunk) LiquidHeightMap() HeightMap {
+	if chunk.recalculateHeightMapLiquid {
+		for x := uint8(0); x < 16; x++ {
+			for z := uint8(0); z < 16; z++ {
+				chunk.heightMapLiquid.Set(x, z, chunk.HighestLiquid(x, z))
+			}
+		}
+		chunk.recalculateHeightMapLiquid = false
+	}
+	return chunk.heightMapLiquid
 }
 
 // Compact compacts the chunk as much as possible, getting rid of any sub chunks that are empty, and compacts

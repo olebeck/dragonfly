@@ -84,28 +84,38 @@ func (Calcite) Color() color.RGBA {
 
 func (c Carpet) Color() color.RGBA {
 	switch c.Colour {
-	case item.ColourBlue():
-		return color.RGBA{52, 54, 154, 255}
-	case item.ColourCyan():
-		return color.RGBA{21, 127, 140, 255}
-	case item.ColourGreen():
-		return color.RGBA{89, 117, 24, 255}
-	case item.ColourLime():
-		return color.RGBA{123, 195, 27, 255}
-	case item.ColourMagenta():
-		return color.RGBA{186, 65, 175, 255}
-	case item.ColourPink():
-		return color.RGBA{243, 138, 170, 255}
-	case item.ColourBlack():
-		return color.RGBA{26, 26, 30, 255}
-	case item.ColourBrown():
-		return color.RGBA{124, 78, 46, 255}
-	case item.ColourGrey():
-		return color.RGBA{67, 73, 76, 255}
-	case item.ColourLightBlue():
-		return color.RGBA{72, 193, 228, 255}
+	case item.ColourWhite():
+		return color.RGBA{248, 249, 249, 255}
 	case item.ColourOrange():
 		return color.RGBA{249, 130, 30, 255}
+	case item.ColourMagenta():
+		return color.RGBA{186, 65, 175, 255}
+	case item.ColourLightBlue():
+		return color.RGBA{72, 193, 228, 255}
+	case item.ColourYellow():
+		return color.RGBA{253, 211, 52, 255}
+	case item.ColourLime():
+		return color.RGBA{123, 195, 27, 255}
+	case item.ColourPink():
+		return color.RGBA{243, 138, 170, 255}
+	case item.ColourGrey():
+		return color.RGBA{67, 73, 76, 255}
+	case item.ColourLightGrey():
+		return color.RGBA{149, 149, 143, 255}
+	case item.ColourCyan():
+		return color.RGBA{21, 127, 140, 255}
+	case item.ColourPurple():
+		return color.RGBA{108, 34, 161, 255}
+	case item.ColourBlue():
+		return color.RGBA{52, 54, 154, 255}
+	case item.ColourBrown():
+		return color.RGBA{124, 78, 46, 255}
+	case item.ColourGreen():
+		return color.RGBA{89, 117, 24, 255}
+	case item.ColourRed():
+		return color.RGBA{172, 43, 36, 255}
+	case item.ColourBlack():
+		return color.RGBA{26, 26, 30, 255}
 	}
 	return color.RGBA{255, 0, 255, 255}
 }
@@ -144,56 +154,76 @@ func (CocoaBean) Color() color.RGBA {
 
 func (c ConcretePowder) Color() color.RGBA {
 	switch c.Colour {
-	case item.ColourMagenta():
-		return color.RGBA{192, 82, 184, 255}
-	case item.ColourPink():
-		return color.RGBA{230, 153, 180, 255}
-	case item.ColourBlue():
-		return color.RGBA{66, 69, 161, 255}
-	case item.ColourCyan():
-		return color.RGBA{35, 141, 153, 255}
-	case item.ColourGreen():
-		return color.RGBA{91, 111, 47, 255}
-	case item.ColourLime():
-		return color.RGBA{120, 185, 40, 255}
+	case item.ColourWhite():
+		return color.RGBA{226, 228, 229, 255}
 	case item.ColourOrange():
 		return color.RGBA{228, 131, 31, 255}
-	case item.ColourBlack():
-		return color.RGBA{22, 24, 30, 255}
-	case item.ColourBrown():
-		return color.RGBA{121, 81, 51, 255}
-	case item.ColourGrey():
-		return color.RGBA{76, 78, 82, 255}
+	case item.ColourMagenta():
+		return color.RGBA{192, 82, 184, 255}
 	case item.ColourLightBlue():
 		return color.RGBA{74, 182, 213, 255}
+	case item.ColourYellow():
+		return color.RGBA{230, 193, 47, 255}
+	case item.ColourLime():
+		return color.RGBA{120, 185, 40, 255}
+	case item.ColourPink():
+		return color.RGBA{230, 153, 180, 255}
+	case item.ColourGrey():
+		return color.RGBA{76, 78, 82, 255}
+	case item.ColourLightGrey():
+		return color.RGBA{157, 157, 152, 255}
+	case item.ColourCyan():
+		return color.RGBA{35, 141, 153, 255}
+	case item.ColourPurple():
+		return color.RGBA{136, 58, 181, 255}
+	case item.ColourBlue():
+		return color.RGBA{66, 69, 161, 255}
+	case item.ColourBrown():
+		return color.RGBA{121, 81, 51, 255}
+	case item.ColourGreen():
+		return color.RGBA{91, 111, 47, 255}
+	case item.ColourRed():
+		return color.RGBA{164, 52, 48, 255}
+	case item.ColourBlack():
+		return color.RGBA{22, 24, 30, 255}
 	}
 	return color.RGBA{255, 0, 255, 255}
 }
 
 func (c Concrete) Color() color.RGBA {
 	switch c.Colour {
-	case item.ColourMagenta():
-		return color.RGBA{170, 50, 160, 255}
-	case item.ColourPink():
-		return color.RGBA{214, 102, 144, 255}
-	case item.ColourBlue():
-		return color.RGBA{44, 46, 143, 255}
-	case item.ColourCyan():
-		return color.RGBA{21, 119, 135, 255}
-	case item.ColourGreen():
-		return color.RGBA{73, 90, 36, 255}
-	case item.ColourLime():
-		return color.RGBA{94, 168, 24, 255}
+	case item.ColourWhite():
+		return color.RGBA{208, 214, 215, 255}
 	case item.ColourOrange():
 		return color.RGBA{225, 97, 1, 255}
-	case item.ColourBlack():
-		return color.RGBA{8, 10, 15, 255}
-	case item.ColourBrown():
-		return color.RGBA{97, 60, 32, 255}
-	case item.ColourGrey():
-		return color.RGBA{55, 58, 62, 255}
+	case item.ColourMagenta():
+		return color.RGBA{170, 50, 160, 255}
 	case item.ColourLightBlue():
 		return color.RGBA{37, 138, 200, 255}
+	case item.ColourYellow():
+		return color.RGBA{242, 176, 21, 255}
+	case item.ColourLime():
+		return color.RGBA{94, 168, 24, 255}
+	case item.ColourPink():
+		return color.RGBA{214, 102, 144, 255}
+	case item.ColourGrey():
+		return color.RGBA{55, 58, 62, 255}
+	case item.ColourLightGrey():
+		return color.RGBA{125, 125, 115, 255}
+	case item.ColourCyan():
+		return color.RGBA{21, 119, 135, 255}
+	case item.ColourPurple():
+		return color.RGBA{100, 31, 156, 255}
+	case item.ColourBlue():
+		return color.RGBA{44, 46, 143, 255}
+	case item.ColourBrown():
+		return color.RGBA{97, 60, 32, 255}
+	case item.ColourGreen():
+		return color.RGBA{73, 90, 36, 255}
+	case item.ColourRed():
+		return color.RGBA{142, 32, 32, 255}
+	case item.ColourBlack():
+		return color.RGBA{8, 10, 15, 255}
 	}
 	return color.RGBA{255, 0, 255, 255}
 }
@@ -344,28 +374,38 @@ func (Furnace) Color() color.RGBA {
 
 func (g GlazedTerracotta) Color() color.RGBA {
 	switch g.Colour {
-	case item.ColourMagenta():
-		return color.RGBA{212, 96, 194, 255}
-	case item.ColourPink():
-		return color.RGBA{244, 181, 179, 255}
-	case item.ColourBlue():
-		return color.RGBA{44, 68, 170, 255}
-	case item.ColourCyan():
-		return color.RGBA{50, 106, 121, 255}
-	case item.ColourGreen():
-		return color.RGBA{114, 155, 37, 255}
-	case item.ColourLime():
-		return color.RGBA{128, 204, 31, 255}
+	case item.ColourWhite():
+		return color.RGBA{244, 243, 229, 255}
 	case item.ColourOrange():
 		return color.RGBA{240, 102, 0, 255}
-	case item.ColourBlack():
-		return color.RGBA{24, 17, 17, 255}
-	case item.ColourBrown():
-		return color.RGBA{131, 84, 51, 255}
-	case item.ColourGrey():
-		return color.RGBA{69, 77, 80, 255}
+	case item.ColourMagenta():
+		return color.RGBA{212, 96, 194, 255}
 	case item.ColourLightBlue():
 		return color.RGBA{48, 137, 199, 255}
+	case item.ColourYellow():
+		return color.RGBA{238, 170, 61, 255}
+	case item.ColourLime():
+		return color.RGBA{128, 204, 31, 255}
+	case item.ColourPink():
+		return color.RGBA{244, 181, 179, 255}
+	case item.ColourGrey():
+		return color.RGBA{69, 77, 80, 255}
+	case item.ColourLightGrey():
+		return color.RGBA{91, 109, 115, 255}
+	case item.ColourCyan():
+		return color.RGBA{50, 106, 121, 255}
+	case item.ColourPurple():
+		return color.RGBA{137, 50, 184, 255}
+	case item.ColourBlue():
+		return color.RGBA{44, 68, 170, 255}
+	case item.ColourBrown():
+		return color.RGBA{131, 84, 51, 255}
+	case item.ColourGreen():
+		return color.RGBA{114, 155, 37, 255}
+	case item.ColourRed():
+		return color.RGBA{168, 43, 36, 255}
+	case item.ColourBlack():
+		return color.RGBA{24, 17, 17, 255}
 	}
 	return color.RGBA{255, 0, 255, 255}
 }
@@ -472,6 +512,16 @@ func (Mud) Color() color.RGBA {
 
 func (MuddyMangroveRoots) Color() color.RGBA {
 	return color.RGBA{60, 53, 54, 255}
+}
+
+func (m MushroomBlock) Color() color.RGBA {
+	switch m.Type {
+	case Red():
+		return color.RGBA{201, 43, 41, 255}
+	case Brown():
+		return color.RGBA{151, 114, 82, 255}
+	}
+	return color.RGBA{255, 0, 255, 255}
 }
 
 func (NetherBricks) Color() color.RGBA {
@@ -657,28 +707,38 @@ func (s Sponge) Color() color.RGBA {
 
 func (h StainedTerracotta) Color() color.RGBA {
 	switch h.Colour {
-	case item.ColourBlack():
-		return color.RGBA{37, 23, 17, 255}
-	case item.ColourBrown():
-		return color.RGBA{78, 52, 36, 255}
-	case item.ColourGrey():
-		return color.RGBA{57, 42, 35, 255}
-	case item.ColourLightBlue():
-		return color.RGBA{112, 108, 138, 255}
+	case item.ColourWhite():
+		return color.RGBA{209, 175, 160, 255}
 	case item.ColourOrange():
 		return color.RGBA{162, 84, 38, 255}
-	case item.ColourBlue():
-		return color.RGBA{73, 58, 90, 255}
-	case item.ColourCyan():
-		return color.RGBA{86, 91, 91, 255}
-	case item.ColourGreen():
-		return color.RGBA{75, 82, 42, 255}
-	case item.ColourLime():
-		return color.RGBA{102, 116, 51, 255}
 	case item.ColourMagenta():
 		return color.RGBA{148, 86, 107, 255}
+	case item.ColourLightBlue():
+		return color.RGBA{112, 108, 138, 255}
+	case item.ColourYellow():
+		return color.RGBA{185, 132, 35, 255}
+	case item.ColourLime():
+		return color.RGBA{102, 116, 51, 255}
 	case item.ColourPink():
 		return color.RGBA{160, 76, 77, 255}
+	case item.ColourGrey():
+		return color.RGBA{57, 42, 35, 255}
+	case item.ColourLightGrey():
+		return color.RGBA{134, 105, 96, 255}
+	case item.ColourCyan():
+		return color.RGBA{86, 91, 91, 255}
+	case item.ColourPurple():
+		return color.RGBA{119, 71, 87, 255}
+	case item.ColourBlue():
+		return color.RGBA{73, 58, 90, 255}
+	case item.ColourBrown():
+		return color.RGBA{78, 52, 36, 255}
+	case item.ColourGreen():
+		return color.RGBA{75, 82, 42, 255}
+	case item.ColourRed():
+		return color.RGBA{141, 59, 45, 255}
+	case item.ColourBlack():
+		return color.RGBA{37, 23, 17, 255}
 	}
 	return color.RGBA{255, 0, 255, 255}
 }
@@ -761,23 +821,23 @@ func (t WoodTrapdoor) Color() color.RGBA {
 
 func (w wood) Color() color.RGBA {
 	switch w {
-	case 0:
+	case 0: // oak
 		return color.RGBA{175, 143, 85, 255}
-	case 1:
+	case 1: // spruce
 		return color.RGBA{130, 97, 57, 255}
-	case 2:
+	case 2: // birch
 		return color.RGBA{240, 241, 235, 255}
-	case 3:
+	case 3: // jungle
 		return color.RGBA{84, 70, 26, 255}
-	case 4:
+	case 4: // acacia
 		return color.RGBA{91, 85, 77, 255}
-	case 5:
+	case 5: // darkoak
 		return color.RGBA{79, 50, 24, 255}
-	case 6:
+	case 6: // crimson
 		return color.RGBA{106, 52, 75, 255}
-	case 7:
+	case 7: // warped
 		return color.RGBA{40, 126, 130, 255}
-	case 8:
+	case 8: // mangrove
 		return color.RGBA{111, 42, 45, 255}
 	}
 	return color.RGBA{255, 0, 255, 255}
@@ -789,28 +849,38 @@ func (w Wood) Color() color.RGBA {
 
 func (w Wool) Color() color.RGBA {
 	switch w.Colour {
-	case item.ColourBlue():
-		return color.RGBA{52, 54, 154, 255}
-	case item.ColourCyan():
-		return color.RGBA{21, 127, 140, 255}
-	case item.ColourGreen():
-		return color.RGBA{89, 117, 24, 255}
-	case item.ColourLime():
-		return color.RGBA{123, 195, 27, 255}
-	case item.ColourMagenta():
-		return color.RGBA{186, 65, 175, 255}
-	case item.ColourPink():
-		return color.RGBA{243, 138, 170, 255}
-	case item.ColourBlack():
-		return color.RGBA{26, 26, 30, 255}
-	case item.ColourBrown():
-		return color.RGBA{124, 78, 46, 255}
-	case item.ColourGrey():
-		return color.RGBA{67, 73, 76, 255}
-	case item.ColourLightBlue():
-		return color.RGBA{72, 193, 228, 255}
+	case item.ColourWhite():
+		return color.RGBA{248, 249, 249, 255}
 	case item.ColourOrange():
 		return color.RGBA{249, 130, 30, 255}
+	case item.ColourMagenta():
+		return color.RGBA{186, 65, 175, 255}
+	case item.ColourLightBlue():
+		return color.RGBA{72, 193, 228, 255}
+	case item.ColourYellow():
+		return color.RGBA{253, 211, 52, 255}
+	case item.ColourLime():
+		return color.RGBA{123, 195, 27, 255}
+	case item.ColourPink():
+		return color.RGBA{243, 138, 170, 255}
+	case item.ColourGrey():
+		return color.RGBA{67, 73, 76, 255}
+	case item.ColourLightGrey():
+		return color.RGBA{149, 149, 143, 255}
+	case item.ColourCyan():
+		return color.RGBA{21, 127, 140, 255}
+	case item.ColourPurple():
+		return color.RGBA{108, 34, 161, 255}
+	case item.ColourBlue():
+		return color.RGBA{52, 54, 154, 255}
+	case item.ColourBrown():
+		return color.RGBA{124, 78, 46, 255}
+	case item.ColourGreen():
+		return color.RGBA{89, 117, 24, 255}
+	case item.ColourRed():
+		return color.RGBA{172, 43, 36, 255}
+	case item.ColourBlack():
+		return color.RGBA{26, 26, 30, 255}
 	}
 	return color.RGBA{255, 0, 255, 255}
 }

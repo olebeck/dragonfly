@@ -186,6 +186,8 @@ func init() {
 	registerAll(allWood())
 	registerAll(allWool())
 	registerAll(allWalls())
+	registerAll(allMushroomBlock())
+	registerAll(allSeagrass())
 }
 
 func init() {
@@ -416,6 +418,9 @@ func init() {
 	}
 	for _, t := range DeepslateTypes() {
 		world.RegisterItem(Deepslate{Type: t})
+	}
+	for _, t := range MushroomBlockTypes() {
+		world.RegisterItem(MushroomBlock{Type: t})
 	}
 }
 
