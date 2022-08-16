@@ -1,9 +1,10 @@
 package world
 
 import (
-	"github.com/df-mc/dragonfly/server/block/cube"
 	"math"
 	"time"
+
+	"github.com/df-mc/dragonfly/server/block/cube"
 )
 
 var (
@@ -29,11 +30,24 @@ type (
 		WeatherCycle() bool
 		TimeCycle() bool
 	}
-	overworld struct{}
-	nether    struct{}
-	end       struct{}
-	nopDim    struct{}
+
+	// overworld with 0 - 255 height
+	overworld_legacy struct{}
+	overworld        struct{}
+	nether           struct{}
+	end              struct{}
+	nopDim           struct{}
 )
+
+func (overworld_legacy) Range() cube.Range                 { return cube.Range{0, 255} }
+func (overworld_legacy) EncodeDimension() int              { return 0 }
+func (overworld_legacy) WaterEvaporates() bool             { return false }
+func (overworld_legacy) LavaSpreadDuration() time.Duration { return time.Second * 3 / 2 }
+func (overworld_legacy) WeatherCycle() bool                { return true }
+func (overworld_legacy) TimeCycle() bool                   { return true }
+func (overworld_legacy) String() string                    { return "Overworld" }
+
+var Overworld_legacy overworld_legacy
 
 func (overworld) Range() cube.Range                 { return cube.Range{-64, 319} }
 func (overworld) EncodeDimension() int              { return 0 }

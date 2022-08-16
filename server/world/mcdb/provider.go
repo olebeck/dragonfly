@@ -534,3 +534,46 @@ func (p *Provider) index(position world.ChunkPos, d world.Dimension) []byte {
 	binary.LittleEndian.PutUint32(b[8:], dim)
 	return b
 }
+
+type PositionAndDimension struct {
+	P world.ChunkPos
+	D world.Dimension
+}
+
+var dimension_ids = map[uint8]world.Dimension{
+	0: world.Overworld,
+	1: world.Nether,
+	2: world.End,
+	// < 1.18
+	10: world.Overworld_legacy,
+	11: world.Nether,
+	12: world.End,
+}
+
+// Chunks returns all chunk positions
+func (p *Provider) Chunks(pre117 bool) (ret map[PositionAndDimension]bool) {
+	ret = map[PositionAndDimension]bool{}
+	i := p.db.NewIterator(nil, nil)
+	for i.Next() {
+		key := i.Key()
+		x := binary.LittleEndian.Uint32(key[0:4])
+		z := binary.LittleEndian.Uint32(key[4:8])
+		dim := uint8(0)
+		if len(key) > 12 {
+			dim = uint8(key[8:9][0])
+		}
+		if pre117 {
+			dim += 10
+		}
+		key_type := key[len(key)-1]
+
+		if key_type == key3DData {
+			ret[PositionAndDimension{
+				P: world.ChunkPos{int32(x), int32(z)},
+				D: dimension_ids[dim],
+			}] = true
+		}
+	}
+	i.Release()
+	return ret
+}
