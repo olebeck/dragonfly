@@ -153,6 +153,7 @@ const (
 	hashStone
 	hashStoneBricks
 	hashStonecutter
+	hashSugarCane
 	hashTNT
 	hashTallGrass
 	hashTerracotta
@@ -767,6 +768,10 @@ func (s StoneBricks) Hash() uint64 {
 
 func (s Stonecutter) Hash() uint64 {
 	return hashStonecutter | uint64(s.Facing)<<8
+}
+
+func (c SugarCane) Hash() uint64 {
+	return hashSugarCane | uint64(c.Age)<<8
 }
 
 func (TNT) Hash() uint64 {
