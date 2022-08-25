@@ -10,7 +10,7 @@ type Moss struct {
 // SoilFor ...
 func (Moss) SoilFor(block world.Block) bool {
 	switch block.(type) {
-	case TallGrass, DoubleTallGrass, Flower, DoubleFlower, NetherSprouts, Azalea:
+	case TallGrass, DoubleTallGrass, Flower, DoubleFlower, NetherSprouts, Azalea, Sapling:
 		return true
 	}
 	return false
@@ -18,7 +18,7 @@ func (Moss) SoilFor(block world.Block) bool {
 
 // BreakInfo ...
 func (m Moss) BreakInfo() BreakInfo {
-	return newBreakInfo(0.5, alwaysHarvestable, shovelEffective, oneOf(m))
+	return newBreakInfo(0.1, alwaysHarvestable, hoeEffective, oneOf(m))
 }
 
 // EncodeItem ...

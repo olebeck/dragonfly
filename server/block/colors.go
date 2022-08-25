@@ -682,6 +682,30 @@ func (s Sandstone) Color() color.RGBA {
 	return color.RGBA{223, 212, 167, 255}
 }
 
+func (s Sapling) Color() color.RGBA {
+	switch s.Wood {
+	case OakWood():
+		return color.RGBA{76, 82, 25, 255}
+	case SpruceWood():
+		return color.RGBA{57, 73, 46, 255}
+	case BirchWood():
+		return color.RGBA{90, 126, 51, 255}
+	case JungleWood():
+		return color.RGBA{47, 53, 9, 255}
+	case AcaciaWood():
+		return color.RGBA{124, 111, 23, 255}
+	case DarkOakWood():
+		return color.RGBA{64, 143, 47, 255}
+	case CrimsonWood():
+		return color.RGBA{80, 24, 16, 255}
+	case WarpedWood():
+		return color.RGBA{22, 155, 133, 255}
+	case Mangrove():
+		return color.RGBA{84, 195, 87, 255}
+	}
+	return color.RGBA{255, 0, 255, 255}
+}
+
 func (Shroomlight) Color() color.RGBA {
 	return color.RGBA{254, 172, 109, 255}
 }

@@ -137,6 +137,7 @@ const (
 	hashReinforcedDeepslate
 	hashSand
 	hashSandstone
+	hashSapling
 	hashSeaLantern
 	hashSeaPickle
 	hashSeagrass
@@ -710,6 +711,10 @@ func (s Sand) Hash() uint64 {
 
 func (s Sandstone) Hash() uint64 {
 	return hashSandstone | uint64(s.Type.Uint8())<<8 | uint64(boolByte(s.Red))<<10
+}
+
+func (s Sapling) Hash() uint64 {
+	return hashSapling | uint64(s.Wood.Uint8())<<8
 }
 
 func (SeaLantern) Hash() uint64 {

@@ -6,6 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/features"
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
 )
@@ -34,7 +35,12 @@ func (a Azalea) BoneMeal(pos cube.Pos, w *world.World) (success bool) {
 			success = true
 		}
 	} else {
-		// TODO: trees
+		t := features.AzaleaTree{
+			Trunk:   Log{Wood: OakWood()},
+			Leaves:  AzaleaLeaves{},
+			Leaves2: AzaleaLeaves{Flowering: true},
+		}
+		return t.GrowTree(pos, w)
 	}
 	return success
 }
