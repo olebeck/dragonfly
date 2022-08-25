@@ -100,6 +100,7 @@ const (
 	hashLoom
 	hashMelon
 	hashMelonSeeds
+	hashMoss
 	hashMossCarpet
 	hashMud
 	hashMudBricks
@@ -561,6 +562,10 @@ func (Melon) Hash() uint64 {
 
 func (m MelonSeeds) Hash() uint64 {
 	return hashMelonSeeds | uint64(m.Growth)<<8 | uint64(m.Direction)<<16
+}
+
+func (Moss) Hash() uint64 {
+	return hashMoss
 }
 
 func (MossCarpet) Hash() uint64 {

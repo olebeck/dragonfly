@@ -510,6 +510,10 @@ func (Melon) Color() color.RGBA {
 	return color.RGBA{82, 129, 28, 255}
 }
 
+func (m Moss) Color() color.RGBA {
+	return color.RGBA{100, 114, 45, 255}
+}
+
 func (MudBricks) Color() color.RGBA {
 	return color.RGBA{157, 120, 92, 255}
 }

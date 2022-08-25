@@ -1,6 +1,8 @@
 package block
 
 import (
+	"math/rand"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
@@ -19,7 +21,22 @@ type Azalea struct {
 
 // BoneMeal ...
 func (a Azalea) BoneMeal(pos cube.Pos, w *world.World) (success bool) {
-	return false
+	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Moss); ok {
+		for i := 0; i < 8; i++ {
+			p := pos.Add(cube.Pos{rand.Intn(7) - 3, rand.Intn(3) - 1, rand.Intn(7) - 3})
+			if _, ok := w.Block(p).(Air); !ok {
+				continue
+			}
+			if _, ok := w.Block(p.Side(cube.FaceDown)).(Moss); !ok {
+				continue
+			}
+			w.SetBlock(p, Azalea{}, nil)
+			success = true
+		}
+	} else {
+		// TODO: trees
+	}
+	return success
 }
 
 // NeighbourUpdateTick ...
