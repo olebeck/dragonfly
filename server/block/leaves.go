@@ -1,11 +1,12 @@
 package block
 
 import (
+	"math/rand"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
 )
 
 // Leaves are blocks that grow as part of trees which mainly drop saplings and sticks.
@@ -66,6 +67,10 @@ func (l Leaves) RandomTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
 			l.ShouldUpdate = false
 			w.SetBlock(pos, l, nil)
 		} else {
+			drops := l.BreakInfo().Drops(nil, nil)
+			for _, drop := range drops {
+				dropItem(w, drop, pos.Vec3Centre())
+			}
 			w.SetBlock(pos, nil, nil)
 		}
 	}
@@ -89,14 +94,23 @@ func (l Leaves) BreakInfo() BreakInfo {
 	return newBreakInfo(0.2, alwaysHarvestable, func(t item.Tool) bool {
 		return t.ToolType() == item.TypeShears || t.ToolType() == item.TypeHoe
 	}, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
-		if t.ToolType() == item.TypeShears || hasSilkTouch(enchantments) {
+		if t != nil && t.ToolType() == item.TypeShears || hasSilkTouch(enchantments) {
 			return []item.Stack{item.NewStack(l, 1)}
 		}
 		var drops []item.Stack
-		if (l.Wood == OakWood() || l.Wood == DarkOakWood()) && rand.Float64() < 0.005 {
+		if (l.Wood == OakWood() || l.Wood == DarkOakWood()) && rand.Float64() < 1/200.0 {
 			drops = append(drops, item.NewStack(item.Apple{}, 1))
 		}
-		// TODO: Saplings and sticks can drop along with apples
+		var chanceSapling = 20.0
+		if l.Wood == JungleWood() {
+			chanceSapling = 40.0
+		}
+		if rand.Float64() < 1/chanceSapling {
+			drops = append(drops, item.NewStack(Sapling{Wood: l.Wood}, 1))
+		}
+		if rand.Float64() < 1/50.0 {
+			drops = append(drops, item.NewStack(item.Stick{}, rand.Intn(2)+1))
+		}
 		return drops
 	})
 }

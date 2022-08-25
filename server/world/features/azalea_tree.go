@@ -29,8 +29,8 @@ func (t *AzaleaTree) LeafBlock() world.Block {
 }
 
 func (a *AzaleaTree) GrowTree(pos cube.Pos, w *world.World) bool {
-	a.growTrunk(pos, w)
 	a.growLeaves(pos, w)
+	a.growTrunk(pos, w)
 	return true
 }
 

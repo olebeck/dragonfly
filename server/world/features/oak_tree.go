@@ -25,8 +25,8 @@ func (t *OakTree) LeafBlock() world.Block {
 }
 
 func (t *OakTree) GrowTree(pos cube.Pos, w *world.World) bool {
-	t.growTrunk(pos, w)
 	t.growLeaves(pos, w)
+	t.growTrunk(pos, w)
 	return true
 }
 
