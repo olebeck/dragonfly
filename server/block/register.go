@@ -101,6 +101,7 @@ func init() {
 	world.RegisterBlock(TNT{})
 	world.RegisterBlock(Terracotta{})
 	world.RegisterBlock(Tuff{})
+	world.RegisterBlock(Waterlily{})
 
 	for _, ore := range OreTypes() {
 		world.RegisterBlock(CoalOre{Type: ore})
@@ -113,6 +114,7 @@ func init() {
 	}
 
 	registerAll(allAnvils())
+	registerAll(allAzaleaLeaves())
 	registerAll(allBanners())
 	registerAll(allBarrels())
 	registerAll(allBasalt())
@@ -199,6 +201,8 @@ func init() {
 	world.RegisterItem(AncientDebris{})
 	world.RegisterItem(Andesite{Polished: true})
 	world.RegisterItem(Andesite{})
+	world.RegisterItem(AzaleaLeaves{})
+	world.RegisterItem(AzaleaLeaves{Flowering: true})
 	world.RegisterItem(Barrel{})
 	world.RegisterItem(Barrier{})
 	world.RegisterItem(Basalt{Polished: true})
@@ -326,6 +330,7 @@ func init() {
 	world.RegisterItem(Terracotta{})
 	world.RegisterItem(Tuff{})
 	world.RegisterItem(WheatSeeds{})
+	world.RegisterItem(Waterlily{})
 	world.RegisterItem(item.Bucket{Content: item.LiquidBucketContent(Lava{})})
 	world.RegisterItem(item.Bucket{Content: item.LiquidBucketContent(Water{})})
 	world.RegisterItem(item.Bucket{Content: item.MilkBucketContent()})

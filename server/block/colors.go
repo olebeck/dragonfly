@@ -18,6 +18,14 @@ func (Anvil) Color() color.RGBA {
 	return color.RGBA{74, 74, 74, 255}
 }
 
+func (a AzaleaLeaves) Color() color.RGBA {
+	if a.Flowering {
+		return color.RGBA{108, 128, 45, 255}
+	} else {
+		return color.RGBA{108, 128, 45, 255}
+	}
+}
+
 func (Banner) Color() color.RGBA {
 	return color.RGBA{184, 148, 95, 255}
 }
@@ -781,6 +789,10 @@ func (Tuff) Color() color.RGBA {
 
 func (Water) Color() color.RGBA {
 	return color.RGBA{113, 133, 253, 255}
+}
+
+func (w Waterlily) Color() color.RGBA {
+	return color.RGBA{104, 104, 104, 255}
 }
 
 func (s WheatSeeds) Color() color.RGBA {

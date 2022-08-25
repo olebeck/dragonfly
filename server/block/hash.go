@@ -8,6 +8,7 @@ const (
 	hashAncientDebris
 	hashAndesite
 	hashAnvil
+	hashAzaleaLeaves
 	hashBanner
 	hashBarrel
 	hashBarrier
@@ -163,6 +164,7 @@ const (
 	hashTuff
 	hashWall
 	hashWater
+	hashWaterlily
 	hashWheatSeeds
 	hashWood
 	hashWoodDoor
@@ -190,6 +192,10 @@ func (a Andesite) Hash() uint64 {
 
 func (a Anvil) Hash() uint64 {
 	return hashAnvil | uint64(a.Type.Uint8())<<8 | uint64(a.Facing)<<10
+}
+
+func (l AzaleaLeaves) Hash() uint64 {
+	return hashAzaleaLeaves | uint64(boolByte(l.Flowering))<<8 | uint64(boolByte(l.Persistent))<<9 | uint64(boolByte(l.ShouldUpdate))<<10
 }
 
 func (b Banner) Hash() uint64 {
@@ -810,6 +816,10 @@ func (w Wall) Hash() uint64 {
 
 func (w Water) Hash() uint64 {
 	return hashWater | uint64(boolByte(w.Still))<<8 | uint64(w.Depth)<<9 | uint64(boolByte(w.Falling))<<17
+}
+
+func (Waterlily) Hash() uint64 {
+	return hashWaterlily
 }
 
 func (s WheatSeeds) Hash() uint64 {
