@@ -19,7 +19,7 @@ func (d Dirt) SoilFor(block world.Block) bool {
 	switch block.(type) {
 	case TallGrass, DoubleTallGrass, DeadBush:
 		return !d.Coarse
-	case Flower, DoubleFlower, NetherSprouts, SugarCane:
+	case Flower, DoubleFlower, NetherSprouts, SugarCane, Azalea:
 		return true
 	}
 	return false

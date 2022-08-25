@@ -8,6 +8,7 @@ const (
 	hashAncientDebris
 	hashAndesite
 	hashAnvil
+	hashAzalea
 	hashAzaleaLeaves
 	hashBanner
 	hashBarrel
@@ -192,6 +193,10 @@ func (a Andesite) Hash() uint64 {
 
 func (a Anvil) Hash() uint64 {
 	return hashAnvil | uint64(a.Type.Uint8())<<8 | uint64(a.Facing)<<10
+}
+
+func (a Azalea) Hash() uint64 {
+	return hashAzalea | uint64(boolByte(a.Flowering))<<8
 }
 
 func (l AzaleaLeaves) Hash() uint64 {

@@ -114,12 +114,12 @@ func DiskDecode(data SerialisedData, r cube.Range) (*Chunk, error) {
 
 // decodeSubChunk decodes a SubChunk from a bytes.Buffer. The Encoding passed defines how the block storages of the
 // SubChunk are decoded.
-func decodeSubChunk(buf *bytes.Buffer, c *Chunk, index *byte, e Encoding) (sub *SubChunk, err error) {
+func decodeSubChunk(buf *bytes.Buffer, c *Chunk, index *byte, e Encoding) (*SubChunk, error) {
 	ver, err := buf.ReadByte()
 	if err != nil {
 		return nil, fmt.Errorf("error reading version: %w", err)
 	}
-	sub = NewSubChunk(c.air)
+	sub := NewSubChunk(c.air)
 	switch ver {
 	default:
 		return nil, fmt.Errorf("unknown sub chunk version %v: can't decode", ver)
@@ -197,10 +197,6 @@ func decodePalettedStorage(buf *bytes.Buffer, e Encoding, pe paletteEncoding) (*
 		return nil, nil
 	}
 
-	if blockSize > 32 {
-		return nil, fmt.Errorf("INVALID CHUNK")
-	}
-
 	size := paletteSize(blockSize)
 	uint32Count := size.uint32s()
 
@@ -215,7 +211,6 @@ func decodePalettedStorage(buf *bytes.Buffer, e Encoding, pe paletteEncoding) (*
 		// Explicitly don't use the binary package to greatly improve performance of reading the uint32s.
 		uint32s[i] = uint32(data[i*4]) | uint32(data[i*4+1])<<8 | uint32(data[i*4+2])<<16 | uint32(data[i*4+3])<<24
 	}
-
 	p, err := e.decodePalette(buf, paletteSize(blockSize), pe)
 	return newPalettedStorage(uint32s, p), err
 }

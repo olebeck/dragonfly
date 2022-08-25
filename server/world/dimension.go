@@ -9,7 +9,7 @@ import (
 
 var (
 	// Overworld is the Dimension implementation of a normal overworld. It has a blue sky under normal circumstances and
-	// has a sun, clouds, stars and a moon. Overworld has a building range of [-64, 320).
+	// has a sun, clouds, stars and a moon. Overworld has a building range of [-64, 320].
 	Overworld overworld
 	// Nether is a Dimension implementation with a lower base light level and a darker sky without sun/moon. It has a
 	// building range of [0, 128).
@@ -17,6 +17,9 @@ var (
 	// End is a Dimension implementation with a dark sky. It has a building range of [0, 256).
 	End end
 )
+
+// Overworld_legacy is the same as Overworld except it has a building range of [0, 255].
+var Overworld_legacy = overworld{legacy: true}
 
 type (
 	// Dimension is a dimension of a World. It influences a variety of properties of a World such as the building range,
@@ -32,24 +35,18 @@ type (
 	}
 
 	// overworld with 0 - 255 height
-	overworld_legacy struct{}
-	overworld        struct{}
-	nether           struct{}
-	end              struct{}
-	nopDim           struct{}
+	overworld struct{ legacy bool }
+	nether    struct{}
+	end       struct{}
+	nopDim    struct{}
 )
 
-func (overworld_legacy) Range() cube.Range                 { return cube.Range{0, 255} }
-func (overworld_legacy) EncodeDimension() int              { return 0 }
-func (overworld_legacy) WaterEvaporates() bool             { return false }
-func (overworld_legacy) LavaSpreadDuration() time.Duration { return time.Second * 3 / 2 }
-func (overworld_legacy) WeatherCycle() bool                { return true }
-func (overworld_legacy) TimeCycle() bool                   { return true }
-func (overworld_legacy) String() string                    { return "Overworld" }
-
-var Overworld_legacy overworld_legacy
-
-func (overworld) Range() cube.Range                 { return cube.Range{-64, 319} }
+func (w overworld) Range() cube.Range {
+	if w.legacy {
+		return cube.Range{0, 255}
+	}
+	return cube.Range{-64, 319}
+}
 func (overworld) EncodeDimension() int              { return 0 }
 func (overworld) WaterEvaporates() bool             { return false }
 func (overworld) LavaSpreadDuration() time.Duration { return time.Second * 3 / 2 }
