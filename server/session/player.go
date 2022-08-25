@@ -106,32 +106,34 @@ const (
 )
 
 const (
-	containerAnvilInput           = 0
-	containerAnvilMaterial        = 1
-	containerSmithingInput        = 3
-	containerSmithingMaterial     = 4
-	containerArmour               = 6
-	containerChest                = 7
-	containerBeacon               = 8
-	containerFullInventory        = 12
-	containerCraftingGrid         = 13
-	containerEnchantingTableInput = 21
-	containerEnchantingTableLapis = 22
-	containerFurnaceFuel          = 23
-	containerFurnaceResult        = 25
-	containerFurnaceInput         = 24
-	containerHotbar               = 27
-	containerInventory            = 28
-	containerOffHand              = 33
-	containerLoomInput            = 40
-	containerLoomDye              = 41
-	containerLoomPattern          = 42
-	containerBlastFurnaceInput    = 44
-	containerSmokerInput          = 45
-	containerStonecutterInput     = 52
-	containerBarrel               = 57
-	containerCursor               = 58
-	containerOutput               = 59
+	containerAnvilInput            = 0
+	containerAnvilMaterial         = 1
+	containerSmithingInput         = 3
+	containerSmithingMaterial      = 4
+	containerArmour                = 6
+	containerChest                 = 7
+	containerBeacon                = 8
+	containerFullInventory         = 12
+	containerCraftingGrid          = 13
+	containerEnchantingTableInput  = 21
+	containerEnchantingTableLapis  = 22
+	containerFurnaceFuel           = 23
+	containerFurnaceResult         = 25
+	containerFurnaceInput          = 24
+	containerHotbar                = 27
+	containerInventory             = 28
+	containerOffHand               = 33
+	containerLoomInput             = 40
+	containerLoomDye               = 41
+	containerLoomPattern           = 42
+	containerBlastFurnaceInput     = 44
+	containerSmokerInput           = 45
+	containerGrindstoneFirstInput  = 49
+	containerGrindstoneSecondInput = 50
+	containerStonecutterInput      = 52
+	containerBarrel                = 57
+	containerCursor                = 58
+	containerOutput                = 59
 )
 
 // smelter is an interface representing a block used to smelt items.
@@ -200,6 +202,12 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 				return s.ui, true
 			}
 		}
+	case containerGrindstoneFirstInput, containerGrindstoneSecondInput:
+		if s.containerOpened.Load() {
+			if _, ok := s.c.World().Block(s.openedPos.Load()).(block.Grindstone); ok {
+				return s.ui, true
+			}
+		}
 	case containerEnchantingTableInput, containerEnchantingTableLapis:
 		if s.containerOpened.Load() {
 			if _, enchanting := s.c.World().Block(s.openedPos.Load()).(block.EnchantingTable); enchanting {
@@ -233,10 +241,11 @@ func (s *Session) SendSpeed(speed float64) {
 	s.writePacket(&packet.UpdateAttributes{
 		EntityRuntimeID: selfEntityRuntimeID,
 		Attributes: []protocol.Attribute{{
-			Name:    "minecraft:movement",
-			Value:   float32(speed),
-			Max:     math.MaxFloat32,
-			Min:     0,
+			AttributeValue: protocol.AttributeValue{
+				Name:  "minecraft:movement",
+				Value: float32(speed),
+				Max:   math.MaxFloat32,
+			},
 			Default: 0.1,
 		}},
 	})
@@ -248,19 +257,27 @@ func (s *Session) SendFood(food int, saturation, exhaustion float64) {
 		EntityRuntimeID: selfEntityRuntimeID,
 		Attributes: []protocol.Attribute{
 			{
-				Name:  "minecraft:player.hunger",
-				Value: float32(food),
-				Max:   20, Min: 0, Default: 20,
+				AttributeValue: protocol.AttributeValue{
+					Name:  "minecraft:player.hunger",
+					Value: float32(food),
+					Max:   20,
+				},
+				Default: 20,
 			},
 			{
-				Name:  "minecraft:player.saturation",
-				Value: float32(saturation),
-				Max:   20, Min: 0, Default: 20,
+				AttributeValue: protocol.AttributeValue{
+					Name:  "minecraft:player.saturation",
+					Value: float32(saturation),
+					Max:   20,
+				},
+				Default: 20,
 			},
 			{
-				Name:  "minecraft:player.exhaustion",
-				Value: float32(exhaustion),
-				Max:   5, Min: 0, Default: 0,
+				AttributeValue: protocol.AttributeValue{
+					Name:  "minecraft:player.exhaustion",
+					Value: float32(exhaustion),
+					Max:   5,
+				},
 			},
 		},
 	})
@@ -366,9 +383,11 @@ func (s *Session) SendHealth(health *entity.HealthManager) {
 	s.writePacket(&packet.UpdateAttributes{
 		EntityRuntimeID: selfEntityRuntimeID,
 		Attributes: []protocol.Attribute{{
-			Name:    "minecraft:health",
-			Value:   float32(math.Ceil(health.Health())),
-			Max:     float32(math.Ceil(health.MaxHealth())),
+			AttributeValue: protocol.AttributeValue{
+				Name:  "minecraft:health",
+				Value: float32(math.Ceil(health.Health())),
+				Max:   float32(math.Ceil(health.MaxHealth())),
+			},
 			Default: 20,
 		}},
 	})
@@ -376,16 +395,18 @@ func (s *Session) SendHealth(health *entity.HealthManager) {
 
 // SendAbsorption sends the absorption value passed to the player.
 func (s *Session) SendAbsorption(value float64) {
-	max := value
+	maximum := value
 	if math.Mod(value, 2) != 0 {
-		max = value + 1
+		maximum = value + 1
 	}
 	s.writePacket(&packet.UpdateAttributes{
 		EntityRuntimeID: selfEntityRuntimeID,
 		Attributes: []protocol.Attribute{{
-			Name:  "minecraft:absorption",
-			Value: float32(math.Ceil(value)),
-			Max:   float32(math.Ceil(max)),
+			AttributeValue: protocol.AttributeValue{
+				Name:  "minecraft:absorption",
+				Value: float32(math.Ceil(value)),
+				Max:   float32(math.Ceil(maximum)),
+			},
 		}},
 	})
 }
@@ -639,14 +660,18 @@ func (s *Session) SendExperience(e *entity.ExperienceManager) {
 		EntityRuntimeID: selfEntityRuntimeID,
 		Attributes: []protocol.Attribute{
 			{
-				Name:  "minecraft:player.level",
-				Value: float32(level),
-				Max:   float32(math.MaxInt32),
+				AttributeValue: protocol.AttributeValue{
+					Name:  "minecraft:player.level",
+					Value: float32(level),
+					Max:   float32(math.MaxInt32),
+				},
 			},
 			{
-				Name:  "minecraft:player.experience",
-				Value: float32(progress),
-				Max:   1,
+				AttributeValue: protocol.AttributeValue{
+					Name:  "minecraft:player.experience",
+					Value: float32(progress),
+					Max:   1,
+				},
 			},
 		},
 	})
