@@ -16,14 +16,16 @@ type Sapling struct {
 	transparent
 
 	Wood WoodType
+
+	AgeBit bool
 }
 
-// BoneMeal ...
-func (s Sapling) BoneMeal(pos cube.Pos, w *world.World) (success bool) {
+func (s Sapling) Grow(pos cube.Pos, w *world.World) (success bool) {
 	var tree features.Tree
 	switch s.Wood {
 	case OakWood():
 		tree = &features.OakTree{
+			Height: 4 + rand.Intn(4),
 			Trunk:  Log{Wood: s.Wood},
 			Leaves: Leaves{Wood: s.Wood},
 		}
@@ -43,6 +45,19 @@ func (s Sapling) BoneMeal(pos cube.Pos, w *world.World) (success bool) {
 	if tree != nil {
 		success = tree.GrowTree(pos, w)
 	}
+	return
+}
+
+// RandomTick ...
+func (s Sapling) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
+	if rand.Intn(16) == 1 {
+		s.Grow(pos, w)
+	}
+}
+
+// BoneMeal ...
+func (s Sapling) BoneMeal(pos cube.Pos, w *world.World) (success bool) {
+	s.Grow(pos, w)
 	return success
 }
 
@@ -89,7 +104,7 @@ func (s Sapling) EncodeItem() (name string, meta int16) {
 func (s Sapling) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:sapling", map[string]any{
 		"sapling_type": s.Wood.String(),
-		"age_bit":      uint8(0),
+		"age_bit":      s.AgeBit,
 	}
 }
 

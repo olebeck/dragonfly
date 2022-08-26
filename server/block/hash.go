@@ -714,7 +714,7 @@ func (s Sandstone) Hash() uint64 {
 }
 
 func (s Sapling) Hash() uint64 {
-	return hashSapling | uint64(s.Wood.Uint8())<<8
+	return hashSapling | uint64(s.Wood.Uint8())<<8 | uint64(boolByte(s.AgeBit))<<12
 }
 
 func (SeaLantern) Hash() uint64 {
