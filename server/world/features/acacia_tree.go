@@ -13,9 +13,6 @@ type AcaciaTree struct{}
 func (AcaciaTree) Name() string { return "minecraft:acacia_tree" }
 
 func (t *AcaciaTree) CanPlace(pos cube.Pos, w *world.World) bool {
-	if w.Light(pos) < 9 {
-		return false
-	}
 	if !checkTreebox(3, 6, 3, pos, w) {
 		return false
 	}
@@ -23,9 +20,7 @@ func (t *AcaciaTree) CanPlace(pos cube.Pos, w *world.World) bool {
 }
 
 func (t *AcaciaTree) Place(pos cube.Pos, w *world.World) bool {
-	if !t.CanPlace(pos, w) {
-		return false
-	}
+	height := rand.Intn(3) + rand.Intn(3) + 5
 
 	placeLog := func(blockPos cube.Pos) {
 		w.SetBlock(blockPos, block.Log{Wood: block.AcaciaWood()}, nil)
@@ -35,7 +30,6 @@ func (t *AcaciaTree) Place(pos cube.Pos, w *world.World) bool {
 	}
 
 	// check if fits
-	height := rand.Intn(3) + rand.Intn(3) + 5
 	flag := true
 	if pos.Y() >= 1 && pos.Y()+height+1 < w.Range().Max() {
 		for y := pos.Y(); y < pos.Y()+1+height; y++ {

@@ -49,13 +49,15 @@ func (s Sapling) findSaplings(pos cube.Pos, w *world.World) (*cube.Pos, bool) {
 		if correct {
 			var lowestX = 0
 			var lowestZ = 0
+			var first = true
 			for _, p := range v {
-				if p.X() < lowestX {
+				if p.X() < lowestX || first {
 					lowestX = p.X()
 				}
-				if p.Z() < lowestZ {
+				if p.Z() < lowestZ || first {
 					lowestZ = p.Z()
 				}
+				first = false
 			}
 			return &cube.Pos{lowestX, pos.Y(), lowestZ}, true
 		}
@@ -65,7 +67,6 @@ func (s Sapling) findSaplings(pos cube.Pos, w *world.World) (*cube.Pos, bool) {
 
 // Grow grows this sapling into a tree
 func (s Sapling) Grow(pos cube.Pos, w *world.World) (success bool) {
-
 	var treeName = "minecraft:"
 	pos2, correct := s.findSaplings(pos, w)
 	if correct {
@@ -76,7 +77,9 @@ func (s Sapling) Grow(pos cube.Pos, w *world.World) (success bool) {
 	treeName += "_tree"
 
 	if tree := world.GetFeature(treeName); tree != nil {
-		tree.Place(pos, w)
+		if tree.CanPlace(pos, w) {
+			tree.Place(pos, w)
+		}
 		return true
 	}
 	return false
@@ -85,7 +88,10 @@ func (s Sapling) Grow(pos cube.Pos, w *world.World) (success bool) {
 // RandomTick ...
 func (s Sapling) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	if rand.Intn(16) == 1 {
-		s.Grow(pos, w)
+		if w.Light(pos) < 9 {
+			return
+		}
+		s.Grow(pos, w, false)
 	}
 }
 

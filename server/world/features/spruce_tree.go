@@ -14,14 +14,13 @@ type SpruceTree struct {
 func (SpruceTree) Name() string { return "minecraft:spruce_tree" }
 
 func (t *SpruceTree) CanPlace(pos cube.Pos, w *world.World) bool {
+	if !checkTreebox(4, 6, 4, pos, w) {
+		return false
+	}
 	return true
 }
 
 func (t *SpruceTree) Place(pos cube.Pos, w *world.World) bool {
-	if !t.CanPlace(pos, w) {
-		return false
-	}
-
 	height := 6 + rand.Intn(4)
 	growSpruceLeaves(pos, w, height, height-(1+rand.Intn(2)), 3+rand.Intn(2), block.Leaves{Wood: block.SpruceWood()})
 	growStraightTrunk(pos, w, height-rand.Intn(3), block.Log{Wood: block.SpruceWood()})
