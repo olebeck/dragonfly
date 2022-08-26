@@ -22,7 +22,7 @@ func (t *AzaleaTree) TrunkBlock() world.Block {
 }
 
 func (t *AzaleaTree) LeafBlock() world.Block {
-	if rand.Intn(16) == 0 {
+	if rand.Intn(8) == 0 {
 		return t.Leaves2
 	}
 	return t.Leaves
