@@ -37,6 +37,19 @@ func growStraightTrunk(pos cube.Pos, w *world.World, height int, trunk world.Blo
 	}
 }
 
+func canGrowInto(b world.Block) bool {
+	if _, ok := b.(block.Leaves); ok {
+		return true
+	}
+	if _, ok := b.(block.Air); ok {
+		return true
+	}
+	if _, ok := b.(block.Sapling); ok {
+		return true
+	}
+	return false
+}
+
 func checkTreebox(x, y, z int, pos cube.Pos, w *world.World) bool {
 	x = (x - 1) / 2
 	z = (z - 1) / 2
@@ -46,19 +59,27 @@ func checkTreebox(x, y, z int, pos cube.Pos, w *world.World) bool {
 			for zz := -z; zz < z; zz++ {
 				p := pos.Add(cube.Pos{xx, yy, zz})
 				b := w.Block(p)
-				if _, ok := b.(block.Leaves); ok {
-					continue
+				if !canGrowInto(b) {
+					return false
 				}
-				if _, ok := b.(block.Air); ok {
-					continue
-				}
-				if _, ok := b.(block.Sapling); ok {
-					continue
-				}
-				return false
 			}
 		}
 	}
 
 	return true
+}
+
+func randomHorizontalFace() cube.Face {
+	r := rand.Intn(4)
+	switch r {
+	case 0:
+		return cube.FaceNorth
+	case 1:
+		return cube.FaceSouth
+	case 2:
+		return cube.FaceWest
+	case 3:
+		return cube.FaceEast
+	}
+	panic("unreachable")
 }

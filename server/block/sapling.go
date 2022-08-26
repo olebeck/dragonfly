@@ -19,17 +19,61 @@ type Sapling struct {
 	AgeBit bool
 }
 
-var treeNames = map[WoodType]string{
-	OakWood():    "minecraft:oak_tree",
-	SpruceWood(): "minecraft:spruce_tree",
-	BirchWood():  "minecraft:birch_tree",
+// findSaplings finds the same sapling type in a 2x2 area, returns the lowest xz coordinates.
+func (s Sapling) findSaplings(pos cube.Pos, w *world.World) (*cube.Pos, bool) {
+	validPositions := [][]cube.Pos{
+		[]cube.Pos{
+			pos, pos.Add(cube.Pos{1, 0, 0}), pos.Add(cube.Pos{0, 0, 1}), pos.Add(cube.Pos{1, 0, 1}),
+		},
+		[]cube.Pos{
+			pos, pos.Add(cube.Pos{-1, 0, 0}), pos.Add(cube.Pos{0, 0, -1}), pos.Add(cube.Pos{-1, 0, -1}),
+		},
+		[]cube.Pos{
+			pos, pos.Add(cube.Pos{1, 0, 0}), pos.Add(cube.Pos{0, 0, -1}), pos.Add(cube.Pos{1, 0, -1}),
+		},
+		[]cube.Pos{
+			pos, pos.Add(cube.Pos{-1, 0, 0}), pos.Add(cube.Pos{-1, 0, 0}), pos.Add(cube.Pos{-1, 0, 1}),
+		},
+	}
+	for _, v := range validPositions {
+		var correct = true
+		for _, p := range v {
+			if sapling, ok := w.Block(p).(Sapling); ok {
+				if sapling.Wood != s.Wood {
+					correct = false
+				}
+			} else {
+				correct = false
+			}
+		}
+		if correct {
+			var lowestX = 0
+			var lowestZ = 0
+			for _, p := range v {
+				if p.X() < lowestX {
+					lowestX = p.X()
+				}
+				if p.Z() < lowestZ {
+					lowestZ = p.Z()
+				}
+			}
+			return &cube.Pos{lowestX, pos.Y(), lowestZ}, true
+		}
+	}
+	return nil, false
 }
 
+// Grow grows this sapling into a tree
 func (s Sapling) Grow(pos cube.Pos, w *world.World) (success bool) {
-	treeName, ok := treeNames[s.Wood]
-	if !ok {
-		return false
+
+	var treeName = "minecraft:"
+	pos2, correct := s.findSaplings(pos, w)
+	if correct {
+		treeName += "large_"
+		pos = *pos2
 	}
+	treeName += s.Wood.String()
+	treeName += "_tree"
 
 	if tree := world.GetFeature(treeName); tree != nil {
 		tree.Place(pos, w)
