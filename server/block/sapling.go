@@ -1,6 +1,8 @@
 package block
 
 import (
+	"math/rand"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
@@ -22,6 +24,18 @@ func (s Sapling) BoneMeal(pos cube.Pos, w *world.World) (success bool) {
 	switch s.Wood {
 	case OakWood():
 		tree = &features.OakTree{
+			Trunk:  Log{Wood: s.Wood},
+			Leaves: Leaves{Wood: s.Wood},
+		}
+	case SpruceWood():
+		tree = &features.SpruceTree{
+			Height: 6 + rand.Intn(4),
+			Trunk:  Log{Wood: s.Wood},
+			Leaves: Leaves{Wood: s.Wood},
+		}
+	case BirchWood():
+		tree = &features.BirchTree{
+			Height: 5 + rand.Intn(2),
 			Trunk:  Log{Wood: s.Wood},
 			Leaves: Leaves{Wood: s.Wood},
 		}
