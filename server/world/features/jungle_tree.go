@@ -8,17 +8,18 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 )
 
+// JungleTree is a type of tree generated in the jungle biome.
 type JungleTree struct{}
 
+// Name ...
 func (JungleTree) Name() string { return "minecraft:jungle_tree" }
 
+// CanPlace ...
 func (t *JungleTree) CanPlace(pos cube.Pos, w *world.World) bool {
-	if !checkTreebox(3, 5, 3, pos, w) {
-		return false
-	}
-	return true
+	return checkTreebox(3, 5, 3, pos, w)
 }
 
+// Place ...
 func (t *JungleTree) Place(pos cube.Pos, w *world.World) bool {
 	height := 4 + rand.Intn(6)
 

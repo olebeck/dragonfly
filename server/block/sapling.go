@@ -91,7 +91,7 @@ func (s Sapling) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 		if w.Light(pos) < 9 {
 			return
 		}
-		s.Grow(pos, w, false)
+		s.Grow(pos, w)
 	}
 }
 

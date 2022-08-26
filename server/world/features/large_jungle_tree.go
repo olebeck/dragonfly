@@ -9,28 +9,32 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 )
 
-const baseHeight = 10
-const extraRandomHeight = 20
-
+// LargeJungleTree is the large type of the jungle tree, grown using 4 saplings.
 type LargeJungleTree struct{}
 
+// Name ...
 func (LargeJungleTree) Name() string { return "minecraft:large_jungle_tree" }
 
+// CanPlace ...
 func (t *LargeJungleTree) CanPlace(pos cube.Pos, w *world.World) bool {
-	if !checkTreebox(3, 5, 3, pos, w) {
-		return false
-	}
-	return true
+	return checkTreebox(3, 5, 3, pos, w)
 }
 
+// Place ...
 func (t *LargeJungleTree) Place(pos cube.Pos, w *world.World) bool {
+	const baseHeight = 10
+	const extraRandomHeight = 20
+
 	height := rand.Intn(3) + baseHeight + rand.Intn(extraRandomHeight)
 
 	placeLog := func(blockPos cube.Pos) {
 		w.SetBlock(blockPos, block.Log{Wood: block.JungleWood()}, nil)
 	}
 
+	// builds the leaves on the top
 	t.createCrown(pos.Add(cube.Pos{0, height, 0}), w, 2)
+
+	// adds small branches off of the tree
 	for j := pos.Y() + height - 2 - rand.Intn(4); j > pos.Y()+height/2; j -= 2 + rand.Intn(4) {
 		f := rand.Float64() * math.Pi * 2
 		var k, l int
@@ -46,6 +50,7 @@ func (t *LargeJungleTree) Place(pos cube.Pos, w *world.World) bool {
 		}
 	}
 
+	// builds the trunk, with vines
 	for i2 := 0; i2 < height; i2++ {
 		blockPos := pos.Add(cube.Pos{0, i2, 0})
 
@@ -96,12 +101,14 @@ func (t *LargeJungleTree) Place(pos cube.Pos, w *world.World) bool {
 	return true
 }
 
+// createCrown grows the leaves at the top of the large jungle tree
 func (t *LargeJungleTree) createCrown(pos cube.Pos, w *world.World, width int) {
 	for j := -2; j <= 2; j++ {
 		t.growLeavesLayerStrict(pos.Add(cube.Pos{0, j, 0}), w, width+1-j)
 	}
 }
 
+// growLeavesLayerStrict generates a circular leaf layer on the tree
 func (t *LargeJungleTree) growLeavesLayerStrict(pos cube.Pos, w *world.World, width int) {
 	widthSquared := width * width
 	for j := -width; j <= width+1; j++ {
@@ -118,6 +125,7 @@ func (t *LargeJungleTree) growLeavesLayerStrict(pos cube.Pos, w *world.World, wi
 	}
 }
 
+// placeVine adds a vine to the tree at the position, with a certain chance
 func (t *LargeJungleTree) placeVine(w *world.World, pos cube.Pos, i1 int) {
 	_, isAir := w.Block(pos).(block.Air)
 	if rand.Intn(3) > 0 && isAir {
@@ -125,6 +133,7 @@ func (t *LargeJungleTree) placeVine(w *world.World, pos cube.Pos, i1 int) {
 	}
 }
 
+// growLeavesLayer grows a lower leaf layer on the tree
 func (t *LargeJungleTree) growLeavesLayer(pos cube.Pos, w *world.World, width int) {
 	widthSquared := width * width
 	for j := -width; j <= width+1; j++ {

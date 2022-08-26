@@ -13,10 +13,7 @@ type AcaciaTree struct{}
 func (AcaciaTree) Name() string { return "minecraft:acacia_tree" }
 
 func (t *AcaciaTree) CanPlace(pos cube.Pos, w *world.World) bool {
-	if !checkTreebox(3, 6, 3, pos, w) {
-		return false
-	}
-	return true
+	return checkTreebox(3, 6, 3, pos, w)
 }
 
 func (t *AcaciaTree) Place(pos cube.Pos, w *world.World) bool {

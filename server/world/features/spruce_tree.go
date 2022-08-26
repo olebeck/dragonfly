@@ -8,26 +8,27 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 )
 
-type SpruceTree struct {
-}
+// SpruceTree is a dark tree with multiple variations
+type SpruceTree struct{}
 
+// Name ...
 func (SpruceTree) Name() string { return "minecraft:spruce_tree" }
 
+// CanPlace ...
 func (t *SpruceTree) CanPlace(pos cube.Pos, w *world.World) bool {
-	if !checkTreebox(4, 6, 4, pos, w) {
-		return false
-	}
-	return true
+	return checkTreebox(4, 6, 4, pos, w)
 }
 
+// Place ...
 func (t *SpruceTree) Place(pos cube.Pos, w *world.World) bool {
 	height := 6 + rand.Intn(4)
-	growSpruceLeaves(pos, w, height, height-(1+rand.Intn(2)), 3+rand.Intn(2), block.Leaves{Wood: block.SpruceWood()})
+	growSpruceLeaves(pos, w, height, height-(1+rand.Intn(2)), 3+rand.Intn(2))
 	growStraightTrunk(pos, w, height-rand.Intn(3), block.Log{Wood: block.SpruceWood()})
 	return true
 }
 
-func growSpruceLeaves(pos cube.Pos, w *world.World, height, top, lRadius int, leaves world.Block) {
+// growSpruceLeaves grows leaves in the normal spruce tree pattern
+func growSpruceLeaves(pos cube.Pos, w *world.World, height, top, lRadius int) {
 	radius := rand.Intn(2)
 	maxR := 1
 	minR := 0
@@ -44,8 +45,8 @@ func growSpruceLeaves(pos cube.Pos, w *world.World, height, top, lRadius int, le
 				}
 
 				p := cube.Pos{x, yy, z}
-				if true /* !w.Block(p).(Solid) */ {
-					w.SetBlock(p, leaves, nil)
+				if canGrowInto(w.Block(p)) {
+					w.SetBlock(p, block.Leaves{Wood: block.SpruceWood()}, nil)
 				}
 			}
 		}

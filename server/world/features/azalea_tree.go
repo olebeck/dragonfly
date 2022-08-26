@@ -20,10 +20,7 @@ func (t *AzaleaTree) LeafBlock() world.Block {
 }
 
 func (AzaleaTree) CanPlace(pos cube.Pos, w *world.World) bool {
-	if !checkTreebox(5, 6, 5, pos, w) {
-		return false
-	}
-	return true
+	return checkTreebox(5, 6, 5, pos, w)
 }
 
 func (a *AzaleaTree) Place(pos cube.Pos, w *world.World) bool {

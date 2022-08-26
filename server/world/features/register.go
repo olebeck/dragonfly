@@ -4,7 +4,9 @@ import "github.com/df-mc/dragonfly/server/world"
 
 func init() {
 	world.RegisterFeature(&OakTree{})
+	world.RegisterFeature(&LargeDarkOakTree{})
 	world.RegisterFeature(&SpruceTree{})
+	world.RegisterFeature(&LargeSpruceTree{})
 	world.RegisterFeature(&BirchTree{})
 	world.RegisterFeature(&JungleTree{})
 	world.RegisterFeature(&LargeJungleTree{})

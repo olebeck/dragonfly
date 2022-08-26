@@ -8,17 +8,18 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 )
 
+// BirchTree is a tree that appears similar to a common oak in terms of height and leaves, but with light bark and pale wood.
 type BirchTree struct{}
 
+// Name ...
 func (BirchTree) Name() string { return "minecraft:birch_tree" }
 
+// CanPlace ...
 func (t *BirchTree) CanPlace(pos cube.Pos, w *world.World) bool {
-	if !checkTreebox(3, 6, 3, pos, w) {
-		return false
-	}
-	return true
+	return checkTreebox(3, 6, 3, pos, w)
 }
 
+// Place ...
 func (t *BirchTree) Place(pos cube.Pos, w *world.World) bool {
 	height := 5 + rand.Intn(2)
 

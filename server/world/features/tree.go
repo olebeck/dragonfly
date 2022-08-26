@@ -30,6 +30,7 @@ func growRegularLeaves(pos cube.Pos, w *world.World, height int, leaves world.Bl
 	}
 }
 
+// growStraightTrunk grows a 1 block wide trunk that goes straight up.
 func growStraightTrunk(pos cube.Pos, w *world.World, height int, trunk world.Block) {
 	for i := 0; i < height; i++ {
 		p := pos.Add(cube.Pos{0, i, 0})
@@ -37,6 +38,29 @@ func growStraightTrunk(pos cube.Pos, w *world.World, height int, trunk world.Blo
 	}
 }
 
+// growLargeTrunk grows a 2x2 wide trunk that goes straight up.
+func growLargeTrunk(pos cube.Pos, w *world.World, height int, trunk world.Block) {
+	for i := 0; i < height; i++ {
+		if canGrowInto(w.Block(pos)) {
+			w.SetBlock(pos, trunk, nil)
+		}
+		pos1 := pos.Side(cube.FaceEast)
+		if canGrowInto(w.Block(pos1)) {
+			w.SetBlock(pos1, trunk, nil)
+		}
+		pos1 = pos.Side(cube.FaceSouth).Side(cube.FaceEast)
+		if canGrowInto(w.Block(pos1)) {
+			w.SetBlock(pos1, trunk, nil)
+		}
+		pos1 = pos.Side(cube.FaceSouth)
+		if canGrowInto(w.Block(pos1)) {
+			w.SetBlock(pos1, trunk, nil)
+		}
+		pos = pos.Add(cube.Pos{0, 1, 0})
+	}
+}
+
+// canGrowInto checks if a tree is allowed to replace this block
 func canGrowInto(b world.Block) bool {
 	if _, ok := b.(block.Leaves); ok {
 		return true
@@ -50,6 +74,7 @@ func canGrowInto(b world.Block) bool {
 	return false
 }
 
+// checkTreebox checks that no blocks the tree isnt allowed to replace are in the box around it
 func checkTreebox(x, y, z int, pos cube.Pos, w *world.World) bool {
 	x = (x - 1) / 2
 	z = (z - 1) / 2
@@ -69,6 +94,7 @@ func checkTreebox(x, y, z int, pos cube.Pos, w *world.World) bool {
 	return true
 }
 
+// randomHorizontalFace returns a random face that isnt up or down
 func randomHorizontalFace() cube.Face {
 	r := rand.Intn(4)
 	switch r {

@@ -13,10 +13,7 @@ type OakTree struct{}
 func (OakTree) Name() string { return "minecraft:oak_tree" }
 
 func (t *OakTree) CanPlace(pos cube.Pos, w *world.World) bool {
-	if !checkTreebox(3, 5, 3, pos, w) {
-		return false
-	}
-	return true
+	return checkTreebox(3, 5, 3, pos, w)
 }
 
 func (t *OakTree) Place(pos cube.Pos, w *world.World) bool {
