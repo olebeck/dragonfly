@@ -3,15 +3,10 @@ package features
 import (
 	"math/rand"
 
+	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 )
-
-// Tree is a tree that can be grown in the world.
-type Tree interface {
-	// GrowTree grows a tree at pos
-	GrowTree(pos cube.Pos, w *world.World) bool
-}
 
 // growRegularLeaves grows normal leaves for like an oak tree.
 func growRegularLeaves(pos cube.Pos, w *world.World, height int, leaves world.Block) {
@@ -40,4 +35,30 @@ func growStraightTrunk(pos cube.Pos, w *world.World, height int, trunk world.Blo
 		p := pos.Add(cube.Pos{0, i, 0})
 		w.SetBlock(p, trunk, nil)
 	}
+}
+
+func checkTreebox(x, y, z int, pos cube.Pos, w *world.World) bool {
+	x = (x - 1) / 2
+	z = (z - 1) / 2
+
+	for xx := -x; xx < x; xx++ {
+		for yy := 0; yy < y; yy++ {
+			for zz := -z; zz < z; zz++ {
+				p := pos.Add(cube.Pos{xx, yy, zz})
+				b := w.Block(p)
+				if _, ok := b.(block.Leaves); ok {
+					continue
+				}
+				if _, ok := b.(block.Air); ok {
+					continue
+				}
+				if _, ok := b.(block.Sapling); ok {
+					continue
+				}
+				return false
+			}
+		}
+	}
+
+	return true
 }

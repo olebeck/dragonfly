@@ -6,7 +6,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/features"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
@@ -20,32 +19,23 @@ type Sapling struct {
 	AgeBit bool
 }
 
+var treeNames = map[WoodType]string{
+	OakWood():    "minecraft:oak_tree",
+	SpruceWood(): "minecraft:spruce_tree",
+	BirchWood():  "minecraft:birch_tree",
+}
+
 func (s Sapling) Grow(pos cube.Pos, w *world.World) (success bool) {
-	var tree features.Tree
-	switch s.Wood {
-	case OakWood():
-		tree = &features.OakTree{
-			Height: 4 + rand.Intn(4),
-			Trunk:  Log{Wood: s.Wood},
-			Leaves: Leaves{Wood: s.Wood},
-		}
-	case SpruceWood():
-		tree = &features.SpruceTree{
-			Height: 6 + rand.Intn(4),
-			Trunk:  Log{Wood: s.Wood},
-			Leaves: Leaves{Wood: s.Wood},
-		}
-	case BirchWood():
-		tree = &features.BirchTree{
-			Height: 5 + rand.Intn(2),
-			Trunk:  Log{Wood: s.Wood},
-			Leaves: Leaves{Wood: s.Wood},
-		}
+	treeName, ok := treeNames[s.Wood]
+	if !ok {
+		return false
 	}
-	if tree != nil {
-		success = tree.GrowTree(pos, w)
+
+	if tree := world.GetFeature(treeName); tree != nil {
+		tree.Place(pos, w)
+		return true
 	}
-	return
+	return false
 }
 
 // RandomTick ...

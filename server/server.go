@@ -6,6 +6,17 @@ import (
 	_ "embed"
 	"encoding/base64"
 	"fmt"
+	"math/rand"
+	"os"
+	"os/exec"
+	"os/signal"
+	"path/filepath"
+	"runtime"
+	"strings"
+	"sync"
+	"syscall"
+	"time"
+
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/cmd"
@@ -19,6 +30,7 @@ import (
 	"github.com/df-mc/dragonfly/server/session"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/biome"
+	_ "github.com/df-mc/dragonfly/server/world/features" // Imported for compiler directives.
 	"github.com/df-mc/dragonfly/server/world/generator"
 	"github.com/df-mc/dragonfly/server/world/mcdb"
 	"github.com/df-mc/goleveldb/leveldb/opt"
@@ -34,16 +46,6 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/text"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/exp/maps"
-	"math/rand"
-	"os"
-	"os/exec"
-	"os/signal"
-	"path/filepath"
-	"runtime"
-	"strings"
-	"sync"
-	"syscall"
-	"time"
 )
 
 // Server implements a Dragonfly server. It runs the main server loop and handles the connections of players

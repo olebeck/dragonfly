@@ -6,12 +6,11 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/features"
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// Azalea are a flower like
+// Azalea are a flower like block
 type Azalea struct {
 	solid
 	transparent
@@ -35,12 +34,8 @@ func (a Azalea) BoneMeal(pos cube.Pos, w *world.World) (success bool) {
 			success = true
 		}
 	} else {
-		t := features.AzaleaTree{
-			Trunk:   Log{Wood: OakWood()},
-			Leaves:  AzaleaLeaves{},
-			Leaves2: AzaleaLeaves{Flowering: true},
-		}
-		return t.GrowTree(pos, w)
+		tree := world.GetFeature("minecraft:azalea_tree")
+		return tree.Place(pos, w)
 	}
 	return success
 }

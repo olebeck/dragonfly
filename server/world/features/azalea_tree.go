@@ -3,47 +3,49 @@ package features
 import (
 	"math/rand"
 
+	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
-type AzaleaTree struct {
-	Trunk   world.Block
-	Leaves  world.Block
-	Leaves2 world.Block
-}
+type AzaleaTree struct{}
 
-func (t *AzaleaTree) Height() int {
-	return 7
-}
-
-func (t *AzaleaTree) TrunkBlock() world.Block {
-	return t.Trunk
-}
+func (AzaleaTree) Name() string { return "minecraft:azalea_tree" }
 
 func (t *AzaleaTree) LeafBlock() world.Block {
 	if rand.Intn(8) == 0 {
-		return t.Leaves2
+		return block.AzaleaLeaves{Flowering: true}
 	}
-	return t.Leaves
+	return block.AzaleaLeaves{}
 }
 
-func (a *AzaleaTree) GrowTree(pos cube.Pos, w *world.World) bool {
-	a.growLeaves(pos, w)
-	a.growTrunk(pos, w)
+func (AzaleaTree) CanPlace(pos cube.Pos, w *world.World) bool {
+	if w.Light(pos) < 9 {
+		return false
+	}
+	if !checkTreebox(5, 6, 5, pos, w) {
+		return false
+	}
 	return true
 }
 
-func (a *AzaleaTree) growTrunk(pos cube.Pos, w *world.World) {
-	for i := 0; i < a.Height()-1; i++ {
+func (a *AzaleaTree) Place(pos cube.Pos, w *world.World) bool {
+	height := 7
+	a.growLeaves(pos, w, height)
+	a.growTrunk(pos, w, height)
+	return true
+}
+
+func (a *AzaleaTree) growTrunk(pos cube.Pos, w *world.World, height int) {
+	for i := 0; i < height-1; i++ {
 		p := pos.Add(cube.Pos{0, i, 0})
-		w.SetBlock(p, a.TrunkBlock(), nil)
+		w.SetBlock(p, block.Log{Wood: block.OakWood()}, nil)
 	}
 }
 
-func (a *AzaleaTree) growLeaves(pos cube.Pos, w *world.World) {
-	for y := pos.Y() - 3 + a.Height(); y <= pos.Y()+a.Height(); y++ {
-		yOff := y - (pos.Y() + a.Height())
+func (a *AzaleaTree) growLeaves(pos cube.Pos, w *world.World, height int) {
+	for y := pos.Y() - 3 + height; y <= pos.Y()+height; y++ {
+		yOff := y - (pos.Y() + height)
 		mid := int(1 - yOff/2)
 		for x := pos.X() - mid; x <= pos.X()+mid; x++ {
 			xOff := abs(x - pos.X())

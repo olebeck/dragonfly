@@ -3,19 +3,28 @@ package features
 import (
 	"math/rand"
 
+	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
 type SpruceTree struct {
-	Height int // 6 + 0~4
-	Trunk  world.Block
-	Leaves world.Block
 }
 
-func (t *SpruceTree) GrowTree(pos cube.Pos, w *world.World) bool {
-	growSpruceLeaves(pos, w, t.Height, t.Height-(1+rand.Intn(2)), 3+rand.Intn(2), t.Leaves)
-	growStraightTrunk(pos, w, t.Height-rand.Intn(3), t.Trunk)
+func (SpruceTree) Name() string { return "minecraft:spruce_tree" }
+
+func (t *SpruceTree) CanPlace(pos cube.Pos, w *world.World) bool {
+	return true
+}
+
+func (t *SpruceTree) Place(pos cube.Pos, w *world.World) bool {
+	if !t.CanPlace(pos, w) {
+		return false
+	}
+
+	height := 6 + rand.Intn(4)
+	growSpruceLeaves(pos, w, height, height-(1+rand.Intn(2)), 3+rand.Intn(2), block.Leaves{Wood: block.SpruceWood()})
+	growStraightTrunk(pos, w, height-rand.Intn(3), block.Log{Wood: block.SpruceWood()})
 	return true
 }
 
