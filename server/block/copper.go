@@ -59,7 +59,7 @@ func (c Copper) EncodeBlock() (name string, data map[string]any) {
 
 // RandomTick ...
 func (c Copper) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
-	// TODO
+	// TODO: weathering
 }
 
 func allCopper() (c []world.Block) {

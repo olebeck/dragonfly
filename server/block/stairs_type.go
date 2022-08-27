@@ -7,7 +7,6 @@ import (
 // encodeStairsBlock encodes the provided block in to an identifier and meta value that can be used to encode the stairs.
 func encodeStairsBlock(block world.Block) string {
 	switch block := block.(type) {
-	// TODO: Copper
 	case Andesite:
 		if block.Polished {
 			return "polished_andesite"
@@ -114,7 +113,6 @@ func encodeStairsBlock(block world.Block) string {
 // StairsBlocks returns a list of all possible blocks for stairs.
 func StairsBlocks() []world.Block {
 	b := []world.Block{
-		// TODO: Copper
 		Andesite{Polished: true},
 		Andesite{},
 		Blackstone{Type: PolishedBlackstone()},

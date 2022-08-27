@@ -7,7 +7,6 @@ import (
 // encodeSlabBlock encodes the provided block in to an identifier and meta value that can be used to encode the slab.
 func encodeSlabBlock(block world.Block) (id, slabType string, meta int16) {
 	switch block := block.(type) {
-	// TODO: Copper
 	case Andesite:
 		if block.Polished {
 			return "polished_andesite", "stone_slab_type_3", 2
@@ -148,7 +147,6 @@ func encodeLegacySlabId(slabType string) string {
 // SlabBlocks returns a list of all possible blocks for a slab.
 func SlabBlocks() []world.Block {
 	b := []world.Block{
-		// TODO: Copper
 		Andesite{Polished: true},
 		Andesite{},
 		Blackstone{Type: PolishedBlackstone()},
