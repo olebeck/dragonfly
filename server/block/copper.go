@@ -7,10 +7,14 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 )
 
+// Copper is a block that can be waxed and can weather.
 type Copper struct {
 	solid
-	Waxed   bool
-	Cut     bool
+	// Waxed is if this copper block has been waxed and wont weather.
+	Waxed bool
+	// Cut is if this copper block is the cut variant.
+	Cut bool
+	// Weather is the current weathering state.
 	Weather WeatheringType
 }
 
@@ -46,6 +50,10 @@ func (c Copper) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (c Copper) EncodeBlock() (name string, data map[string]any) {
+	// to stop blockhash ignoring these:
+	// Waxed
+	// Cut
+	// Weather
 	return "minecraft:" + c.name(true), nil
 }
 

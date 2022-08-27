@@ -10,7 +10,7 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// Azalea are a flower like block
+// Azalea are a flower like block that can grow into an azalea tree.
 type Azalea struct {
 	solid
 	transparent

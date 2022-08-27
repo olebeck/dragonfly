@@ -126,6 +126,7 @@ func init() {
 	registerAll(allBoneBlock())
 	registerAll(allCactus())
 	registerAll(allCake())
+	registerAll(allCandle())
 	registerAll(allCarpet())
 	registerAll(allCarrots())
 	registerAll(allChains())
@@ -443,6 +444,11 @@ func init() {
 	}
 	for _, c := range allCopper() {
 		world.RegisterItem(c.(world.Item))
+	}
+
+	world.RegisterItem(Candle{Dyed: false})
+	for _, c := range item.Colours() {
+		world.RegisterItem(Candle{Colour: c, Dyed: true})
 	}
 }
 
