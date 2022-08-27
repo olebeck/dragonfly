@@ -65,6 +65,9 @@ func canGrowInto(b world.Block) bool {
 	if _, ok := b.(block.Leaves); ok {
 		return true
 	}
+	if _, ok := b.(block.AzaleaLeaves); ok {
+		return true
+	}
 	if _, ok := b.(block.Air); ok {
 		return true
 	}

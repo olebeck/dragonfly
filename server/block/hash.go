@@ -39,6 +39,7 @@ const (
 	hashComposter
 	hashConcrete
 	hashConcretePowder
+	hashCopper
 	hashCopperOre
 	hashCoral
 	hashCoralBlock
@@ -319,6 +320,10 @@ func (c Concrete) Hash() uint64 {
 
 func (c ConcretePowder) Hash() uint64 {
 	return hashConcretePowder | uint64(c.Colour.Uint8())<<8
+}
+
+func (c Copper) Hash() uint64 {
+	return hashCopper | uint64(boolByte(c.Waxed))<<8 | uint64(boolByte(c.Cut))<<9 | uint64(c.Weather.Uint8())<<10
 }
 
 func (c CopperOre) Hash() uint64 {

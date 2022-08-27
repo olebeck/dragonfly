@@ -24,36 +24,43 @@ func (AzaleaTree) CanPlace(pos cube.Pos, w *world.World) bool {
 }
 
 func (a *AzaleaTree) Place(pos cube.Pos, w *world.World) bool {
-	height := 7
-	a.growLeaves(pos, w, height)
-	a.growTrunk(pos, w, height)
+	height := 4 + rand.Intn(2)
+	bend := rand.Intn(2)
+	top := growBendyTrunk(pos, w, height, bend, block.Log{Wood: block.OakWood()})
+	randomSpreadFoliage(top, w, block.AzaleaLeaves{}, 3, 0, 2, 50)
 	return true
 }
 
-func (a *AzaleaTree) growTrunk(pos cube.Pos, w *world.World, height int) {
-	for i := 0; i < height-1; i++ {
-		p := pos.Add(cube.Pos{0, i, 0})
-		w.SetBlock(p, block.Log{Wood: block.OakWood()}, nil)
+func growBendyTrunk(pos cube.Pos, w *world.World, height int, bend int, trunk world.Block) (top cube.Pos) {
+	direction := randomHorizontalFace()
+	i := height - 1
+
+	for j := 0; j <= i; j++ {
+		if j+1 >= i+rand.Intn(2) {
+			pos = pos.Side(direction)
+		}
+		b := w.Block(pos)
+		_, azalea := b.(block.Azalea)
+		if canGrowInto(b) || azalea {
+			w.SetBlock(pos, trunk, nil)
+		}
+		pos = pos.Side(cube.FaceUp)
 	}
+
+	for k := 0; k <= bend; k++ {
+		if canGrowInto(w.Block(pos)) {
+			w.SetBlock(pos, trunk, nil)
+		}
+		pos = pos.Side(direction)
+	}
+	return pos.Side(direction.Opposite())
 }
 
-func (a *AzaleaTree) growLeaves(pos cube.Pos, w *world.World, height int) {
-	for y := pos.Y() - 3 + height; y <= pos.Y()+height; y++ {
-		yOff := y - (pos.Y() + height)
-		mid := int(1 - yOff/2)
-		for x := pos.X() - mid; x <= pos.X()+mid; x++ {
-			xOff := abs(x - pos.X())
-			for z := pos.Z() - mid; z <= pos.Z()+mid; z++ {
-				zOff := abs(z - pos.Z())
-				if xOff == mid && zOff == mid && (yOff == 0 || rand.Intn(2) == 0) {
-					continue
-				}
-
-				p := cube.Pos{x, y, z}
-				if true /* !w.Block(p).(Solid) */ {
-					w.SetBlock(p, a.LeafBlock(), nil)
-				}
-			}
+func randomSpreadFoliage(pos cube.Pos, w *world.World, leaf world.Block, radius, offset, foliageHeight, attempts int) {
+	for i := 0; i < attempts; i++ {
+		p := pos.Add(cube.Pos{rand.Intn(radius) - rand.Intn(radius), rand.Intn(foliageHeight) - rand.Intn(foliageHeight), rand.Intn(radius) - rand.Intn(radius)})
+		if canGrowInto(w.Block(p)) {
+			w.SetBlock(p, leaf, nil)
 		}
 	}
 }

@@ -240,6 +240,36 @@ func (CopperOre) Color() color.RGBA {
 	return color.RGBA{143, 127, 104, 255}
 }
 
+func (c Copper) Color() color.RGBA {
+	switch c.Weather {
+	case NotWeathered():
+		if c.Cut {
+			return color.RGBA{178, 98, 71, 255}
+		} else {
+			return color.RGBA{200, 116, 86, 255}
+		}
+	case Exposed():
+		if c.Cut {
+			return color.RGBA{148, 118, 97, 255}
+		} else {
+			return color.RGBA{186, 130, 119, 255}
+		}
+	case Weathered():
+		if c.Cut {
+			return color.RGBA{108, 169, 119, 255}
+		} else {
+			return color.RGBA{106, 141, 100, 255}
+		}
+	case Oxidized():
+		if c.Cut {
+			return color.RGBA{81, 161, 129, 255}
+		} else {
+			return color.RGBA{89, 178, 146, 255}
+		}
+	}
+	return color.RGBA{255, 0, 255, 255}
+}
+
 func (c CoralBlock) Color() color.RGBA {
 	if c.Dead {
 		return color.RGBA{116, 106, 102, 255}

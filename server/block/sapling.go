@@ -22,18 +22,10 @@ type Sapling struct {
 // findSaplings finds the same sapling type in a 2x2 area, returns the lowest xz coordinates.
 func (s Sapling) findSaplings(pos cube.Pos, w *world.World) (*cube.Pos, bool) {
 	validPositions := [][]cube.Pos{
-		[]cube.Pos{
-			pos, pos.Add(cube.Pos{1, 0, 0}), pos.Add(cube.Pos{0, 0, 1}), pos.Add(cube.Pos{1, 0, 1}),
-		},
-		[]cube.Pos{
-			pos, pos.Add(cube.Pos{-1, 0, 0}), pos.Add(cube.Pos{0, 0, -1}), pos.Add(cube.Pos{-1, 0, -1}),
-		},
-		[]cube.Pos{
-			pos, pos.Add(cube.Pos{1, 0, 0}), pos.Add(cube.Pos{0, 0, -1}), pos.Add(cube.Pos{1, 0, -1}),
-		},
-		[]cube.Pos{
-			pos, pos.Add(cube.Pos{-1, 0, 0}), pos.Add(cube.Pos{-1, 0, 0}), pos.Add(cube.Pos{-1, 0, 1}),
-		},
+		{pos, pos.Add(cube.Pos{1, 0, 0}), pos.Add(cube.Pos{0, 0, 1}), pos.Add(cube.Pos{1, 0, 1})},
+		{pos, pos.Add(cube.Pos{-1, 0, 0}), pos.Add(cube.Pos{0, 0, -1}), pos.Add(cube.Pos{-1, 0, -1})},
+		{pos, pos.Add(cube.Pos{1, 0, 0}), pos.Add(cube.Pos{0, 0, -1}), pos.Add(cube.Pos{1, 0, -1})},
+		{pos, pos.Add(cube.Pos{-1, 0, 0}), pos.Add(cube.Pos{-1, 0, 0}), pos.Add(cube.Pos{-1, 0, 1})},
 	}
 	for _, v := range validPositions {
 		var correct = true

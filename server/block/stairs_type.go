@@ -26,6 +26,8 @@ func encodeStairsBlock(block world.Block) string {
 			return "mossy_cobblestone"
 		}
 		return "stone"
+	case Copper:
+		return block.name(false)
 	case Deepslate:
 		if block.Type == CobbledDeepslate() {
 			return "cobbled_deepslate"
@@ -151,6 +153,11 @@ func StairsBlocks() []world.Block {
 	}
 	for _, w := range WoodTypes() {
 		b = append(b, Planks{Wood: w})
+	}
+	for _, c := range allCopper() {
+		if c.(Copper).Cut {
+			b = append(b, c)
+		}
 	}
 	return b
 }

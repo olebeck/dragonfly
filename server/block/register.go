@@ -134,6 +134,7 @@ func init() {
 	registerAll(allComposters())
 	registerAll(allConcrete())
 	registerAll(allConcretePowder())
+	registerAll(allCopper())
 	registerAll(allCoral())
 	registerAll(allCoralBlocks())
 	registerAll(allDeepslate())
@@ -439,6 +440,10 @@ func init() {
 	}
 	for _, t := range MushroomBlockTypes() {
 		world.RegisterItem(MushroomBlock{Type: t})
+	}
+
+	for _, c := range allCopper() {
+		world.RegisterItem(c.(world.Item))
 	}
 }
 
