@@ -164,6 +164,7 @@ func init() {
 	registerAll(allLooms())
 	registerAll(allMelonStems())
 	registerAll(allMuddyMangroveRoots())
+	registerAll(allMushroomBlock())
 	registerAll(allNetherBricks())
 	registerAll(allNetherWart())
 	registerAll(allPlanks())
@@ -176,6 +177,7 @@ func init() {
 	registerAll(allSandstones())
 	registerAll(allSapling())
 	registerAll(allSeaPickles())
+	registerAll(allSeagrass())
 	registerAll(allSigns())
 	registerAll(allSkulls())
 	registerAll(allSlabs())
@@ -195,8 +197,6 @@ func init() {
 	registerAll(allWheat())
 	registerAll(allWood())
 	registerAll(allWool())
-	registerAll(allMushroomBlock())
-	registerAll(allSeagrass())
 }
 
 func init() {
@@ -336,8 +336,8 @@ func init() {
 	world.RegisterItem(TNT{})
 	world.RegisterItem(Terracotta{})
 	world.RegisterItem(Tuff{})
-	world.RegisterItem(WheatSeeds{})
 	world.RegisterItem(Waterlily{})
+	world.RegisterItem(WheatSeeds{})
 	world.RegisterItem(item.Bucket{Content: item.LiquidBucketContent(Lava{})})
 	world.RegisterItem(item.Bucket{Content: item.LiquidBucketContent(Water{})})
 	world.RegisterItem(item.Bucket{Content: item.MilkBucketContent()})
@@ -441,7 +441,6 @@ func init() {
 	for _, t := range MushroomBlockTypes() {
 		world.RegisterItem(MushroomBlock{Type: t})
 	}
-
 	for _, c := range allCopper() {
 		world.RegisterItem(c.(world.Item))
 	}

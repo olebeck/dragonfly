@@ -2,7 +2,6 @@ package chunk
 
 import (
 	"bytes"
-	"fmt"
 	"sync"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -91,14 +90,13 @@ func (chunk *Chunk) SetBlock(x uint8, y int16, z uint8, layer uint8, block uint3
 }
 
 // ApplySubChunkEntry sets the subchunk at a given y
-func (chunk *Chunk) ApplySubChunkEntry(y uint8, sub *protocol.SubChunkEntry) ([]map[string]any, error) {
+func (chunk *Chunk) ApplySubChunkEntry(y uint8, sub *protocol.SubChunkEntry) (blockNBTs []map[string]any, err error) {
 	if sub.Result == protocol.SubChunkResultSuccessAllAir {
 		return nil, nil
-	}
-	if sub.Result == protocol.SubChunkResultSuccess {
+	} else if sub.Result == protocol.SubChunkResultSuccess {
 		buf := bytes.NewBuffer(sub.RawPayload)
 		index := y
-		dec, err := decodeSubChunk(
+		chunk.sub[index], err = decodeSubChunk(
 			buf,
 			chunk,
 			&index,
@@ -108,13 +106,6 @@ func (chunk *Chunk) ApplySubChunkEntry(y uint8, sub *protocol.SubChunkEntry) ([]
 			return nil, err
 		}
 
-		if int(index) < len(chunk.sub) {
-			chunk.sub[index] = dec
-		} else {
-			fmt.Printf("index: %d\n", index)
-		}
-
-		var blockNBTs []map[string]any = nil
 		if buf.Len() > 0 {
 			dec := nbt.NewDecoderWithEncoding(buf, nbt.NetworkLittleEndian)
 			for buf.Len() > 0 {
@@ -138,8 +129,6 @@ func (chunk *Chunk) ApplySubChunkEntry(y uint8, sub *protocol.SubChunkEntry) ([]
 		chunk.recalculateHeightMapLiquid = true
 
 		return blockNBTs, nil
-	} else {
-		fmt.Printf("sub.Result: %d", sub.Result)
 	}
 	return nil, nil
 }

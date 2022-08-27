@@ -59,19 +59,22 @@ func (s Sapling) findSaplings(pos cube.Pos, w *world.World) (*cube.Pos, bool) {
 
 // Grow grows this sapling into a tree
 func (s Sapling) Grow(pos cube.Pos, w *world.World) (success bool) {
-	var treeName = "minecraft:"
+	var tree world.Feature
 	pos2, correct := s.findSaplings(pos, w)
-	if correct {
-		treeName += "large_"
-		pos = *pos2
-	}
-	treeName += s.Wood.String()
-	treeName += "_tree"
-
-	if tree := world.GetFeature(treeName); tree != nil {
-		if tree.CanPlace(pos, w) {
-			tree.Place(pos, w)
+	if correct { // if a large version of this tree exists grow that
+		tree = world.GetFeature("minecraft:large_" + s.Wood.String() + "_tree")
+		if tree != nil {
+			pos = *pos2
 		}
+	}
+
+	if tree == nil {
+		tree = world.GetFeature("minecraft:" + s.Wood.String() + "_tree")
+	}
+
+	// check that this tree type exists and can be placed
+	if tree != nil && tree.CanPlace(pos, w) {
+		tree.Place(pos, w)
 		return true
 	}
 	return false
@@ -90,7 +93,7 @@ func (s Sapling) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 // BoneMeal ...
 func (s Sapling) BoneMeal(pos cube.Pos, w *world.World) (success bool) {
 	s.Grow(pos, w)
-	return success
+	return true
 }
 
 // UseOnBlock ...

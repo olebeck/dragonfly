@@ -1,13 +1,14 @@
 package block
 
 import (
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"time"
 )
 
 // Slab is a half block that allows entities to walk up blocks without jumping.
@@ -169,6 +170,22 @@ func (s Slab) EncodeBlock() (string, map[string]any) {
 			id = "double_" + id
 		}
 	} else if s.Double {
+		if copper, ok := s.Block.(Copper); ok {
+			weather := ""
+			if copper.Weather != NotWeathered() {
+				weather = copper.Weather.String() + "_"
+			}
+			if copper.Waxed {
+				cut := ""
+				if copper.Cut {
+					cut = "cut_"
+				}
+				id = "waxed_" + weather + "double_" + cut + "copper_slab"
+				return "minecraft:" + id, properties
+			}
+			id = weather + "double_cut_copper_slab"
+			return "minecraft:" + id, properties
+		}
 		id = id + "_double_slab"
 	} else {
 		id = id + "_slab"

@@ -26,6 +26,14 @@ func encodeSlabBlock(block world.Block) (id, slabType string, meta int16) {
 			return "mossy_cobblestone", "stone_slab_type_2", 5
 		}
 		return "cobblestone", "stone_slab_type", 3
+	case Copper:
+		if block.Waxed {
+			id += "waxed_"
+		}
+		if block.Weather != NotWeathered() {
+			id += block.Weather.String() + "_"
+		}
+		return id + "cut_copper", "", 0
 	case Deepslate:
 		if block.Type == CobbledDeepslate() {
 			return "cobbled_deepslate", "", 0
@@ -180,6 +188,11 @@ func SlabBlocks() []world.Block {
 	}
 	for _, w := range WoodTypes() {
 		b = append(b, Planks{Wood: w})
+	}
+	for _, c := range allCopper() {
+		if c.(Copper).Cut {
+			b = append(b, c)
+		}
 	}
 	return b
 }
