@@ -24,5 +24,6 @@ func (LargeSpruceTree) Place(pos cube.Pos, w *world.World) bool {
 	height := 20 + rand.Intn(15)
 
 	growLargeTrunk(pos, w, height, block.Log{Wood: block.SpruceWood()})
+	// TODO: add leaves
 	return true
 }

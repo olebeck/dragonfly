@@ -22,7 +22,7 @@ func growRegularLeaves(pos cube.Pos, w *world.World, height int, leaves world.Bl
 				}
 
 				p := cube.Pos{x, y, z}
-				if true /* !w.Block(p).(Solid) */ {
+				if canGrowInto(w.Block(p)) {
 					w.SetBlock(p, leaves, nil)
 				}
 			}
@@ -73,6 +73,9 @@ func canGrowInto(b world.Block) bool {
 		return true
 	}
 	if _, ok := b.(block.Sapling); ok {
+		return true
+	}
+	if _, ok := b.(block.Mushroom); ok {
 		return true
 	}
 	return false

@@ -19,7 +19,7 @@ type Mushroom struct {
 
 // Grow grows this mushroom into a huge mushroom
 func (m Mushroom) Grow(pos cube.Pos, w *world.World) (success bool) {
-	feature := world.GetFeature("minecraft:huge_" + m.Type.String() + "mushroom")
+	feature := world.GetFeature("minecraft:huge_" + m.Type.String() + "_mushroom")
 	if feature != nil {
 		return feature.Place(pos, w)
 	}
@@ -68,10 +68,9 @@ func (m Mushroom) canSurvive(pos cube.Pos, w *world.World) bool {
 
 // RandomTick ...
 func (m Mushroom) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
-	// TODO: find the actual chance here
-	if rand.Intn(32) == 1 {
+	if rand.Intn(25) == 0 {
 		if m.canSpread(pos, w) {
-			pos2 := pos.Add(cube.Pos{rand.Intn(8) - 4, 0, rand.Intn(8) - 4})
+			pos2 := pos.Add(cube.Pos{rand.Intn(3) - 1, rand.Intn(2) - rand.Intn(2), rand.Intn(3) - 1})
 			m2 := Mushroom{Type: m.Type}
 			if m2.canSurvive(pos2, w) {
 				w.SetBlock(pos2, m2, nil)
@@ -82,8 +81,9 @@ func (m Mushroom) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 
 // BoneMeal ...
 func (m Mushroom) BoneMeal(pos cube.Pos, w *world.World) (success bool) {
-	// 40% chance
-	m.Grow(pos, w)
+	if rand.Float64() < 0.4 {
+		m.Grow(pos, w)
+	}
 	return true
 }
 
