@@ -165,6 +165,7 @@ func init() {
 	registerAll(allLooms())
 	registerAll(allMelonStems())
 	registerAll(allMuddyMangroveRoots())
+	registerAll(allMushroom())
 	registerAll(allMushroomBlock())
 	registerAll(allNetherBricks())
 	registerAll(allNetherWart())
@@ -439,8 +440,9 @@ func init() {
 	for _, t := range DeepslateTypes() {
 		world.RegisterItem(Deepslate{Type: t})
 	}
-	for _, t := range MushroomBlockTypes() {
+	for _, t := range MushroomTypes() {
 		world.RegisterItem(MushroomBlock{Type: t})
+		world.RegisterItem(Mushroom{Type: t})
 	}
 	for _, c := range allCopper() {
 		world.RegisterItem(c.(world.Item))

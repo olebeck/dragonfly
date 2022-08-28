@@ -107,6 +107,7 @@ const (
 	hashMud
 	hashMudBricks
 	hashMuddyMangroveRoots
+	hashMushroom
 	hashMushroomBlock
 	hashNetherBrickFence
 	hashNetherBricks
@@ -593,6 +594,10 @@ func (MudBricks) Hash() uint64 {
 
 func (m MuddyMangroveRoots) Hash() uint64 {
 	return hashMuddyMangroveRoots | uint64(m.Axis)<<8
+}
+
+func (m Mushroom) Hash() uint64 {
+	return hashMushroom | uint64(m.Type.Uint8())<<8
 }
 
 func (m MushroomBlock) Hash() uint64 {

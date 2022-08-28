@@ -129,7 +129,8 @@ func (t *LargeJungleTree) growLeavesLayerStrict(pos cube.Pos, w *world.World, wi
 func (t *LargeJungleTree) placeVine(w *world.World, pos cube.Pos, i1 int) {
 	_, isAir := w.Block(pos).(block.Air)
 	if rand.Intn(3) > 0 && isAir {
-		//w.SetBlock(pos, Vine)
+		// TODO: finish when vines are added
+		// w.SetBlock(pos, Vine)
 	}
 }
 

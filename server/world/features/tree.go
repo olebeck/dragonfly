@@ -62,6 +62,7 @@ func growLargeTrunk(pos cube.Pos, w *world.World, height int, trunk world.Block)
 
 // canGrowInto checks if a tree is allowed to replace this block
 func canGrowInto(b world.Block) bool {
+	// TODO: check works differently, this isnt permissive enough
 	if _, ok := b.(block.Leaves); ok {
 		return true
 	}

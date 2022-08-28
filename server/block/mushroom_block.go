@@ -7,7 +7,7 @@ type MushroomBlock struct {
 	solid
 
 	// Type is the type of mushroomblock
-	Type     MushroomBlockType
+	Type     MushroomType
 	HugeBits int
 }
 
@@ -28,13 +28,8 @@ func (m MushroomBlock) EncodeBlock() (string, map[string]any) {
 	}
 }
 
-// MushroomBlockTypes ...
-func MushroomBlockTypes() []MushroomBlockType {
-	return []MushroomBlockType{Brown(), Red()}
-}
-
 func allMushroomBlock() (s []world.Block) {
-	for _, t := range MushroomBlockTypes() {
+	for _, t := range MushroomTypes() {
 		for i := 0; i < 16; i++ {
 			s = append(s, MushroomBlock{Type: t, HugeBits: i})
 		}
