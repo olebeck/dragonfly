@@ -27,7 +27,7 @@ func (a *AzaleaTree) Place(pos cube.Pos, w *world.World) bool {
 	height := 4 + rand.Intn(2)
 	bend := rand.Intn(2)
 	top := growBendyTrunk(pos, w, height, bend, block.Log{Wood: block.OakWood()})
-	randomSpreadFoliage(top, w, block.AzaleaLeaves{}, 3, 0, 2, 50)
+	randomSpreadFoliage(top, w, a.LeafBlock, 3, 0, 2, 50)
 	return true
 }
 
@@ -56,11 +56,11 @@ func growBendyTrunk(pos cube.Pos, w *world.World, height int, bend int, trunk wo
 	return pos.Side(direction.Opposite())
 }
 
-func randomSpreadFoliage(pos cube.Pos, w *world.World, leaf world.Block, radius, offset, foliageHeight, attempts int) {
+func randomSpreadFoliage(pos cube.Pos, w *world.World, leaf func() world.Block, radius, offset, foliageHeight, attempts int) {
 	for i := 0; i < attempts; i++ {
 		p := pos.Add(cube.Pos{rand.Intn(radius) - rand.Intn(radius), rand.Intn(foliageHeight) - rand.Intn(foliageHeight), rand.Intn(radius) - rand.Intn(radius)})
 		if canGrowInto(w.Block(p)) {
-			w.SetBlock(p, leaf, nil)
+			w.SetBlock(p, leaf(), nil)
 		}
 	}
 }
