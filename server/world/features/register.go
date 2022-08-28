@@ -13,4 +13,5 @@ func init() {
 	world.RegisterFeature(&AcaciaTree{})
 	world.RegisterFeature(&AzaleaTree{})
 	world.RegisterFeature(&HugeBrownMushroom{})
+	world.RegisterFeature(&HugeRedMushroom{})
 }

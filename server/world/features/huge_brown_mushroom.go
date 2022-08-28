@@ -32,14 +32,14 @@ func (m *HugeBrownMushroom) Place(pos cube.Pos, w *world.World) bool {
 }
 
 func (m *HugeBrownMushroom) growTop(pos cube.Pos, w *world.World, height int) {
-	radius := 3
+	const radius = 3
 	for x := -radius; x <= radius; x++ {
-		for y := -radius; y <= radius; y++ {
+		for z := -radius; z <= radius; z++ {
 			// what edge of the top its on
 			edgeNorth := x == -radius
 			edgeSouth := x == radius
-			edgeWest := y == -radius
-			edgeEast := y == radius
+			edgeWest := z == -radius
+			edgeEast := z == radius
 
 			corner1 := (edgeNorth || edgeSouth)
 			corner2 := (edgeWest || edgeEast)
@@ -47,37 +47,14 @@ func (m *HugeBrownMushroom) growTop(pos cube.Pos, w *world.World, height int) {
 			// what sides the block should a cap on
 			withWest := edgeNorth || corner2 && x == 1-radius
 			withEast := edgeSouth || corner2 && x == radius-1
-			withNorth := edgeWest || corner1 && y == 1-radius
-			withSouth := edgeEast || corner1 && y == radius-1
+			withNorth := edgeWest || corner1 && z == 1-radius
+			withSouth := edgeEast || corner1 && z == radius-1
 
-			hugeBits := 0
-			if withWest {
-				if withNorth {
-					hugeBits = 1 // top + west + north
-				} else if withSouth {
-					hugeBits = 7 // top + west + south
-				} else {
-					hugeBits = 4 // top + west
-				}
-			} else if withEast {
-				if withNorth {
-					hugeBits = 3 // top + north + east
-				} else if withSouth {
-					hugeBits = 9 // top + south + east
-				} else {
-					hugeBits = 6 // top + south
-				}
-			} else if withNorth {
-				hugeBits = 2 // top + north
-			} else if withSouth {
-				hugeBits = 8 // top + south
-			} else {
-				hugeBits = 5 // only top
-			}
+			hugeBits := mushroomHugeBits(withWest, withNorth, withSouth, withEast)
 
 			// dont place any on the corners
 			if !corner1 || !corner2 {
-				pos2 := pos.Add(cube.Pos{x, height, y})
+				pos2 := pos.Add(cube.Pos{x, height, z})
 				if canGrowInto(w.Block(pos2)) {
 					w.SetBlock(pos2, block.MushroomBlock{Type: block.Brown(), HugeBits: hugeBits}, nil)
 				}
