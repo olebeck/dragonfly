@@ -1953,6 +1953,7 @@ func (p *Player) teleport(pos mgl64.Vec3) {
 	}
 	p.pos.Store(pos)
 	p.vel.Store(mgl64.Vec3{})
+	p.ResetFallDistance()
 }
 
 // Move moves the player from one position to another in the world, by adding the delta passed to the current
@@ -1992,9 +1993,11 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 	p.pos.Store(res)
 	p.yaw.Store(resYaw)
 	p.pitch.Store(resPitch)
-
-	p.vel.Store(deltaPos)
-	p.checkBlockCollisions(deltaPos, w)
+	if deltaPos.Len() <= 3 {
+		// Only update velocity if the player is not moving too fast to prevent potential OOMs.
+		p.vel.Store(deltaPos)
+		p.checkBlockCollisions(deltaPos, w)
+	}
 
 	horizontalVel := deltaPos
 	horizontalVel[1] = 0
