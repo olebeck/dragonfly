@@ -28,7 +28,7 @@ func (s Sapling) findSaplings(pos cube.Pos, w *world.World) (*cube.Pos, bool) {
 		{pos, pos.Add(cube.Pos{-1, 0, 0}), pos.Add(cube.Pos{-1, 0, 0}), pos.Add(cube.Pos{-1, 0, 1})},
 	}
 	for _, v := range validPositions {
-		var correct = true
+		correct := true
 		for _, p := range v {
 			if sapling, ok := w.Block(p).(Sapling); ok {
 				if sapling.Wood != s.Wood {
@@ -39,9 +39,9 @@ func (s Sapling) findSaplings(pos cube.Pos, w *world.World) (*cube.Pos, bool) {
 			}
 		}
 		if correct {
-			var lowestX = 0
-			var lowestZ = 0
-			var first = true
+			lowestX := 0
+			lowestZ := 0
+			first := true
 			for _, p := range v {
 				if p.X() < lowestX || first {
 					lowestX = p.X()
@@ -82,12 +82,10 @@ func (s Sapling) Grow(pos cube.Pos, w *world.World) (success bool) {
 
 // RandomTick ...
 func (s Sapling) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
-	if rand.Intn(16) == 1 {
-		if w.Light(pos) < 9 {
-			return
-		}
-		s.Grow(pos, w)
+	if rand.Intn(16) == 1 && w.Light(pos) < 9 {
+		return
 	}
+	s.Grow(pos, w)
 }
 
 // BoneMeal ...

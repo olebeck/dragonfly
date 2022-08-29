@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -12,7 +13,6 @@ import (
 // Candles can be lit with flint and steel and extinguished by water or by right-clicking.
 // They can also be waterlogged, but cannot be lit while waterlogged.
 type Candle struct {
-	empty
 	transparent
 	sourceWaterDisplacer
 
@@ -24,6 +24,10 @@ type Candle struct {
 	Dyed bool
 	// Colour is the colour of the candle.
 	Colour item.Colour
+}
+
+func (c Candle) Model() world.BlockModel {
+	return model.Candle{Count: c.AdditionalCount + 1}
 }
 
 // UseOnBlock ...
