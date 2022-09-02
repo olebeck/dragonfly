@@ -81,6 +81,7 @@ const (
 	hashGrass
 	hashGravel
 	hashGrindstone
+	hashHangingRoots
 	hashHayBale
 	hashHoneycomb
 	hashInvisibleBedrock
@@ -138,6 +139,7 @@ const (
 	hashRawGold
 	hashRawIron
 	hashReinforcedDeepslate
+	hashRootedDirt
 	hashSand
 	hashSandstone
 	hashSapling
@@ -492,6 +494,10 @@ func (g Grindstone) Hash() uint64 {
 	return hashGrindstone | uint64(g.Attach.Uint8())<<8 | uint64(g.Facing)<<10
 }
 
+func (HangingRoots) Hash() uint64 {
+	return hashHangingRoots
+}
+
 func (h HayBale) Hash() uint64 {
 	return hashHayBale | uint64(h.Axis)<<8
 }
@@ -718,6 +724,10 @@ func (RawIron) Hash() uint64 {
 
 func (ReinforcedDeepslate) Hash() uint64 {
 	return hashReinforcedDeepslate
+}
+
+func (RootedDirt) Hash() uint64 {
+	return hashRootedDirt
 }
 
 func (s Sand) Hash() uint64 {

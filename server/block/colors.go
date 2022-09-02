@@ -468,6 +468,10 @@ func (Gravel) Color() color.RGBA {
 	return color.RGBA{150, 142, 142, 255}
 }
 
+func (h HangingRoots) Color() color.RGBA {
+	return color.RGBA{185, 133, 101, 255}
+}
+
 func (HayBale) Color() color.RGBA {
 	return color.RGBA{148, 125, 16, 255}
 }
@@ -696,6 +700,10 @@ func (RawIron) Color() color.RGBA {
 
 func (ReinforcedDeepslate) Color() color.RGBA {
 	return color.RGBA{56, 55, 55, 255}
+}
+
+func (RootedDirt) Color() color.RGBA {
+	return color.RGBA{121, 87, 64, 255}
 }
 
 func (s Sand) Color() color.RGBA {

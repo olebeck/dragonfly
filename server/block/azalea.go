@@ -21,23 +21,26 @@ type Azalea struct {
 
 // BoneMeal ...
 func (a Azalea) BoneMeal(pos cube.Pos, w *world.World) (success bool) {
-	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Moss); ok {
-		for i := 0; i < 8; i++ {
-			p := pos.Add(cube.Pos{rand.Intn(7) - 3, rand.Intn(3) - 1, rand.Intn(7) - 3})
-			if _, ok := w.Block(p).(Air); !ok {
-				continue
+	if rand.Float64() < 0.45 {
+		if _, ok := w.Block(pos.Side(cube.FaceDown)).(Moss); ok {
+			for i := 0; i < 8; i++ {
+				p := pos.Add(cube.Pos{rand.Intn(7) - 3, rand.Intn(3) - 1, rand.Intn(7) - 3})
+				if _, ok := w.Block(p).(Air); !ok {
+					continue
+				}
+				if _, ok := w.Block(p.Side(cube.FaceDown)).(Moss); !ok {
+					continue
+				}
+				w.SetBlock(p, Azalea{}, nil)
 			}
-			if _, ok := w.Block(p.Side(cube.FaceDown)).(Moss); !ok {
-				continue
+		} else {
+			tree := world.GetFeature("minecraft:azalea_tree")
+			if tree.CanPlace(pos, w) {
+				return tree.Place(pos, w)
 			}
-			w.SetBlock(p, Azalea{}, nil)
-			success = true
 		}
-	} else {
-		tree := world.GetFeature("minecraft:azalea_tree")
-		return tree.Place(pos, w)
 	}
-	return success
+	return true
 }
 
 // NeighbourUpdateTick ...

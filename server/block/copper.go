@@ -62,6 +62,24 @@ func (c Copper) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	// TODO: weathering
 }
 
+// Strip using an axe on it scrapes the wax off from the copper block
+func (c Copper) Strip() (world.Block, bool) {
+	if !c.Waxed {
+		return nil, false
+	}
+	c.Waxed = false
+	return c, true
+}
+
+// Wax using honeycomb on the copper block
+func (c Copper) Wax() (world.Block, bool) {
+	if !c.Waxed {
+		c.Waxed = true
+		return c, true
+	}
+	return nil, false
+}
+
 func allCopper() (c []world.Block) {
 	f := func(cut, waxed bool) {
 		for _, w := range WeatheringTypes() {

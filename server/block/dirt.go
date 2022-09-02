@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -31,7 +32,7 @@ func (d Dirt) BreakInfo() BreakInfo {
 }
 
 // Till ...
-func (d Dirt) Till() (world.Block, bool) {
+func (d Dirt) Till(*world.World, cube.Pos) (world.Block, bool) {
 	if d.Coarse {
 		return Dirt{Coarse: false}, true
 	}
