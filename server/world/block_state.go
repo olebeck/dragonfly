@@ -75,6 +75,10 @@ func registerBlockState(s blockState) {
 	if s.Name == "minecraft:air" {
 		airRID = rid
 	}
+	if s.Name == "minecraft:water" {
+		chunk.WaterBlocks = append(chunk.WaterBlocks, rid)
+	}
+
 	stateRuntimeIDs[h] = rid
 	blocks = append(blocks, unknownBlock{s})
 

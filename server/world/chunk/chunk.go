@@ -7,6 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
+	"golang.org/x/exp/slices"
 )
 
 // Chunk is a segment in the world with a size of 16x16x256 blocks. A chunk contains multiple sub chunks
@@ -181,21 +182,20 @@ func (chunk *Chunk) HighestLightBlocker(x, z uint8) int16 {
 // HighestBlock iterates from the highest non-empty sub chunk downwards to find the Y value of the highest
 // non-air block at an x and z. If no blocks are present in the column, the minimum height is returned.
 func (chunk *Chunk) HighestBlock(x, z uint8) int16 {
-	return chunk.HighestBlockLayer(x, z, 0)
-}
-
-// HighestLiquid finds the first non air liquid
-func (chunk *Chunk) HighestLiquid(x, z uint8) int16 {
-	return chunk.HighestBlockLayer(x, z, 1)
+	return chunk.HighestBlockLayer(x, z, 0, true)
 }
 
 // HighestBlockLayer returns the highest block that isnt air in a layer
-func (chunk *Chunk) HighestBlockLayer(x, z, layer uint8) int16 {
+func (chunk *Chunk) HighestBlockLayer(x, z, layer uint8, noWater bool) int16 {
 	for index := int16(len(chunk.sub) - 1); index >= 0; index-- {
 		if sub := chunk.sub[index]; !sub.Empty() {
 			if len(sub.storages) > int(layer) {
 				for y := 15; y >= 0; y-- {
-					if rid := sub.storages[layer].At(x, uint8(y), z); rid != chunk.air {
+					rid := sub.storages[layer].At(x, uint8(y), z)
+					if rid != chunk.air {
+						if noWater && slices.Contains(WaterBlocks, rid) {
+							continue
+						}
 						return int16(y) | chunk.SubY(index)
 					}
 				}
@@ -211,7 +211,7 @@ func (chunk *Chunk) HeightMap() HeightMap {
 	if chunk.recalculateHeightMap {
 		for x := uint8(0); x < 16; x++ {
 			for z := uint8(0); z < 16; z++ {
-				chunk.heightMap.Set(x, z, chunk.HighestLightBlocker(x, z))
+				chunk.heightMap.Set(x, z, chunk.HighestBlockLayer(x, z, 0, true))
 			}
 		}
 		chunk.recalculateHeightMap = false
@@ -219,13 +219,13 @@ func (chunk *Chunk) HeightMap() HeightMap {
 	return chunk.heightMap
 }
 
-// LiquidHeightMap returns the height map of the chunk. If the chunk is edited, the height map will be recalculated on the
+// HeightMapWithWater returns the height map of the chunk. If the chunk is edited, the height map will be recalculated on the
 // next call to this function.
-func (chunk *Chunk) LiquidHeightMap() HeightMap {
+func (chunk *Chunk) HeightMapWithWater() HeightMap {
 	if chunk.recalculateHeightMapLiquid {
 		for x := uint8(0); x < 16; x++ {
 			for z := uint8(0); z < 16; z++ {
-				chunk.heightMapLiquid.Set(x, z, chunk.HighestLiquid(x, z))
+				chunk.heightMapLiquid.Set(x, z, chunk.HighestBlockLayer(x, z, 0, false))
 			}
 		}
 		chunk.recalculateHeightMapLiquid = false

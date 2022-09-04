@@ -90,6 +90,47 @@ func (Calcite) Color() color.RGBA {
 	return color.RGBA{201, 201, 196, 255}
 }
 
+func (c Candle) Color() color.RGBA {
+	if !c.Dyed {
+		return color.RGBA{254, 240, 179, 255}
+	}
+	switch c.Colour {
+	case item.ColourWhite():
+		return color.RGBA{224, 229, 229, 255}
+	case item.ColourOrange():
+		return color.RGBA{230, 101, 0, 255}
+	case item.ColourMagenta():
+		return color.RGBA{186, 47, 166, 255}
+	case item.ColourLightBlue():
+		return color.RGBA{32, 141, 205, 255}
+	case item.ColourYellow():
+		return color.RGBA{218, 171, 52, 255}
+	case item.ColourPink():
+		return color.RGBA{222, 101, 148, 255}
+	case item.ColourLime():
+		return color.RGBA{222, 101, 148, 255}
+	case item.ColourGrey():
+		return color.RGBA{82, 97, 98, 255}
+	case item.ColourLightGrey():
+		return color.RGBA{125, 127, 119, 255}
+	case item.ColourCyan():
+		return color.RGBA{18, 158, 157, 255}
+	case item.ColourPurple():
+		return color.RGBA{106, 36, 164, 255}
+	case item.ColourBlue():
+		return color.RGBA{64, 90, 190, 255}
+	case item.ColourBrown():
+		return color.RGBA{114, 71, 40, 255}
+	case item.ColourGreen():
+		return color.RGBA{96, 129, 22, 255}
+	case item.ColourRed():
+		return color.RGBA{162, 39, 41, 255}
+	case item.ColourBlack():
+		return color.RGBA{39, 38, 61, 255}
+	}
+	return color.RGBA{255, 0, 255, 255}
+}
+
 func (c Carpet) Color() color.RGBA {
 	switch c.Colour {
 	case item.ColourWhite():
@@ -744,6 +785,10 @@ func (s Sapling) Color() color.RGBA {
 	return color.RGBA{255, 0, 255, 255}
 }
 
+func (s Seagrass) Color() color.RGBA {
+	return color.RGBA{20, 46, 4, 255}
+}
+
 func (Shroomlight) Color() color.RGBA {
 	return color.RGBA{254, 172, 109, 255}
 }
@@ -819,6 +864,10 @@ func (h StainedTerracotta) Color() color.RGBA {
 
 func (StoneBricks) Color() color.RGBA {
 	return color.RGBA{139, 137, 139, 255}
+}
+
+func (t TallGrass) Color() color.RGBA {
+	return color.RGBA{118, 118, 118, 255}
 }
 
 func (Andesite) Color() color.RGBA {
