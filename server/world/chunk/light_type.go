@@ -14,6 +14,8 @@ var (
 	// FilteringBlocks is a map for checking if a block runtime ID filters light, and if so, how many levels.
 	// Light is able to propagate through these blocks, but will have its level reduced.
 	FilteringBlocks = make([]uint8, 0, 7000)
+	// WaterBlocks is a list of water blocks
+	WaterBlocks = make([]uint32, 255)
 )
 
 type (
