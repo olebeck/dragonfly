@@ -20,9 +20,9 @@ func (Anvil) Color() color.RGBA {
 
 func (a AzaleaLeaves) Color() color.RGBA {
 	if a.Flowering {
-		return color.RGBA{108, 128, 45, 255}
+		return color.RGBA{173, 91, 192, 255}
 	} else {
-		return color.RGBA{108, 128, 45, 255}
+		return color.RGBA{104, 136, 42, 255}
 	}
 }
 
@@ -404,7 +404,7 @@ func (d doubleFlower) Color() color.RGBA {
 }
 
 func (DoubleTallGrass) Color() color.RGBA {
-	return color.RGBA{118, 118, 118, 255}
+	return color.RGBA{86, 124, 77, 255}
 }
 
 func (DragonEgg) Color() color.RGBA {
@@ -548,23 +548,23 @@ func (Lava) Color() color.RGBA {
 func (l Leaves) Color() color.RGBA {
 	switch l.Wood {
 	case OakWood():
-		return color.RGBA{152, 153, 152, 255}
+		return color.RGBA{76, 115, 52, 255}
 	case SpruceWood():
-		return color.RGBA{79, 79, 79, 255}
+		return color.RGBA{55, 86, 55, 255}
 	case BirchWood():
-		return color.RGBA{152, 153, 152, 255}
+		return color.RGBA{86, 113, 57, 255}
 	case JungleWood():
-		return color.RGBA{152, 153, 152, 255}
+		return color.RGBA{76, 113, 51, 255}
 	case AcaciaWood():
-		return color.RGBA{136, 135, 135, 255}
+		return color.RGBA{75, 110, 51, 255}
 	case DarkOakWood():
-		return color.RGBA{152, 153, 152, 255}
+		return color.RGBA{63, 93, 43, 255}
 	case CrimsonWood():
 		return color.RGBA{172, 32, 32, 255}
 	case WarpedWood():
 		return color.RGBA{69, 107, 88, 255}
 	case Mangrove():
-		return color.RGBA{84, 195, 87, 255}
+		return color.RGBA{45, 65, 30, 255}
 	}
 	return color.RGBA{255, 0, 255, 255}
 }
@@ -809,6 +809,12 @@ func (Snow) Color() color.RGBA {
 	return color.RGBA{255, 255, 255, 255}
 }
 
+/*
+func (SnowLayer) Color() color.RGBA {
+	return color.RGBA{255, 255, 255, 255}
+}
+*/
+
 func (SoulSand) Color() color.RGBA {
 	return color.RGBA{66, 49, 39, 255}
 }
@@ -867,7 +873,7 @@ func (StoneBricks) Color() color.RGBA {
 }
 
 func (t TallGrass) Color() color.RGBA {
-	return color.RGBA{118, 118, 118, 255}
+	return color.RGBA{86, 124, 77, 255}
 }
 
 func (Andesite) Color() color.RGBA {
