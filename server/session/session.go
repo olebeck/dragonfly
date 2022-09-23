@@ -4,6 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"net"
+	"sync"
+	"time"
+
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -21,10 +26,6 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"github.com/sandertv/gophertunnel/minecraft/text"
-	"io"
-	"net"
-	"sync"
-	"time"
 )
 
 // Session handles incoming packets from connections and sends outgoing packets by providing a thin layer
@@ -456,6 +457,10 @@ func (s *Session) registerHandlers() {
 		packet.IDText:                  &TextHandler{},
 		packet.IDTickSync:              nil,
 	}
+}
+
+func (s *Session) SetHandler(id uint32, handler packetHandler) {
+	s.handlers[id] = handler
 }
 
 // handleInterfaceUpdate handles an update to the UI inventory, used for updating enchantment options and possibly more
