@@ -809,11 +809,9 @@ func (Snow) Color() color.RGBA {
 	return color.RGBA{255, 255, 255, 255}
 }
 
-/*
 func (SnowLayer) Color() color.RGBA {
 	return color.RGBA{255, 255, 255, 255}
 }
-*/
 
 func (SoulSand) Color() color.RGBA {
 	return color.RGBA{66, 49, 39, 255}

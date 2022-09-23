@@ -44,6 +44,7 @@ const (
 	hashCopperOre
 	hashCoral
 	hashCoralBlock
+	hashCoralFan
 	hashCraftingTable
 	hashDeadBush
 	hashDeepslate
@@ -153,6 +154,7 @@ const (
 	hashSmithingTable
 	hashSmoker
 	hashSnow
+	hashSnowLayer
 	hashSoulSand
 	hashSoulSoil
 	hashSponge
@@ -344,6 +346,10 @@ func (c Coral) Hash() uint64 {
 
 func (c CoralBlock) Hash() uint64 {
 	return hashCoralBlock | uint64(c.Type.Uint8())<<8 | uint64(boolByte(c.Dead))<<11
+}
+
+func (c CoralFan) Hash() uint64 {
+	return hashCoralFan | uint64(c.Type.Uint8())<<8 | uint64(boolByte(c.Dead))<<11 | uint64(boolByte(c.Hanging))<<12 | uint64(c.Facing)<<13
 }
 
 func (CraftingTable) Hash() uint64 {
@@ -780,6 +786,10 @@ func (s Smoker) Hash() uint64 {
 
 func (Snow) Hash() uint64 {
 	return hashSnow
+}
+
+func (s SnowLayer) Hash() uint64 {
+	return hashSnowLayer | uint64(s.Height)<<8 | uint64(boolByte(s.Covered))<<16
 }
 
 func (SoulSand) Hash() uint64 {

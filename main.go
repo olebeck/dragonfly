@@ -2,11 +2,13 @@ package main
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/df-mc/dragonfly/server"
 	"github.com/df-mc/dragonfly/server/player/chat"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
-	"os"
 )
 
 func main() {
@@ -20,6 +22,16 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
+
+		config.WorldConfig = func(def world.Config) world.Config {
+			if def.Dim == world.Overworld {
+				def.Dim = world.Overworld_legacy
+			}
+			def.ReadOnly = true
+			def.Generator = world.NopGenerator{}
+			return def
+		}
+
 
 	srv := server.New(&config, log)
 	srv.CloseOnProgramEnd()
@@ -39,7 +51,7 @@ func readConfig() (server.Config, error) {
 		if err != nil {
 			return c, fmt.Errorf("failed encoding default config: %v", err)
 		}
-		if err := os.WriteFile("config.toml", data, 0644); err != nil {
+		if err := os.WriteFile("config.toml", data, 0o644); err != nil {
 			return c, fmt.Errorf("failed creating config: %v", err)
 		}
 		return c, nil

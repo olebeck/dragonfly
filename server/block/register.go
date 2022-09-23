@@ -140,6 +140,7 @@ func init() {
 	registerAll(allCopper())
 	registerAll(allCoral())
 	registerAll(allCoralBlocks())
+	registerAll(allCoralFan())
 	registerAll(allDeepslate())
 	registerAll(allDoors())
 	registerAll(allDoubleFlowers())
@@ -186,6 +187,7 @@ func init() {
 	registerAll(allSkulls())
 	registerAll(allSlabs())
 	registerAll(allSmokers())
+	registerAll(allSnowLayers())
 	registerAll(allStainedGlass())
 	registerAll(allStainedGlassPane())
 	registerAll(allStainedTerracotta())
@@ -355,6 +357,9 @@ func init() {
 		world.RegisterItem(c.(world.Item))
 	}
 	for _, c := range allCoralBlocks() {
+		world.RegisterItem(c.(world.Item))
+	}
+	for _, c := range allCoralFan() {
 		world.RegisterItem(c.(world.Item))
 	}
 	for _, t := range SandstoneTypes() {
