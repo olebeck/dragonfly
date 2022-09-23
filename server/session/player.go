@@ -382,7 +382,7 @@ func (s *Session) sendAbilities() {
 	if mode.AllowsInteraction() {
 		abilities |= protocol.AbilityDoorsAndSwitches | protocol.AbilityOpenContainers | protocol.AbilityAttackPlayers | protocol.AbilityAttackMobs
 	}
-	s.writePacket(&packet.UpdateAbilities{
+	s.writePacket(&packet.UpdateAbilities{AbilityData: protocol.AbilityData{
 		EntityUniqueID:     selfEntityRuntimeID,
 		PlayerPermissions:  packet.PermissionLevelMember,
 		CommandPermissions: packet.CommandPermissionLevelNormal,
@@ -395,7 +395,7 @@ func (s *Session) sendAbilities() {
 				WalkSpeed: protocol.AbilityBaseWalkSpeed,
 			},
 		},
-	})
+	}})
 }
 
 // SendHealth sends the health and max health to the player.
@@ -565,7 +565,7 @@ func (s *Session) removeFromPlayerList(session *Session) {
 // HandleInventories starts handling the inventories of the Controllable entity of the session. It sends packets when
 // slots in the inventory are changed.
 func (s *Session) HandleInventories() (inv, offHand, enderChest *inventory.Inventory, armour *inventory.Armour, heldSlot *atomic.Uint32) {
-	s.inv = inventory.New(36, func(slot int, item item.Stack) {
+	s.inv = inventory.New(36, func(slot int, _, item item.Stack) {
 		if s.c == nil {
 			return
 		}
@@ -578,7 +578,7 @@ func (s *Session) HandleInventories() (inv, offHand, enderChest *inventory.Inven
 			s.sendItem(item, slot, protocol.WindowIDInventory)
 		}
 	})
-	s.offHand = inventory.New(1, func(slot int, item item.Stack) {
+	s.offHand = inventory.New(1, func(slot int, _, item item.Stack) {
 		if s.c == nil {
 			return
 		}
@@ -595,7 +595,7 @@ func (s *Session) HandleInventories() (inv, offHand, enderChest *inventory.Inven
 			})
 		}
 	})
-	s.enderChest = inventory.New(27, func(slot int, item item.Stack) {
+	s.enderChest = inventory.New(27, func(slot int, _, item item.Stack) {
 		if s.c == nil {
 			return
 		}
@@ -605,15 +605,19 @@ func (s *Session) HandleInventories() (inv, offHand, enderChest *inventory.Inven
 			}
 		}
 	})
-	s.armour = inventory.NewArmour(func(slot int, item item.Stack) {
+	s.armour = inventory.NewArmour(func(slot int, before, after item.Stack) {
 		if s.c == nil {
+			return
+		}
+		if !s.inTransaction.Load() {
+			s.sendItem(after, slot, protocol.WindowIDArmour)
+		}
+		if before.Comparable(after) && before.Empty() == after.Empty() {
+			// Only send armour if the item type actually changed.
 			return
 		}
 		for _, viewer := range s.c.World().Viewers(s.c.Position()) {
 			viewer.ViewEntityArmour(s.c)
-		}
-		if !s.inTransaction.Load() {
-			s.sendItem(item, slot, protocol.WindowIDArmour)
 		}
 	})
 	return s.inv, s.offHand, s.enderChest, s.armour, s.heldSlot
@@ -796,11 +800,11 @@ func stacksToRecipeStacks(inputs []item.Stack) []protocol.ItemStack {
 }
 
 // stacksToIngredientItems converts a list of item.Stacks to recipe ingredient items used over the network.
-func stacksToIngredientItems(inputs []item.Stack) []protocol.RecipeIngredientItem {
-	items := make([]protocol.RecipeIngredientItem, 0, len(inputs))
+func stacksToIngredientItems(inputs []item.Stack) []protocol.ItemDescriptorCount {
+	items := make([]protocol.ItemDescriptorCount, 0, len(inputs))
 	for _, i := range inputs {
 		if i.Empty() {
-			items = append(items, protocol.RecipeIngredientItem{})
+			items = append(items, protocol.ItemDescriptorCount{Descriptor: &protocol.InvalidItemDescriptor{}})
 			continue
 		}
 		rid, meta, ok := world.ItemRuntimeID(i.Item())
@@ -810,10 +814,12 @@ func stacksToIngredientItems(inputs []item.Stack) []protocol.RecipeIngredientIte
 		if _, ok = i.Value("variants"); ok {
 			meta = math.MaxInt16 // Used to indicate that the item has multiple selectable variants.
 		}
-		items = append(items, protocol.RecipeIngredientItem{
-			NetworkID:     rid,
-			MetadataValue: int32(meta),
-			Count:         int32(i.Count()),
+		items = append(items, protocol.ItemDescriptorCount{
+			Descriptor: &protocol.DefaultItemDescriptor{
+				NetworkID:     int16(rid),
+				MetadataValue: meta,
+			},
+			Count: int32(i.Count()),
 		})
 	}
 	return items

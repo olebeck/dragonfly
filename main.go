@@ -18,50 +18,45 @@ func main() {
 
 	chat.Global.Subscribe(chat.StdoutSubscriber{})
 
-	config, err := readConfig()
+	conf, err := readConfig(log)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-		config.WorldConfig = func(def world.Config) world.Config {
-			if def.Dim == world.Overworld {
-				def.Dim = world.Overworld_legacy
-			}
-			def.ReadOnly = true
-			def.Generator = world.NopGenerator{}
-			return def
-		}
-
-
-	srv := server.New(&config, log)
-	srv.CloseOnProgramEnd()
-	if err := srv.Start(); err != nil {
-		log.Fatalln(err)
+	conf.Generator = func(dim world.Dimension) world.Generator {
+		return world.NopGenerator{}
 	}
+	conf.ReadOnly = true
 
+	srv := conf.New()
+	srv.CloseOnProgramEnd()
+
+	srv.Listen()
 	for srv.Accept(nil) {
 	}
 }
 
-// readConfig reads the configuration from the config.toml file, or creates the file if it does not yet exist.
-func readConfig() (server.Config, error) {
-	c := server.DefaultConfig()
+// readConfig reads the configuration from the config.toml file, or creates the
+// file if it does not yet exist.
+func readConfig(log server.Logger) (server.Config, error) {
+	c, _ := server.DefaultConfig().Config(log)
+	var zero server.Config
 	if _, err := os.Stat("config.toml"); os.IsNotExist(err) {
 		data, err := toml.Marshal(c)
 		if err != nil {
-			return c, fmt.Errorf("failed encoding default config: %v", err)
+			return zero, fmt.Errorf("encode default config: %v", err)
 		}
 		if err := os.WriteFile("config.toml", data, 0o644); err != nil {
-			return c, fmt.Errorf("failed creating config: %v", err)
+			return zero, fmt.Errorf("create default config: %v", err)
 		}
-		return c, nil
+		return zero, nil
 	}
 	data, err := os.ReadFile("config.toml")
 	if err != nil {
-		return c, fmt.Errorf("error reading config: %v", err)
+		return zero, fmt.Errorf("read config: %v", err)
 	}
 	if err := toml.Unmarshal(data, &c); err != nil {
-		return c, fmt.Errorf("error decoding config: %v", err)
+		return zero, fmt.Errorf("decode config: %v", err)
 	}
 	return c, nil
 }
