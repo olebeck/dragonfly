@@ -353,15 +353,16 @@ func (srv *Server) defaultGameData() minecraft.GameData {
 		// We set these IDs to 1, because that's how the session will treat them.
 		EntityUniqueID:               1,
 		EntityRuntimeID:              1,
-		Yaw:                          90,
-		PlayerGameMode:               1,
 		Difficulty:                   2,
+		Yaw:                          90,
 		ServerAuthoritativeInventory: true,
 		WorldName:                    srv.conf.Name,
 		Items:                        srv.itemEntries(),
 		Time:                         int64(srv.world.Time()),
-		PlayerPosition:               vec64To32(srv.world.Spawn().Vec3Centre().Add(mgl64.Vec3{0, 1.62})),
+		PlayerGameMode:               packet.GameTypeCreative,
+		PlayerPermissions:            packet.PermissionLevelMember,
 		GameRules:                    []protocol.GameRule{{Name: "naturalregeneration", Value: false}},
+		PlayerPosition:               vec64To32(srv.world.Spawn().Vec3Centre().Add(mgl64.Vec3{0, 1.62})),
 		PlayerMovementSettings:       protocol.PlayerMovementSettings{MovementType: protocol.PlayerMovementModeServer, ServerAuthoritativeBlockBreaking: true},
 	}
 }
@@ -446,7 +447,7 @@ func (srv *Server) createWorld(dim world.Dimension, nether, end **world.World) *
 	conf := world.Config{
 		Log:             logger,
 		Dim:             dim,
-		ReadOnly:        srv.conf.ReadOnly,
+		ReadOnly:        srv.conf.ReadOnlyWorld,
 		Provider:        srv.conf.WorldProvider,
 		Generator:       srv.conf.Generator(dim),
 		RandomTickSpeed: srv.conf.RandomTickSpeed,
