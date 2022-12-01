@@ -26,7 +26,7 @@ func main() {
 	conf.Generator = func(dim world.Dimension) world.Generator {
 		return world.NopGenerator{}
 	}
-	conf.ReadOnly = true
+	conf.ReadOnlyWorld = true
 
 	srv := conf.New()
 	srv.CloseOnProgramEnd()
