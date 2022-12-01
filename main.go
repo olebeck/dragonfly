@@ -39,7 +39,7 @@ func main() {
 // readConfig reads the configuration from the config.toml file, or creates the
 // file if it does not yet exist.
 func readConfig(log server.Logger) (server.Config, error) {
-	c, _ := server.DefaultConfig().Config(log)
+	c := server.DefaultConfig()
 	var zero server.Config
 	if _, err := os.Stat("config.toml"); os.IsNotExist(err) {
 		data, err := toml.Marshal(c)
@@ -49,7 +49,7 @@ func readConfig(log server.Logger) (server.Config, error) {
 		if err := os.WriteFile("config.toml", data, 0o644); err != nil {
 			return zero, fmt.Errorf("create default config: %v", err)
 		}
-		return zero, nil
+		return c.Config(log)
 	}
 	data, err := os.ReadFile("config.toml")
 	if err != nil {
@@ -58,5 +58,5 @@ func readConfig(log server.Logger) (server.Config, error) {
 	if err := toml.Unmarshal(data, &c); err != nil {
 		return zero, fmt.Errorf("decode config: %v", err)
 	}
-	return c, nil
+	return c.Config(log)
 }
