@@ -188,7 +188,7 @@ func (s *Session) Spawn(c Controllable, pos mgl64.Vec3, w *world.World, gm world
 		Radius:   uint32(s.chunkRadius) << 4,
 	})
 
-	s.sendAvailableEntities()
+	s.sendAvailableEntities(w)
 
 	s.initPlayerList()
 
@@ -356,6 +356,13 @@ func (s *Session) background() {
 // sendChunks sends the next up to 4 chunks to the connection. What chunks are loaded depends on the connection of
 // the chunk loader and the chunks that were previously loaded.
 func (s *Session) sendChunks() {
+	pos := s.c.Position()
+	s.chunkLoader.Move(pos)
+	s.writePacket(&packet.NetworkChunkPublisherUpdate{
+		Position: protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
+		Radius:   uint32(s.chunkRadius) << 4,
+	})
+
 	const maxChunkTransactions = 8
 
 	if w := s.c.World(); s.chunkLoader.World() != w && w != nil {
@@ -525,10 +532,10 @@ type actorIdentifier struct {
 }
 
 // sendAvailableEntities sends all registered entities to the player.
-func (s *Session) sendAvailableEntities() {
+func (s *Session) sendAvailableEntities(w *world.World) {
 	var identifiers []actorIdentifier
-	for _, entity := range world.Entities() {
-		identifiers = append(identifiers, actorIdentifier{ID: entity.Type().EncodeEntity()})
+	for _, t := range w.EntityRegistry().Types() {
+		identifiers = append(identifiers, actorIdentifier{ID: t.EncodeEntity()})
 	}
 	serializedEntityData, err := nbt.Marshal(map[string]any{"idlist": identifiers})
 	if err != nil {

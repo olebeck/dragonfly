@@ -113,7 +113,7 @@ func (p *Provider) initDefaultLevelDat() {
 	p.d.FreezeDamage = true
 	p.d.FunctionCommandLimit = 10000
 	p.d.GameType = 1
-	p.d.Generator = 1
+	p.d.Generator = 2
 	p.d.HasBeenLoadedInCreative = true
 	p.d.InventoryVersion = protocol.CurrentVersion
 	p.d.LANBroadcast = true
@@ -409,7 +409,7 @@ func (p *Provider) saveDifficulty(d world.Difficulty) {
 }
 
 // LoadEntities loads all entities from the chunk position passed.
-func (p *Provider) LoadEntities(pos world.ChunkPos, dim world.Dimension) ([]world.Entity, error) {
+func (p *Provider) LoadEntities(pos world.ChunkPos, dim world.Dimension, reg world.EntityRegistry) ([]world.Entity, error) {
 	data, err := p.db.Get(append(p.index(pos, dim), keyEntities), nil)
 	if err != leveldb.ErrNotFound && err != nil {
 		return nil, err
@@ -430,12 +430,12 @@ func (p *Provider) LoadEntities(pos world.ChunkPos, dim world.Dimension) ([]worl
 			continue
 		}
 		name, _ := id.(string)
-		e, ok := world.EntityByName(name)
+		t, ok := reg.Lookup(name)
 		if !ok {
 			p.log.Errorf("load entities: failed loading %v: entity %s was not registered (%v)", pos, name, m)
 			continue
 		}
-		if s, ok := e.Type().(world.SaveableEntityType); ok {
+		if s, ok := t.(world.SaveableEntityType); ok {
 			if v := s.DecodeNBT(m); v != nil {
 				a = append(a, v)
 			}

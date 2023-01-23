@@ -312,15 +312,7 @@ func (s *Session) SendGameMode(mode world.GameMode) {
 	if s == Nop {
 		return
 	}
-
-	id := int32(packet.GameTypeSurvival)
-	if mode.AllowsFlying() && mode.CreativeInventory() {
-		id = packet.GameTypeCreative
-	}
-	if !mode.Visible() && !mode.HasCollision() {
-		id = packet.GameTypeSpectator
-	}
-	s.writePacket(&packet.SetPlayerGameType{GameType: id})
+	s.writePacket(&packet.SetPlayerGameType{GameType: gameTypeFromMode(mode)})
 	s.sendAbilities()
 }
 
@@ -385,17 +377,13 @@ func (s *Session) SendHealth(health *entity.HealthManager) {
 
 // SendAbsorption sends the absorption value passed to the player.
 func (s *Session) SendAbsorption(value float64) {
-	maximum := value
-	if math.Mod(value, 2) != 0 {
-		maximum = value + 1
-	}
 	s.writePacket(&packet.UpdateAttributes{
 		EntityRuntimeID: selfEntityRuntimeID,
 		Attributes: []protocol.Attribute{{
 			AttributeValue: protocol.AttributeValue{
 				Name:  "minecraft:absorption",
 				Value: float32(math.Ceil(value)),
-				Max:   float32(math.Ceil(maximum)),
+				Max:   float32(math.MaxFloat32),
 			},
 		}},
 	})
@@ -857,6 +845,17 @@ func protocolToSkin(sk protocol.Skin) (s skin.Skin, err error) {
 		s.Animations = append(s.Animations, animation)
 	}
 	return
+}
+
+// gameTypeFromMode returns the game type ID from the game mode passed.
+func gameTypeFromMode(mode world.GameMode) int32 {
+	if mode.AllowsFlying() && mode.CreativeInventory() {
+		return packet.GameTypeCreative
+	}
+	if !mode.Visible() && !mode.HasCollision() {
+		return packet.GameTypeSpectator
+	}
+	return packet.GameTypeSurvival
 }
 
 // The following functions use the go:linkname directive in order to make sure the item.byID and item.toID
