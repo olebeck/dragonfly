@@ -25,8 +25,6 @@ var (
 	blocks []Block
 	// stateRuntimeIDs holds a map for looking up the runtime ID of a block by the stateHash it produces.
 	stateRuntimeIDs = map[stateHash]uint32{}
-	// stateRuntimeIDsVanilla holds a map for looking up the runtime ID of a block by the stateHash it produces.
-	stateRuntimeIDsVanilla = map[stateHash]uint32{}
 	// nbtBlocks holds a list of NBTer implementations for blocks registered that implement the NBTer interface.
 	// These are indexed by their runtime IDs. Blocks that do not implement NBTer have a false value in this slice.
 	nbtBlocks []bool
@@ -42,6 +40,10 @@ var (
 	// airRID is the runtime ID of an air block.
 	airRID uint32
 )
+
+func AirRID() uint32 {
+	return airRID
+}
 
 func init() {
 	dec := nbt.NewDecoder(bytes.NewBuffer(blockStateData))
@@ -69,6 +71,55 @@ func init() {
 	}
 }
 
+func sort_blocks(i, j int) bool {
+	nameOne, _ := blocks[i].EncodeBlock()
+	nameTwo, _ := blocks[j].EncodeBlock()
+	h1 := fnv.New64()
+	h1.Write([]byte(nameOne))
+	h2 := fnv.New64()
+	h2.Write([]byte(nameTwo))
+	return nameOne == nameTwo && h1.Sum64() < h2.Sum64()
+}
+
+// registerBlockStates inserts multiple blockstates
+func registerBlockStates(ss []blockState) {
+	var map_rids = map[stateHash]uint32{}
+
+	// add blocks
+	for _, s := range ss {
+		blocks = append(blocks, unknownBlock{s})
+		map_rids[stateHash{s.Name, hashProperties(s.Properties)}] = 0
+	}
+	// sort the new blocks
+	sort.SliceStable(blocks, sort_blocks)
+
+	for id, b := range blocks {
+		name, properties := b.EncodeBlock()
+		i := stateHash{name: name, properties: hashProperties(properties)}
+		rid := uint32(id)
+		if name == "minecraft:air" {
+			airRID = rid
+		}
+
+		// if its one of the added ones
+		if _, ok := map_rids[i]; ok {
+			if _, ok := stateRuntimeIDs[i]; ok {
+				panic(fmt.Sprintf("cannot register the same state twice (%+v)", b))
+			}
+			map_rids[i] = rid
+
+			nbtBlocks = slices.Insert(nbtBlocks, int(rid), false)
+			randomTickBlocks = slices.Insert(randomTickBlocks, int(rid), false)
+			liquidBlocks = slices.Insert(liquidBlocks, int(rid), false)
+			liquidDisplacingBlocks = slices.Insert(liquidDisplacingBlocks, int(rid), false)
+			chunk.FilteringBlocks = slices.Insert(chunk.FilteringBlocks, int(rid), 15)
+			chunk.LightBlocks = slices.Insert(chunk.LightBlocks, int(rid), 0)
+		}
+		stateRuntimeIDs[i] = rid
+		hashes.Put(int64(b.Hash()), int64(id))
+	}
+}
+
 // registerBlockState registers a new blockState to the states slice. The function panics if the properties the
 // blockState hold are invalid or if the blockState was already registered.
 func registerBlockState(s blockState, order bool) {
@@ -86,15 +137,7 @@ func registerBlockState(s blockState, order bool) {
 
 	blocks = append(blocks, unknownBlock{s})
 	if order {
-		sort.SliceStable(blocks, func(i, j int) bool {
-			nameOne, _ := blocks[i].EncodeBlock()
-			nameTwo, _ := blocks[j].EncodeBlock()
-			h1 := fnv.New64()
-			h1.Write([]byte(nameOne))
-			h2 := fnv.New64()
-			h2.Write([]byte(nameTwo))
-			return nameOne == nameTwo && h1.Sum64() < h2.Sum64()
-		})
+		sort.SliceStable(blocks, sort_blocks)
 
 		for id, b := range blocks {
 			name, properties := b.EncodeBlock()
@@ -119,14 +162,40 @@ func registerBlockState(s blockState, order bool) {
 	chunk.LightBlocks = slices.Insert(chunk.LightBlocks, int(rid), 0)
 }
 
-func InsertCustomBlocks(entries []protocol.BlockEntry) {
-	for _, entry := range entries {
-		registerBlockState(blockState{
-			Name: entry.Name,
-		}, true)
+func permutate_properties(props []property) []map[string]any {
+	var result []map[string]any
+	if len(props) == 0 {
+		return append(result, map[string]any{})
 	}
+	for _, p1 := range props[0].Enum {
+		if len(props) == 1 {
+			result = append(result, map[string]any{props[0].Name: p1})
+			continue
+		}
+		for _, p2 := range permutate_properties(props[1:]) {
+			res := make(map[string]any)
+			res[props[0].Name] = p1
+			for k, v := range p2 {
+				res[k] = v
+			}
+			result = append(result, res)
+		}
+	}
+	return result
+}
 
-	println()
+func InsertCustomBlocks(entries []protocol.BlockEntry) {
+	var states []blockState
+	for _, entry := range entries {
+		block := ParseBlock(entry)
+		for _, props := range permutate_properties(block.Properties) {
+			states = append(states, blockState{
+				Name:       entry.Name,
+				Properties: props,
+			})
+		}
+	}
+	registerBlockStates(states)
 }
 
 // unknownBlock represents a block that has not yet been implemented. It is used for registering block
