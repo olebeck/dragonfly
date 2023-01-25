@@ -5,10 +5,10 @@ import (
 )
 
 type description struct {
-	Identifier             string     `json:"identifier"`
-	IsExperimental         bool       `json:"is_experimental"`
-	RegisterToCreativeMenu bool       `json:"register_to_creative_menu"`
-	Properties             []property `json:"properties,omitempty"`
+	Identifier             string         `json:"identifier"`
+	IsExperimental         bool           `json:"is_experimental"`
+	RegisterToCreativeMenu bool           `json:"register_to_creative_menu"`
+	Properties             map[string]any `json:"properties,omitempty"`
 }
 
 type menu_category struct {
@@ -32,18 +32,6 @@ func permutation_from_map(in map[string]any) permutation {
 	return permutation{
 		Components: in["components"].(map[string]any),
 		Condition:  in["condition"].(string),
-	}
-}
-
-type property struct {
-	Enum []int32 `json:"enum"`
-	Name string  `json:"name"`
-}
-
-func property_from_map(in map[string]any) property {
-	return property{
-		Enum: in["enum"].([]int32),
-		Name: in["name"].(string),
 	}
 }
 
@@ -97,8 +85,17 @@ func ParseBlock(block protocol.BlockEntry) MinecraftBlock {
 		entry.MenuCategory = menu_category_from_map(menu)
 	}
 	if props, ok := block.Properties["properties"].([]any); ok {
+		entry.Description.Properties = make(map[string]any)
 		for _, v := range props {
-			entry.Description.Properties = append(entry.Description.Properties, property_from_map(v.(map[string]any)))
+			v := v.(map[string]any)
+			name := v["name"].(string)
+			switch a := v["enum"].(type) {
+			case []int32:
+				entry.Description.Properties[name] = a
+			case []bool:
+				entry.Description.Properties[name] = a
+			}
+
 		}
 	}
 	return entry

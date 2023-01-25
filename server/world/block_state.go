@@ -162,23 +162,39 @@ func registerBlockState(s blockState, order bool) {
 	chunk.LightBlocks = slices.Insert(chunk.LightBlocks, int(rid), 0)
 }
 
-func permutate_properties(props []property) []map[string]any {
+func permutate_properties(props map[string]any) []map[string]any {
 	var result []map[string]any
 	if len(props) == 0 {
 		return append(result, map[string]any{})
 	}
-	for _, p1 := range props[0].Enum {
+
+	f := func(propName string, p1 any) {
 		if len(props) == 1 {
-			result = append(result, map[string]any{props[0].Name: p1})
-			continue
+			result = append(result, map[string]any{propName: p1})
+			return
 		}
-		for _, p2 := range permutate_properties(props[1:]) {
+
+		delete(props, propName)
+		for _, p2 := range permutate_properties(props) {
 			res := make(map[string]any)
-			res[props[0].Name] = p1
+			res[propName] = p1
 			for k, v := range p2 {
 				res[k] = v
 			}
 			result = append(result, res)
+		}
+	}
+
+	for propName, propVal := range props {
+		switch propVal := propVal.(type) {
+		case []int32:
+			for _, p1 := range propVal {
+				f(propName, p1)
+			}
+		case []any:
+			for _, p1 := range propVal {
+				f(propName, p1)
+			}
 		}
 	}
 	return result
