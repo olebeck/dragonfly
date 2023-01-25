@@ -188,7 +188,7 @@ func InsertCustomBlocks(entries []protocol.BlockEntry) {
 	var states []blockState
 	for _, entry := range entries {
 		block := ParseBlock(entry)
-		for _, props := range permutate_properties(block.Properties) {
+		for _, props := range permutate_properties(block.Description.Properties) {
 			states = append(states, blockState{
 				Name:       entry.Name,
 				Properties: props,

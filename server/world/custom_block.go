@@ -5,9 +5,10 @@ import (
 )
 
 type description struct {
-	Identifier             string `json:"identifier"`
-	IsExperimental         bool   `json:"is_experimental"`
-	RegisterToCreativeMenu bool   `json:"register_to_creative_menu"`
+	Identifier             string     `json:"identifier"`
+	IsExperimental         bool       `json:"is_experimental"`
+	RegisterToCreativeMenu bool       `json:"register_to_creative_menu"`
+	Properties             []property `json:"properties,omitempty"`
 }
 
 type menu_category struct {
@@ -51,7 +52,6 @@ type MinecraftBlock struct {
 	Components   map[string]any `json:"components,omitempty"`
 	MenuCategory menu_category  `json:"menu_category,omitempty"`
 	Permutations []permutation  `json:"permutations,omitempty"`
-	Properties   []property     `json:"properties,omitempty"`
 }
 
 func ParseBlock(block protocol.BlockEntry) MinecraftBlock {
@@ -98,7 +98,7 @@ func ParseBlock(block protocol.BlockEntry) MinecraftBlock {
 	}
 	if props, ok := block.Properties["properties"].([]any); ok {
 		for _, v := range props {
-			entry.Properties = append(entry.Properties, property_from_map(v.(map[string]any)))
+			entry.Description.Properties = append(entry.Description.Properties, property_from_map(v.(map[string]any)))
 		}
 	}
 	return entry
