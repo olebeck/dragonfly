@@ -15,9 +15,9 @@ var StateToRuntimeID func(name string, properties map[string]any) (runtimeID uin
 // returned is nil and the error non-nil.
 // The sub chunk count passed must be that found in the LevelChunk packet.
 // noinspection GoUnusedExportedFunction
-func NetworkDecode(air uint32, data []byte, count int, r cube.Range, pre118 bool) (*Chunk, []map[string]any, error) {
+func NetworkDecode(air uint32, data []byte, count int, r cube.Range, pre118 bool, hasCustom bool) (*Chunk, []map[string]any, error) {
 	var (
-		c   = New(air, r)
+		c   = New(air, r, hasCustom)
 		buf = bytes.NewBuffer(data)
 		err error
 		sub *SubChunk
@@ -70,9 +70,7 @@ func NetworkDecode(air uint32, data []byte, count int, r cube.Range, pre118 bool
 		b, _ := buf.ReadByte()
 		if b != 0x00 {
 			buf.UnreadByte()
-		}
-		dec := nbt.NewDecoderWithEncoding(buf, nbt.NetworkLittleEndian)
-		for buf.Len() > 0 {
+			dec := nbt.NewDecoderWithEncoding(buf, nbt.NetworkLittleEndian)
 			blockNBT := make(map[string]any, 0)
 			err = dec.Decode(&blockNBT)
 			if err != nil {
@@ -93,7 +91,7 @@ func DiskDecode(data SerialisedData, r cube.Range) (*Chunk, error) {
 		panic("cannot find air runtime ID")
 	}
 
-	c := New(air, r)
+	c := New(air, r, false)
 
 	err := decodeBiomes(bytes.NewBuffer(data.Biomes), c, DiskEncoding)
 	if err != nil {
@@ -147,8 +145,18 @@ func decodeSubChunk(buf *bytes.Buffer, c *Chunk, index *byte, e Encoding) (*SubC
 		}
 		sub.storages = make([]*PalettedStorage, storageCount)
 
+		pre118 := c.Range().Height() < 256
+
 		for i := byte(0); i < storageCount; i++ {
 			sub.storages[i], err = decodePalettedStorage(buf, e, BlockPaletteEncoding)
+			if c.hasCustom && !pre118 {
+				sub.storages[i].Palette().Replace(func(v uint32) uint32 {
+					if v > UnknownRID {
+						v -= 1
+					}
+					return v
+				})
+			}
 			if err != nil {
 				return nil, err
 			}

@@ -36,6 +36,9 @@ var (
 	BiomePaletteEncoding biomePaletteEncoding
 	// BlockPaletteEncoding is the paletteEncoding used for encoding a palette of block states encoded as NBT.
 	BlockPaletteEncoding blockPaletteEncoding
+
+	// UnknownRID is the runtime ID (IN VANILLA) of the unknown block.
+	UnknownRID uint32
 )
 
 // biomePaletteEncoding implements the encoding of biome palettes to disk.
@@ -190,7 +193,8 @@ func (networkEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, e
 			if err := protocol.Varint32(buf, &temp); err != nil {
 				return nil, fmt.Errorf("error decoding palette entry: %w", err)
 			}
-			blocks[i] = uint32(temp)
+			rid := uint32(temp)
+			blocks[i] = rid
 		}
 
 		return &Palette{values: blocks, size: blockSize}, nil

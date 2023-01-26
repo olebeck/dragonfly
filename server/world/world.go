@@ -1220,14 +1220,14 @@ func (w *World) setChunk(pos ChunkPos, c *chunk.Chunk, e map[cube.Pos]Block) {
 func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
 	c, found, err := w.provider().LoadChunk(pos, w.conf.Dim)
 	if err != nil {
-		ch := newChunkData(chunk.New(airRID, w.Range()))
+		ch := newChunkData(chunk.New(airRID, w.Range(), false))
 		ch.Lock()
 		return ch, err
 	}
 
 	if !found {
 		// The provider doesn't have a chunk saved at this position, so we generate a new one.
-		data := newChunkData(chunk.New(airRID, w.Range()))
+		data := newChunkData(chunk.New(airRID, w.Range(), false))
 		w.chunks[pos] = data
 		data.Lock()
 		w.chunkMu.Unlock()
