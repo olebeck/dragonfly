@@ -46,7 +46,7 @@ func NetworkDecode(air uint32, data []byte, count int, r cube.Range, pre118 bool
 	} else {
 		var last *PalettedStorage
 		for i := 0; i < len(c.sub); i++ {
-			b, err := decodePalettedStorage(buf, NetworkEncoding, BiomePaletteEncoding)
+			b, err := decodePalettedStorage(buf, NetworkEncoding, BiomePaletteEncoding{})
 			if err != nil {
 				return nil, nil, err
 			}
@@ -129,7 +129,7 @@ func decodeSubChunk(buf *bytes.Buffer, c *Chunk, index *byte, e Encoding) (*SubC
 		return nil, fmt.Errorf("unknown sub chunk version %v: can't decode", ver)
 	case 1:
 		// Version 1 only has one layer for each sub chunk, but uses the format with palettes.
-		storage, err := decodePalettedStorage(buf, e, BlockPaletteEncoding)
+		storage, err := decodePalettedStorage(buf, e, BlockPaletteEncoding{})
 		if err != nil {
 			return nil, err
 		}
@@ -151,18 +151,8 @@ func decodeSubChunk(buf *bytes.Buffer, c *Chunk, index *byte, e Encoding) (*SubC
 		}
 		sub.storages = make([]*PalettedStorage, storageCount)
 
-		pre118 := c.Range().Height() < 256
-
 		for i := byte(0); i < storageCount; i++ {
-			sub.storages[i], err = decodePalettedStorage(buf, e, BlockPaletteEncoding)
-			if c.hasCustom && !pre118 {
-				sub.storages[i].Palette().Replace(func(v uint32) uint32 {
-					if v > UnknownRID {
-						v -= 1
-					}
-					return v
-				})
-			}
+			sub.storages[i], err = decodePalettedStorage(buf, e, BlockPaletteEncoding{HasCustom: c.hasCustom})
 			if err != nil {
 				return nil, err
 			}
@@ -176,7 +166,7 @@ func decodeBiomes(buf *bytes.Buffer, c *Chunk, e Encoding) error {
 	var last *PalettedStorage
 	if buf.Len() != 0 {
 		for i := 0; i < len(c.sub); i++ {
-			b, err := decodePalettedStorage(buf, e, BiomePaletteEncoding)
+			b, err := decodePalettedStorage(buf, e, BiomePaletteEncoding{})
 			if err != nil {
 				return err
 			}

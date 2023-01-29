@@ -23,6 +23,7 @@ type (
 	paletteEncoding interface {
 		encode(buf *bytes.Buffer, v uint32)
 		decode(buf *bytes.Buffer, e Encoding) (uint32, error)
+		withCustomBlocks() bool
 	}
 )
 
@@ -32,43 +33,47 @@ var (
 	DiskEncoding diskEncoding
 	// NetworkEncoding is the Encoding used for sending a Chunk over network. It does not use NBT and writes varints.
 	NetworkEncoding networkEncoding
-	// BiomePaletteEncoding is the paletteEncoding used for encoding a palette of biomes.
-	BiomePaletteEncoding biomePaletteEncoding
-	// BlockPaletteEncoding is the paletteEncoding used for encoding a palette of block states encoded as NBT.
-	BlockPaletteEncoding blockPaletteEncoding
 
 	// UnknownRID is the runtime ID (IN VANILLA) of the unknown block.
 	UnknownRID uint32
 )
 
-// biomePaletteEncoding implements the encoding of biome palettes to disk.
-type biomePaletteEncoding struct{}
+// BiomePaletteEncoding implements the encoding of biome palettes to disk.
+type BiomePaletteEncoding struct{}
 
-func (biomePaletteEncoding) encode(buf *bytes.Buffer, v uint32) {
+func (BiomePaletteEncoding) encode(buf *bytes.Buffer, v uint32) {
 	_ = binary.Write(buf, binary.LittleEndian, v)
 }
-func (biomePaletteEncoding) decode(buf *bytes.Buffer, e Encoding) (uint32, error) {
+func (BiomePaletteEncoding) decode(buf *bytes.Buffer, e Encoding) (uint32, error) {
 	var v uint32
 	return v, binary.Read(buf, binary.LittleEndian, &v)
 }
 
-// blockPaletteEncoding implements the encoding of block palettes to disk.
-type blockPaletteEncoding struct{}
+func (e BiomePaletteEncoding) withCustomBlocks() bool {
+	return false
+}
 
-func (blockPaletteEncoding) encode(buf *bytes.Buffer, v uint32) {
+// BlockPaletteEncoding implements the encoding of block palettes to disk.
+type BlockPaletteEncoding struct {
+	HasCustom bool
+}
+
+func (e BlockPaletteEncoding) withCustomBlocks() bool {
+	return e.HasCustom
+}
+
+func (BlockPaletteEncoding) encode(buf *bytes.Buffer, v uint32) {
 	// Get the block state registered with the runtime IDs we have in the palette of the block storage
 	// as we need the name and data value to store.
 	name, props, _ := RuntimeIDToState(v)
 	_ = nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian).Encode(blockEntry{Name: name, State: props, Version: CurrentBlockVersion})
 }
-func (blockPaletteEncoding) decode(buf *bytes.Buffer, e Encoding) (uint32, error) {
+func (BlockPaletteEncoding) decode(buf *bytes.Buffer, e Encoding) (uint32, error) {
 	var m map[string]any
 
-	var nbt_e nbt.Encoding
+	var nbt_e nbt.Encoding = nbt.LittleEndian
 	if e.network() == 1 {
 		nbt_e = nbt.NetworkLittleEndian
-	} else {
-		nbt_e = nbt.LittleEndian
 	}
 
 	if err := nbt.NewDecoderWithEncoding(buf, nbt_e).Decode(&m); err != nil {
@@ -194,6 +199,11 @@ func (networkEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, e
 				return nil, fmt.Errorf("error decoding palette entry: %w", err)
 			}
 			rid := uint32(temp)
+			if e.withCustomBlocks() {
+				if rid > UnknownRID {
+					rid -= 1
+				}
+			}
 			blocks[i] = rid
 		}
 
