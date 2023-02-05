@@ -202,9 +202,18 @@ func permutate_properties(props map[string]any) []map[string]any {
 	return result
 }
 
+func ns_name_split(identifier string) (ns, name string) {
+	ns_name := strings.Split(identifier, ":")
+	return ns_name[0], ns_name[len(ns_name)-1]
+}
+
 func InsertCustomBlocks(entries []protocol.BlockEntry) {
 	var states []blockState
 	for _, entry := range entries {
+		ns, _ := ns_name_split(entry.Name)
+		if ns == "minecraft" {
+			continue
+		}
 		block := ParseBlock(entry)
 		for _, props := range permutate_properties(block.Description.Properties) {
 			states = append(states, blockState{
