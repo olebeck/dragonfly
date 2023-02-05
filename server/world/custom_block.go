@@ -70,6 +70,10 @@ func ParseBlock(block protocol.BlockEntry) MinecraftBlock {
 				if v, ok := v["lightLevel"]; ok {
 					comps[k] = v
 				}
+				// fix {"triggerType": "name"} -> "name"
+				if v, ok := v["triggerType"]; ok {
+					comps[k] = v
+				}
 				// fix missing * instance
 				if k == "minecraft:material_instances" {
 					if m, ok := v["materials"].(map[string]any); ok {

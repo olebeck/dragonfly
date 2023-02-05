@@ -15,16 +15,13 @@ var StateToRuntimeID func(name string, properties map[string]any) (runtimeID uin
 // returned is nil and the error non-nil.
 // The sub chunk count passed must be that found in the LevelChunk packet.
 // noinspection GoUnusedExportedFunction
-func NetworkDecode(air uint32, data []byte, count int, r cube.Range, pre118 bool, hasCustom bool) (*Chunk, []map[string]any, error) {
-	var (
-		c   = New(air, r, hasCustom)
-		buf = bytes.NewBuffer(data)
-		err error
-		sub *SubChunk
-	)
+func NetworkDecode(air uint32, data []byte, count int, r cube.Range, pre118 bool, hasCustom bool) (c *Chunk, blockNBTs []map[string]any, err error) {
+
+	c = New(air, r, hasCustom)
+	var buf = bytes.NewBuffer(data)
 	for i := 0; i < count; i++ {
 		index := uint8(i)
-		sub, err = decodeSubChunk(buf, c, &index, NetworkEncoding)
+		sub, err := decodeSubChunk(buf, c, &index, NetworkEncoding)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -65,7 +62,6 @@ func NetworkDecode(air uint32, data []byte, count int, r cube.Range, pre118 bool
 		}
 	}
 
-	var blockNBTs []map[string]any = nil
 	if buf.Len() > 0 {
 		b, _ := buf.ReadByte()
 		if b != 0x00 {
