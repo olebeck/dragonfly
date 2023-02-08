@@ -44,6 +44,7 @@ type BiomePaletteEncoding struct{}
 func (BiomePaletteEncoding) encode(buf *bytes.Buffer, v uint32) {
 	_ = binary.Write(buf, binary.LittleEndian, v)
 }
+
 func (BiomePaletteEncoding) decode(buf *bytes.Buffer, e Encoding) (uint32, error) {
 	var v uint32
 	return v, binary.Read(buf, binary.LittleEndian, &v)
@@ -68,6 +69,7 @@ func (BlockPaletteEncoding) encode(buf *bytes.Buffer, v uint32) {
 	name, props, _ := RuntimeIDToState(v)
 	_ = nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian).Encode(blockEntry{Name: name, State: props, Version: CurrentBlockVersion})
 }
+
 func (BlockPaletteEncoding) decode(buf *bytes.Buffer, e Encoding) (uint32, error) {
 	var m map[string]any
 
@@ -133,6 +135,7 @@ func (diskEncoding) encodePalette(buf *bytes.Buffer, p *Palette, e paletteEncodi
 		e.encode(buf, v)
 	}
 }
+
 func (diskEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, e paletteEncoding) (*Palette, error) {
 	paletteCount := uint32(1)
 	if blockSize != 0 {
@@ -167,6 +170,7 @@ func (networkEncoding) encodePalette(buf *bytes.Buffer, p *Palette, _ paletteEnc
 		_ = protocol.WriteVarint32(buf, int32(val))
 	}
 }
+
 func (networkEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, e paletteEncoding) (*Palette, error) {
 	var paletteCount int32 = 1
 	if blockSize != 0 {

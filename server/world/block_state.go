@@ -85,7 +85,7 @@ func sort_blocks(i, j int) bool {
 
 // registerBlockStates inserts multiple blockstates
 func registerBlockStates(ss []blockState) {
-	var map_rids = map[stateHash]uint32{}
+	map_rids := map[stateHash]uint32{}
 
 	// add blocks
 	for _, s := range ss {
