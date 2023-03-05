@@ -204,7 +204,7 @@ func (networkEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, e
 			}
 			rid := uint32(temp)
 			if e.withCustomBlocks() {
-				if rid > UnknownRID {
+				if true {
 					rid -= 1
 				}
 			}
