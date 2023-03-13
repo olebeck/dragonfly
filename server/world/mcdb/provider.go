@@ -446,15 +446,19 @@ func (p *Provider) LoadEntities(pos world.ChunkPos, dim world.Dimension, reg wor
 
 // SaveEntities saves all entities to the chunk position passed.
 func (p *Provider) SaveEntities(pos world.ChunkPos, entities []world.Entity, dim world.Dimension) error {
+	digpKey := append([]byte("digp"), p.index(pos, dim)...)
 	if len(entities) == 0 {
-		return p.db.Delete(append(p.index(pos, dim), keyEntities), nil)
+		return p.db.Delete(digpKey, nil)
 	}
+	digp := make([]byte, 0, 8*len(entities))
 
-	buf := bytes.NewBuffer(nil)
-	enc := nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian)
 	for _, e := range entities {
+		buf := bytes.NewBuffer(nil)
+		enc := nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian)
+
 		t, ok := e.Type().(world.SaveableEntityType)
 		if !ok {
+			fmt.Printf("Cant Save Entity %s", e.Type().EncodeEntity())
 			continue
 		}
 		x := t.EncodeNBT(e)
@@ -462,8 +466,20 @@ func (p *Provider) SaveEntities(pos world.ChunkPos, entities []world.Entity, dim
 		if err := enc.Encode(x); err != nil {
 			return fmt.Errorf("save entities: error encoding NBT: %w", err)
 		}
+
+		uniqueIDbytes := binary.LittleEndian.AppendUint64(nil, uint64(t.UniqueID()))
+		key := append([]byte("actorprefix"), uniqueIDbytes...)
+		if err := p.db.Put(key, buf.Bytes(), nil); err != nil {
+			return fmt.Errorf("save entities: error Adding to db: %w", err)
+		}
+		digp = append(digp, uniqueIDbytes...)
 	}
-	return p.db.Put(append(p.index(pos, dim), keyEntities), buf.Bytes(), nil)
+
+	if err := p.db.Put(digpKey, digp, nil); err != nil {
+		return fmt.Errorf("save entities: error Adding to db: %w", err)
+	}
+
+	return nil
 }
 
 // LoadBlockNBT loads all block entities from the chunk position passed.
