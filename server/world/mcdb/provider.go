@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"time"
@@ -408,6 +409,32 @@ func (p *Provider) saveDifficulty(d world.Difficulty) {
 	}
 }
 
+// loadEntity loads a single entity from the map
+func (p *Provider) loadEntity(m map[string]any, pos world.ChunkPos, reg world.EntityRegistry) world.Entity {
+	id, ok := m["identifier"]
+	if !ok {
+		p.log.Errorf("load entities: failed loading %v: entity had data but no identifier (%v)", pos, m)
+		return nil
+	}
+	name, _ := id.(string)
+	t, ok := reg.Lookup(name)
+	if !ok {
+		p.log.Errorf("load entities: failed loading %v: entity %s was not registered (%v)", pos, name, m)
+		return nil
+	}
+	if s, ok := t.(world.SaveableEntityType); ok {
+		// random UniqueID if this entity doesnt have one yet
+		if _, ok := m["UniqueID"]; !ok {
+			m["UniqueID"] = rand.Int63()
+		}
+		if v := s.DecodeNBT(m); v != nil {
+			return v
+		}
+	}
+
+	return nil
+}
+
 // LoadEntities loads all entities from the chunk position passed.
 func (p *Provider) LoadEntities(pos world.ChunkPos, dim world.Dimension, reg world.EntityRegistry) ([]world.Entity, error) {
 	data, err := p.db.Get(append(p.index(pos, dim), keyEntities), nil)
@@ -422,23 +449,43 @@ func (p *Provider) LoadEntities(pos world.ChunkPos, dim world.Dimension, reg wor
 	for buf.Len() != 0 {
 		var m map[string]any
 		if err := dec.Decode(&m); err != nil {
-			return nil, fmt.Errorf("error decoding block NBT: %w", err)
+			return nil, fmt.Errorf("error decoding entity NBT: %w", err)
 		}
-		id, ok := m["identifier"]
-		if !ok {
-			p.log.Errorf("load entities: failed loading %v: entity had data but no identifier (%v)", pos, m)
-			continue
+
+		e := p.loadEntity(m, pos, reg)
+		if e != nil {
+			a = append(a, e)
 		}
-		name, _ := id.(string)
-		t, ok := reg.Lookup(name)
-		if !ok {
-			p.log.Errorf("load entities: failed loading %v: entity %s was not registered (%v)", pos, name, m)
-			continue
+	}
+
+	// load actorstorage entities
+	// https://learn.microsoft.com/en-us/minecraft/creator/documents/actorstorage
+	digp, err := p.db.Get(append([]byte("digp"), p.index(pos, dim)...), nil)
+	if err != leveldb.ErrNotFound && err != nil {
+		return nil, err
+	}
+
+	if err == leveldb.ErrNotFound {
+		return a, nil
+	}
+
+	for i := 0; i < len(digp)/8; i++ {
+		key := append([]byte("actorprefix"), digp[i*8:i*8+8]...)
+		data, err := p.db.Get(key, nil)
+		if err != leveldb.ErrNotFound && err != nil {
+			return nil, err
 		}
-		if s, ok := t.(world.SaveableEntityType); ok {
-			if v := s.DecodeNBT(m); v != nil {
-				a = append(a, v)
-			}
+		buf := bytes.NewBuffer(data)
+		dec := nbt.NewDecoderWithEncoding(buf, nbt.LittleEndian)
+
+		var m map[string]any
+		if err := dec.Decode(&m); err != nil {
+			return nil, fmt.Errorf("error decoding entity NBT: %w", err)
+		}
+
+		e := p.loadEntity(m, pos, reg)
+		if e != nil {
+			a = append(a, e)
 		}
 	}
 	return a, nil
@@ -479,6 +526,8 @@ func (p *Provider) SaveEntities(pos world.ChunkPos, entities []world.Entity, dim
 		return fmt.Errorf("save entities: error Adding to db: %w", err)
 	}
 
+	// remove old
+	p.db.Delete(append(p.index(pos, dim), keyEntities), nil)
 	return nil
 }
 
