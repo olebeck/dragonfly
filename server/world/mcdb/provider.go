@@ -502,7 +502,6 @@ func (p *Provider) SaveEntities(pos world.ChunkPos, entities []world.Entity, dim
 	for _, e := range entities {
 		buf := bytes.NewBuffer(nil)
 		enc := nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian)
-
 		t, ok := e.Type().(world.SaveableEntityType)
 		if !ok {
 			fmt.Printf("Cant Save Entity %s", e.Type().EncodeEntity())
@@ -514,9 +513,13 @@ func (p *Provider) SaveEntities(pos world.ChunkPos, entities []world.Entity, dim
 			return fmt.Errorf("save entities: error encoding NBT: %w", err)
 		}
 
-		uniqueIDbytes := binary.LittleEndian.AppendUint64(nil, uint64(t.UniqueID()))
-		key := append([]byte("actorprefix"), uniqueIDbytes...)
-		if err := p.db.Put(key, buf.Bytes(), nil); err != nil {
+		uniqueID, ok := x["UniqueID"].(int64)
+		if !ok {
+			uniqueID = rand.Int63()
+		}
+
+		uniqueIDbytes := binary.LittleEndian.AppendUint64(nil, uint64(uniqueID))
+		if err := p.db.Put(append([]byte("actorprefix"), uniqueIDbytes...), buf.Bytes(), nil); err != nil {
 			return fmt.Errorf("save entities: error Adding to db: %w", err)
 		}
 		digp = append(digp, uniqueIDbytes...)
