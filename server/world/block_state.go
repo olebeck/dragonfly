@@ -222,6 +222,8 @@ func InsertCustomBlocks(entries []protocol.BlockEntry) {
 			})
 		}
 	}
+
+	chunk.CountCustomBlocks = uint32(len(states))
 	registerBlockStates(states)
 }
 

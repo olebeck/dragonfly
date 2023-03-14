@@ -35,7 +35,8 @@ var (
 	NetworkEncoding networkEncoding
 
 	// UnknownRID is the runtime ID (IN VANILLA) of the unknown block.
-	UnknownRID uint32
+	UnknownRID        uint32
+	CountCustomBlocks uint32
 )
 
 // BiomePaletteEncoding implements the encoding of biome palettes to disk.
@@ -204,7 +205,7 @@ func (networkEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, e
 			}
 			rid := uint32(temp)
 			if e.withCustomBlocks() {
-				if true {
+				if rid > 1500 {
 					rid -= 1
 				}
 			}
