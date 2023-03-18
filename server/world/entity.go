@@ -50,8 +50,6 @@ type SaveableEntityType interface {
 	// EncodeNBT encodes the Entity of the same EntityType passed to a map of
 	// properties that can be encoded to NBT.
 	EncodeNBT(e Entity) map[string]any
-
-	UniqueID() int64
 }
 
 // TickerEntity represents an entity that has a Tick method which should be called every time the entity is
