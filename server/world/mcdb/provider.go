@@ -212,7 +212,7 @@ type playerData struct {
 
 // LoadPlayerSpawnPosition loads the players spawn position stored in the level.dat from their UUID.
 func (p *Provider) LoadPlayerSpawnPosition(id uuid.UUID) (pos cube.Pos, exists bool, err error) {
-	serverData, _, exists, err := p.loadPlayerData(id)
+	serverData, _, exists, err := p.LoadPlayerData(id)
 	if !exists || err != nil {
 		return cube.Pos{}, exists, err
 	}
@@ -223,8 +223,8 @@ func (p *Provider) LoadPlayerSpawnPosition(id uuid.UUID) (pos cube.Pos, exists b
 	return cube.Pos{int(x.(int32)), int(y.(int32)), int(z.(int32))}, true, nil
 }
 
-// loadPlayerData loads the data stored in a LevelDB database for a specific UUID.
-func (p *Provider) loadPlayerData(id uuid.UUID) (serverData map[string]interface{}, key string, exists bool, err error) {
+// LoadPlayerData loads the data stored in a LevelDB database for a specific UUID.
+func (p *Provider) LoadPlayerData(id uuid.UUID) (serverData map[string]interface{}, key string, exists bool, err error) {
 	data, err := p.db.Get([]byte("player_"+id.String()), nil)
 	if err == leveldb.ErrNotFound {
 		return nil, "", false, nil
@@ -250,6 +250,30 @@ func (p *Provider) loadPlayerData(id uuid.UUID) (serverData map[string]interface
 	return serverData, d.ServerID, true, nil
 }
 
+func (p *Provider) SavePlayerData(id uuid.UUID, SelfSignedID string, serverData map[string]any) error {
+	playerServerId := "player_server_" + id.String()
+
+	playerEntryData, _ := nbt.MarshalEncoding(&playerData{
+		UUID:         id.String(),
+		SelfSignedID: SelfSignedID,
+		ServerID:     playerServerId,
+	}, nbt.LittleEndian)
+	if err := p.db.Put([]byte("player_"+id.String()), playerEntryData, nil); err != nil {
+		return fmt.Errorf("save player: error Adding to db: %w", err)
+	}
+
+	serverDataBytes, err := nbt.MarshalEncoding(serverData, nbt.LittleEndian)
+	if err != nil {
+		return fmt.Errorf("save player: error encoding nbt: %w", err)
+	}
+
+	if err := p.db.Put([]byte(playerServerId), serverDataBytes, nil); err != nil {
+		return fmt.Errorf("save player: error Adding to db: %w", err)
+	}
+
+	return nil
+}
+
 // SavePlayerSpawnPosition saves the player spawn position passed to the levelDB database.
 func (p *Provider) SavePlayerSpawnPosition(id uuid.UUID, pos cube.Pos) error {
 	_, err := p.db.Get([]byte("player_"+id.String()), nil)
@@ -268,7 +292,7 @@ func (p *Provider) SavePlayerSpawnPosition(id uuid.UUID, pos cube.Pos) error {
 			return fmt.Errorf("error writing player data for id %v: %w", id, err)
 		}
 	} else {
-		if d, k, _, err = p.loadPlayerData(id); err != nil {
+		if d, k, _, err = p.LoadPlayerData(id); err != nil {
 			return err
 		}
 	}
@@ -626,6 +650,10 @@ var dimension_ids = map[uint8]world.Dimension{
 	10: world.Overworld_legacy,
 	11: world.Nether,
 	12: world.End,
+}
+
+func (p *Provider) DB() *leveldb.DB {
+	return p.db
 }
 
 // Chunks returns all chunk positions

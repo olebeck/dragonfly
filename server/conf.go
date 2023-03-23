@@ -138,7 +138,7 @@ func (conf Config) New() *Server {
 	if conf.MaxChunkRadius == 0 {
 		conf.MaxChunkRadius = 12
 	}
-	if len(conf.Entities.Types()) == 0 {
+	if conf.Entities == nil || len(conf.Entities.Types()) == 0 {
 		conf.Entities = entity.DefaultRegistry
 	}
 	if !conf.DisableResourceBuilding {
