@@ -117,6 +117,15 @@ func (BlockPaletteEncoding) decode(buf *bytes.Buffer, e Encoding) (uint32, error
 		entry = updatedEntry
 	}
 
+	if name == "minecraft:wool" {
+		colorName := state["color"].(string)
+		if colorName == "silver" {
+			colorName = "light_gray"
+		}
+		name = "minecraft:" + colorName + "_wool"
+		entry = blockEntry{Name: name, State: nil}
+	}
+
 	v, ok := StateToRuntimeID(entry.Name, entry.State)
 	if !ok {
 		return 0, fmt.Errorf("cannot get runtime ID of block state %v{%+v}", name, state)
