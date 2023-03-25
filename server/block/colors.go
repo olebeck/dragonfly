@@ -828,6 +828,18 @@ func (s Sponge) Color() color.RGBA {
 	return color.RGBA{193, 188, 78, 255}
 }
 
+func (s StainedGlass) Color() color.RGBA {
+	c := s.Colour.RGBA()
+	c.A = 64
+	return c
+}
+
+func (s StainedGlassPane) Color() color.RGBA {
+	c := s.Colour.RGBA()
+	c.A = 64
+	return c
+}
+
 func (h StainedTerracotta) Color() color.RGBA {
 	switch h.Colour {
 	case item.ColourWhite():
@@ -904,6 +916,10 @@ func (TNT) Color() color.RGBA {
 
 func (Tuff) Color() color.RGBA {
 	return color.RGBA{93, 93, 82, 255}
+}
+
+func (Vines) Color() color.RGBA {
+	return color.RGBA{0, 0, 0, 0}
 }
 
 func (Water) Color() color.RGBA {
