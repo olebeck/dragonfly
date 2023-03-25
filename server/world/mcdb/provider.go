@@ -275,6 +275,19 @@ func (p *Provider) SavePlayerData(id uuid.UUID, SelfSignedID string, serverData 
 	return nil
 }
 
+func (p *Provider) SaveLocalPlayerData(data map[string]any) error {
+	playerDataBytes, err := nbt.MarshalEncoding(data, nbt.LittleEndian)
+	if err != nil {
+		return fmt.Errorf("save player: error encoding nbt: %w", err)
+	}
+
+	if err := p.db.Put([]byte("~local_player"), playerDataBytes, nil); err != nil {
+		return fmt.Errorf("save player: error Adding to db: %w", err)
+	}
+
+	return nil
+}
+
 // SavePlayerSpawnPosition saves the player spawn position passed to the levelDB database.
 func (p *Provider) SavePlayerSpawnPosition(id uuid.UUID, pos cube.Pos) error {
 	_, err := p.db.Get([]byte("player_"+id.String()), nil)
