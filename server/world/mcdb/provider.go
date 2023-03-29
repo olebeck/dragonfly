@@ -22,7 +22,8 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-// Provider implements a world provider for the Minecraft world format, which is based on a leveldb database.
+// Provider implements a world provider for the Minecraft world format, which
+// is based on a leveldb database.
 type Provider struct {
 	db  *leveldb.DB
 	dir string
@@ -344,7 +345,7 @@ func (p *Provider) LoadChunk(position world.ChunkPos, dim world.Dimension) (c *c
 
 	data.Biomes, err = p.db.Get(append(key, key3DData), nil)
 	if err != nil && err != leveldb.ErrNotFound {
-		return nil, false, fmt.Errorf("error reading 3D data: %w", err)
+		return nil, true, fmt.Errorf("error reading 3D data: %w", err)
 	}
 	if len(data.Biomes) > 512 {
 		// Strip the heightmap from the biomes.
@@ -629,6 +630,17 @@ func (p *Provider) SaveBlockNBT(position world.ChunkPos, data []map[string]any, 
 	return p.db.Put(append(p.index(position, dim), keyBlockEntities), buf.Bytes(), nil)
 }
 
+// NewChunkIterator returns a ChunkIterator that may be used to iterate over all
+// position/chunk pairs in a database.
+// An IteratorRange r may be passed to specify limits in terms of what chunks
+// should be read. r may be set to nil to read all chunks from the Provider.
+func (p *Provider) NewChunkIterator(r *IteratorRange) *ChunkIterator {
+	if r == nil {
+		r = &IteratorRange{}
+	}
+	return newChunkIterator(p, r)
+}
+
 // Close closes the provider, saving any file that might need to be saved, such as the level.dat.
 func (p *Provider) Close() error {
 	p.d.LastPlayed = time.Now().Unix()
@@ -665,7 +677,8 @@ func (p *Provider) actorIndex(uniqueID int64) []byte {
 // index returns a byte buffer holding the written index of the chunk position passed. If the dimension passed to New
 // is not world.Overworld, the length of the index returned is 12. It is 8 otherwise.
 func (p *Provider) index(position world.ChunkPos, d world.Dimension) []byte {
-	x, z, dim := uint32(position[0]), uint32(position[1]), uint32(d.EncodeDimension())
+	dim, _ := world.DimensionID(d)
+	x, z := uint32(position[0]), uint32(position[1])
 	b := make([]byte, 12)
 
 	binary.LittleEndian.PutUint32(b, x)
@@ -673,13 +686,8 @@ func (p *Provider) index(position world.ChunkPos, d world.Dimension) []byte {
 	if dim == 0 {
 		return b[:8]
 	}
-	binary.LittleEndian.PutUint32(b[8:], dim)
+	binary.LittleEndian.PutUint32(b[8:], uint32(dim))
 	return b
-}
-
-type PositionAndDimension struct {
-	P world.ChunkPos
-	D world.Dimension
 }
 
 var dimension_ids = map[uint8]world.Dimension{
@@ -694,32 +702,4 @@ var dimension_ids = map[uint8]world.Dimension{
 
 func (p *Provider) DB() *leveldb.DB {
 	return p.db
-}
-
-// Chunks returns all chunk positions
-func (p *Provider) Chunks(pre117 bool) (ret map[PositionAndDimension]bool) {
-	ret = map[PositionAndDimension]bool{}
-	i := p.db.NewIterator(nil, nil)
-	for i.Next() {
-		key := i.Key()
-		x := binary.LittleEndian.Uint32(key[0:4])
-		z := binary.LittleEndian.Uint32(key[4:8])
-		dim := uint8(0)
-		if len(key) > 12 {
-			dim = uint8(key[8:9][0])
-		}
-		if pre117 {
-			dim += 10
-		}
-		key_type := key[len(key)-1]
-
-		if key_type == key3DData {
-			ret[PositionAndDimension{
-				P: world.ChunkPos{int32(x), int32(z)},
-				D: dimension_ids[dim],
-			}] = true
-		}
-	}
-	i.Release()
-	return ret
 }

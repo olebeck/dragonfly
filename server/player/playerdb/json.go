@@ -9,7 +9,8 @@ import (
 	"time"
 )
 
-func (p *Provider) fromJson(d jsonData, world func(world.Dimension) *world.World) player.Data {
+func (p *Provider) fromJson(d jsonData, lookupWorld func(world.Dimension) *world.World) player.Data {
+	dim, _ := world.DimensionByID(int(d.Dimension))
 	data := player.Data{
 		UUID:                uuid.MustParse(d.UUID),
 		Username:            d.Username,
@@ -34,13 +35,14 @@ func (p *Provider) fromJson(d jsonData, world func(world.Dimension) *world.World
 		FallDistance:        d.FallDistance,
 		Inventory:           dataToInv(d.Inventory),
 		EnderChestInventory: make([]item.Stack, 27),
-		World:               world(idToDimension(d.Dimension)),
+		World:               lookupWorld(dim),
 	}
 	decodeItems(d.EnderChestInventory, data.EnderChestInventory)
 	return data
 }
 
 func (p *Provider) toJson(d player.Data) jsonData {
+	dim, _ := world.DimensionID(d.World.Dimension())
 	return jsonData{
 		UUID:                d.UUID.String(),
 		Username:            d.Username,
@@ -65,7 +67,7 @@ func (p *Provider) toJson(d player.Data) jsonData {
 		FallDistance:        d.FallDistance,
 		Inventory:           invToData(d.Inventory),
 		EnderChestInventory: encodeItems(d.EnderChestInventory),
-		Dimension:           uint8(d.World.Dimension().EncodeDimension()),
+		Dimension:           uint8(dim),
 	}
 }
 
