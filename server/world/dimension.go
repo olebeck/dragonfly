@@ -52,6 +52,11 @@ type dimensionRegistry struct {
 func newDimensionRegistry(dim map[int]Dimension) *dimensionRegistry {
 	ids := make(map[Dimension]int, len(dim))
 	for k, v := range dim {
+		if o, ok := v.(overworld); ok {
+			if o.legacy {
+				k -= 10
+			}
+		}
 		ids[v] = k
 	}
 	return &dimensionRegistry{dimensions: dim, IDs: ids}
