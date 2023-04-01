@@ -16,8 +16,6 @@ var (
 	FilteringBlocks = make([]uint8, 0, 7000)
 	// WaterBlocks is a list of water blocks
 	WaterBlocks = make([]uint32, 255)
-
-	FirstWater, LastWater uint32
 )
 
 type (

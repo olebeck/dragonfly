@@ -122,8 +122,6 @@ func registerBlockStates(ss []blockState) {
 	}
 }
 
-var previousWater = false
-
 // registerBlockState registers a new blockState to the states slice. The function panics if the properties the
 // blockState hold are invalid or if the blockState was already registered.
 func registerBlockState(s blockState, order bool) {
@@ -156,16 +154,8 @@ func registerBlockState(s blockState, order bool) {
 	stateRuntimeIDs[h] = rid
 
 	isWater := s.Name == "minecraft:water"
-	if previousWater && !isWater {
-		chunk.LastWater = rid - 1
-		previousWater = false
-	}
 	if isWater {
-		if chunk.FirstWater == 0 {
-			chunk.FirstWater = rid
-		}
 		chunk.WaterBlocks = append(chunk.WaterBlocks, rid)
-		previousWater = true
 	}
 
 	nbtBlocks = slices.Insert(nbtBlocks, int(rid), false)

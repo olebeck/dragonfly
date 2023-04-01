@@ -7,6 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
+	"golang.org/x/exp/slices"
 )
 
 // Chunk is a segment in the world with a size of 16x16x256 blocks. A chunk contains multiple sub chunks
@@ -197,7 +198,8 @@ func (chunk *Chunk) HighestBlockLayer(x, z, layer uint8, noWater bool) int16 {
 					if rid == chunk.air {
 						continue
 					}
-					if noWater && rid > FirstWater && rid <= LastWater {
+					isWater := slices.Contains(WaterBlocks, rid)
+					if noWater && isWater {
 						continue
 					}
 					return int16(y) | chunk.SubY(index)
