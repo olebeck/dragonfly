@@ -6,7 +6,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/df-mc/goleveldb/leveldb/iterator"
-	"golang.org/x/exp/maps"
 )
 
 // ChunkIterator iterates over a Provider's position/chunk pairs in key order.
@@ -109,7 +108,6 @@ func (iter *ChunkIterator) Dimension() world.Dimension {
 // and can be called multiple times without causing error.
 func (iter *ChunkIterator) Release() {
 	iter.dbIter.Release()
-	maps.Clear(iter.seen)
 }
 
 // Error returns any accumulated error. Exhausting all the key/value pairs
