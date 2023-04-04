@@ -9,15 +9,16 @@ type description struct {
 	IsExperimental         bool           `json:"is_experimental"`
 	RegisterToCreativeMenu bool           `json:"register_to_creative_menu"`
 	Properties             map[string]any `json:"properties,omitempty"`
+	MenuCategory           menuCategory   `json:"menu_category,omitempty"`
 }
 
-type menu_category struct {
+type menuCategory struct {
 	Category string `json:"category"`
 	Group    string `json:"group"`
 }
 
-func menu_category_from_map(in map[string]any) menu_category {
-	return menu_category{
+func menu_category_from_map(in map[string]any) menuCategory {
+	return menuCategory{
 		Category: in["category"].(string),
 		Group:    in["group"].(string),
 	}
@@ -38,7 +39,6 @@ func permutation_from_map(in map[string]any) permutation {
 type MinecraftBlock struct {
 	Description  description    `json:"description"`
 	Components   map[string]any `json:"components,omitempty"`
-	MenuCategory menu_category  `json:"menu_category,omitempty"`
 	Permutations []permutation  `json:"permutations,omitempty"`
 }
 
@@ -86,7 +86,7 @@ func ParseBlock(block protocol.BlockEntry) MinecraftBlock {
 	}
 
 	if menu, ok := block.Properties["menu_category"].(map[string]any); ok {
-		entry.MenuCategory = menu_category_from_map(menu)
+		entry.Description.MenuCategory = menu_category_from_map(menu)
 	}
 	if props, ok := block.Properties["properties"].([]any); ok {
 		entry.Description.Properties = make(map[string]any)
