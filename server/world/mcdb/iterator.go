@@ -3,6 +3,7 @@ package mcdb
 import (
 	"encoding/binary"
 	"fmt"
+
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/df-mc/goleveldb/leveldb/iterator"
@@ -39,6 +40,7 @@ type iterKey struct {
 
 func newChunkIterator(db *DB, r *IteratorRange) *ChunkIterator {
 	return &ChunkIterator{
+		db:     db,
 		dbIter: db.ldb.NewIterator(nil, nil),
 		seen:   make(map[iterKey]struct{}),
 		r:      r,
