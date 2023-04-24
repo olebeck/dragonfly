@@ -37,7 +37,7 @@ jobs:
           ./bin/staticcheck ./...
 
   deploy:
-    if: ${{ github.repository_owner }} == "df-mc"
+    if: github.repository_owner == 'df-mc'
     name: Deploy
     needs: build
     runs-on: ubuntu-latest
