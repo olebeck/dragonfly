@@ -423,7 +423,7 @@ func (db *DB) actorIndex(uniqueID int64) []byte {
 	return binary.LittleEndian.AppendUint64([]byte("actorprefix"), uint64(uniqueID))
 }
 
-// index returns a byte buffer holding the written index of the chunk position passed. If the dimension passed to New
+// index returns a byte buffer holding the written index of the chunk position passed. If the dimension passed
 // is not world.Overworld, the length of the index returned is 12. It is 8 otherwise.
 func (db *DB) index(position world.ChunkPos, d world.Dimension) []byte {
 	dim, _ := world.DimensionID(d)

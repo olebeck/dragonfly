@@ -52,13 +52,15 @@ func (s *StationaryBehaviour) Tick(e *Ent) *Movement {
 			e.World().PlaySound(e.Position(), ss)
 		}
 	}
-	s.conf.Tick(e)
+	if s.conf.Tick != nil {
+		s.conf.Tick(e)
+	}
 
 	s.age += time.Second / 20
 	if s.age > s.conf.ExistenceDuration {
 		s.close = true
 	}
-	// Stationary entities never mode. Always return nil here.
+	// Stationary entities never move. Always return nil here.
 	return nil
 }
 

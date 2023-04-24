@@ -119,21 +119,22 @@ func (s *Session) ViewEntity(e world.Entity) {
 			}}})
 		}
 		return
-	case *entity.Item:
-		s.writePacket(&packet.AddItemActor{
-			EntityUniqueID:  int64(runtimeID),
-			EntityRuntimeID: runtimeID,
-			Item:            instanceFromItem(v.Item()),
-			Position:        vec64To32(v.Position()),
-			Velocity:        vec64To32(v.Velocity()),
-			EntityMetadata:  metadata,
-		})
-		return
-	case *entity.FallingBlock:
-		metadata[protocol.EntityDataKeyVariant] = int32(world.BlockRuntimeID(v.Block()))
 	case *entity.Ent:
-		if _, ok := e.Type().(entity.TextType); ok {
+		switch e.Type().(type) {
+		case entity.ItemType:
+			s.writePacket(&packet.AddItemActor{
+				EntityUniqueID:  int64(runtimeID),
+				EntityRuntimeID: runtimeID,
+				Item:            instanceFromItem(v.Behaviour().(*entity.ItemBehaviour).Item()),
+				Position:        vec64To32(v.Position()),
+				Velocity:        vec64To32(v.Velocity()),
+				EntityMetadata:  metadata,
+			})
+			return
+		case entity.TextType:
 			metadata[protocol.EntityDataKeyVariant] = int32(world.BlockRuntimeID(block.Air{}))
+		case entity.FallingBlockType:
+			metadata[protocol.EntityDataKeyVariant] = int32(world.BlockRuntimeID(v.Behaviour().(*entity.FallingBlockBehaviour).Block()))
 		}
 	}
 	if v, ok := e.Type().(NetworkEncodeableEntity); ok {
