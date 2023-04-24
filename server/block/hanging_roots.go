@@ -25,10 +25,7 @@ func (h HangingRoots) BreakInfo() BreakInfo {
 
 func (h HangingRoots) canSurvive(pos cube.Pos, w *world.World) bool {
 	above := pos.Side(cube.FaceUp)
-	if !w.Block(above).Model().FaceSolid(above, cube.FaceDown, w) {
-		return false
-	}
-	return true
+	return w.Block(above).Model().FaceSolid(above, cube.FaceDown, w)
 }
 
 // NeighbourUpdateTick ...
