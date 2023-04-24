@@ -37,6 +37,9 @@ jobs:
           ./bin/staticcheck ./...
 
   deploy:
+    env:
+      VPS_HOST: ${{ secrets.VPS_HOST }}
+    if: ${{ env.VPS_HOST }}
     name: Deploy
     needs: build
     runs-on: ubuntu-latest
