@@ -29,13 +29,13 @@ type DB struct {
 	set  *world.Settings
 }
 
-// New creates a new provider reading and writing from/to files under the path
+// Open creates a new provider reading and writing from/to files under the path
 // passed using default options. If a world is present at the path, New will
 // parse its data and initialise the world with it. If the data cannot be
 // parsed, an error is returned.
-func New(dir string) (*DB, error) {
+func Open(dir string) (*DB, error) {
 	var conf Config
-	return conf.New(dir)
+	return conf.Open(dir)
 }
 
 func (db *DB) LevelDat() *data {

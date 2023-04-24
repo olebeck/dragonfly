@@ -2,12 +2,13 @@ package mcdb
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/df-mc/goleveldb/leveldb"
 	"github.com/df-mc/goleveldb/leveldb/opt"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sirupsen/logrus"
-	"os"
-	"path/filepath"
 )
 
 // Logger is a logger implementation that may be passed to the Log field of Config. World will send errors and debug
@@ -32,13 +33,16 @@ type Config struct {
 	// lead to better compression ratios at the expense of slightly higher
 	// memory usage while (de)compressing.
 	BlockSize int
+	// ReadOnly opens the DB in read-only mode. This will leave the data in the
+	// database unedited.
+	ReadOnly bool
 }
 
-// New creates a new DB reading and writing from/to files under the path
-// passed. If a world is present at the path, New will parse its data and
+// Open creates a new DB reading and writing from/to files under the path
+// passed. If a world is present at the path, Open will parse its data and
 // initialise the world with it. If the data cannot be parsed, an error is
 // returned.
-func (conf Config) New(dir string) (*DB, error) {
+func (conf Config) Open(dir string) (*DB, error) {
 	if conf.Log == nil {
 		conf.Log = logrus.New()
 	}
@@ -69,6 +73,7 @@ func (conf Config) New(dir string) (*DB, error) {
 	ldb, err := leveldb.OpenFile(filepath.Join(dir, "db"), &opt.Options{
 		Compression: conf.Compression,
 		BlockSize:   conf.BlockSize,
+		ReadOnly:    conf.ReadOnly,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("error opening leveldb database: %w", err)

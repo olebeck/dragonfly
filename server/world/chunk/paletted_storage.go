@@ -66,7 +66,7 @@ func (storage *PalettedStorage) Palette() *Palette {
 
 // At returns the value of the PalettedStorage at a given x, y and z.
 func (storage *PalettedStorage) At(x, y, z byte) uint32 {
-	return storage.palette.Value(storage.paletteIndex(uint16(x&15), uint16(y&15), uint16(z&15)))
+	return storage.palette.Value(storage.paletteIndex(x&15, y&15, z&15))
 }
 
 // Set sets a value at a specific x, y and z. The Palette and PalettedStorage are expanded
@@ -78,7 +78,7 @@ func (storage *PalettedStorage) Set(x, y, z byte, v uint32) {
 		// needs to be resized for the palette pointers to fit.
 		index = storage.addNew(v)
 	}
-	storage.setPaletteIndex(uint16(x&15), uint16(y&15), uint16(z&15), uint16(index))
+	storage.setPaletteIndex(x&15, y&15, z&15, uint16(index))
 }
 
 // addNew adds a new value to the PalettedStorage's Palette and returns its index. If needed, the storage is resized.
@@ -92,7 +92,7 @@ func (storage *PalettedStorage) addNew(v uint32) int16 {
 
 // paletteIndex looks up the Palette index at a given x, y and z value in the PalettedStorage. This palette
 // index is not the value at this offset, but merely an index in the Palette pointing to a value.
-func (storage *PalettedStorage) paletteIndex(x, y, z uint16) uint16 {
+func (storage *PalettedStorage) paletteIndex(x, y, z byte) uint16 {
 	if storage.bitsPerIndex == 0 {
 		// Unfortunately our default logic cannot deal with 0 bits per index, meaning we'll have to special case
 		// this. This comes with a little performance hit, but it seems to be the only way to go. An alternative would
@@ -100,11 +100,8 @@ func (storage *PalettedStorage) paletteIndex(x, y, z uint16) uint16 {
 		// by biomes.
 		return 0
 	}
-	x <<= 8
-	z <<= 4
-	offset := (x | z | y) * storage.bitsPerIndex
-	uint32Offset := offset / storage.filledBitsPerIndex
-	bitOffset := offset % storage.filledBitsPerIndex
+	offset := ((uint16(x) << 8) | (uint16(z) << 4) | uint16(y)) * storage.bitsPerIndex
+	uint32Offset, bitOffset := offset/storage.filledBitsPerIndex, offset%storage.filledBitsPerIndex
 
 	w := *(*uint32)(unsafe.Pointer(uintptr(storage.indicesStart) + uintptr(uint32Offset<<2)))
 	return uint16((w >> bitOffset) & storage.indexMask)
@@ -112,15 +109,12 @@ func (storage *PalettedStorage) paletteIndex(x, y, z uint16) uint16 {
 
 // setPaletteIndex sets the palette index at a given x, y and z to paletteIndex. This index should point
 // to a value in the PalettedStorage's Palette.
-func (storage *PalettedStorage) setPaletteIndex(x, y, z uint16, i uint16) {
+func (storage *PalettedStorage) setPaletteIndex(x, y, z byte, i uint16) {
 	if storage.bitsPerIndex == 0 {
 		return
 	}
-	x <<= 8
-	z <<= 4
-	offset := (x | z | y) * storage.bitsPerIndex
-	uint32Offset := offset / storage.filledBitsPerIndex
-	bitOffset := offset % storage.filledBitsPerIndex
+	offset := ((uint16(x) << 8) | (uint16(z) << 4) | uint16(y)) * storage.bitsPerIndex
+	uint32Offset, bitOffset := offset/storage.filledBitsPerIndex, offset%storage.filledBitsPerIndex
 
 	ptr := (*uint32)(unsafe.Pointer(uintptr(storage.indicesStart) + uintptr(uint32Offset<<2)))
 	*ptr = (*ptr &^ (storage.indexMask << bitOffset)) | (uint32(i) << bitOffset)
@@ -136,9 +130,9 @@ func (storage *PalettedStorage) resize(newPaletteSize paletteSize) {
 	// Construct a new storage and set all values in there manually. We can't easily do this in a better
 	// way, because all values will be at a different index with a different length.
 	newStorage := newPalettedStorage(make([]uint32, newPaletteSize.uint32s()), storage.palette)
-	for x := uint16(0); x < 16; x++ {
-		for y := uint16(0); y < 16; y++ {
-			for z := uint16(0); z < 16; z++ {
+	for x := byte(0); x < 16; x++ {
+		for y := byte(0); y < 16; y++ {
+			for z := byte(0); z < 16; z++ {
 				newStorage.setPaletteIndex(x, y, z, storage.paletteIndex(x, y, z))
 			}
 		}
@@ -152,9 +146,9 @@ func (storage *PalettedStorage) resize(newPaletteSize paletteSize) {
 // saved to disk. compact also shrinks the palette size if possible.
 func (storage *PalettedStorage) compact() {
 	usedIndices := make([]bool, storage.palette.Len())
-	for x := uint16(0); x < 16; x++ {
-		for y := uint16(0); y < 16; y++ {
-			for z := uint16(0); z < 16; z++ {
+	for x := byte(0); x < 16; x++ {
+		for y := byte(0); y < 16; y++ {
+			for z := byte(0); z < 16; z++ {
 				usedIndices[storage.paletteIndex(x, y, z)] = true
 			}
 		}
@@ -173,9 +167,9 @@ func (storage *PalettedStorage) compact() {
 	size := paletteSizeFor(len(newRuntimeIDs))
 	newStorage := newPalettedStorage(make([]uint32, size.uint32s()), newPalette(size, newRuntimeIDs))
 
-	for x := uint16(0); x < 16; x++ {
-		for y := uint16(0); y < 16; y++ {
-			for z := uint16(0); z < 16; z++ {
+	for x := byte(0); x < 16; x++ {
+		for y := byte(0); y < 16; y++ {
+			for z := byte(0); z < 16; z++ {
 				// Replace all usages of the old palette indexes with the new indexes using the map we
 				// produced earlier.
 				newStorage.setPaletteIndex(x, y, z, conversion[storage.paletteIndex(x, y, z)])

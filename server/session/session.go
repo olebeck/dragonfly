@@ -474,10 +474,6 @@ func (s *Session) registerHandlers() {
 	}
 }
 
-func (s *Session) SetHandler(id uint32, handler packetHandler) {
-	s.handlers[id] = handler
-}
-
 // handleInterfaceUpdate handles an update to the UI inventory, used for updating enchantment options and possibly more
 // in the future.
 func (s *Session) handleInterfaceUpdate(slot int, _, item item.Stack) {
