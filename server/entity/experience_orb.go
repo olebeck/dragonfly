@@ -51,6 +51,9 @@ func (ExperienceOrbType) DecodeNBT(m map[string]any) world.Entity {
 	o := NewExperienceOrb(nbtconv.Vec3(m, "Pos"), int(nbtconv.Int32(m, "Value")))
 	o.vel = nbtconv.Vec3(m, "Motion")
 	o.age = time.Duration(nbtconv.Int16(m, "Age")) * (time.Second / 20)
+	if uniqueID, ok := m["UniqueID"].(int64); ok {
+		o.uniqueID = uniqueID
+	}
 	return o
 }
 

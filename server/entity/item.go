@@ -50,6 +50,9 @@ func (ItemType) DecodeNBT(m map[string]any) world.Entity {
 	n.SetVelocity(nbtconv.Vec3(m, "Motion"))
 	n.age = time.Duration(nbtconv.Int16(m, "Age")) * (time.Second / 20)
 	n.Behaviour().(*ItemBehaviour).pickupDelay = time.Duration(nbtconv.Int64(m, "PickupDelay")) * (time.Second / 20)
+	if uniqueID, ok := m["UniqueID"].(int64); ok {
+		n.uniqueID = uniqueID
+	}
 	return n
 }
 

@@ -36,6 +36,9 @@ func (FallingBlockType) DecodeNBT(m map[string]any) world.Entity {
 	n := NewFallingBlock(b, nbtconv.Vec3(m, "Pos"))
 	n.SetVelocity(nbtconv.Vec3(m, "Motion"))
 	n.Behaviour().(*FallingBlockBehaviour).passive.fallDistance = nbtconv.Float64(m, "FallDistance")
+	if uniqueID, ok := m["UniqueID"].(int64); ok {
+		n.uniqueID = uniqueID
+	}
 	return n
 }
 

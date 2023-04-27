@@ -52,7 +52,7 @@ func (AreaEffectCloudType) BBox(e world.Entity) cube.BBox {
 }
 
 func (AreaEffectCloudType) DecodeNBT(m map[string]any) world.Entity {
-	return NewAreaEffectCloudWith(
+	e := NewAreaEffectCloudWith(
 		nbtconv.Vec3(m, "Pos"),
 		potion.From(nbtconv.Int32(m, "PotionId")),
 		nbtconv.TickDuration[int32](m, "Duration"),
@@ -62,6 +62,10 @@ func (AreaEffectCloudType) DecodeNBT(m map[string]any) world.Entity {
 		float64(nbtconv.Float32(m, "RadiusOnUse")),
 		float64(nbtconv.Float32(m, "RadiusPerTick")),
 	)
+	if uniqueID, ok := m["UniqueID"].(int64); ok {
+		e.uniqueID = uniqueID
+	}
+	return e
 }
 
 func (AreaEffectCloudType) EncodeNBT(e world.Entity) map[string]any {
