@@ -55,7 +55,7 @@ func (conf Config) Open(dir string) (*DB, error) {
 	if conf.BlockSize == 0 {
 		conf.BlockSize = 16 * opt.KiB
 	}
-	if len(conf.Entities.Types()) == 0 {
+	if conf.Entities == nil || len(conf.Entities.Types()) == 0 {
 		conf.Entities = entity.DefaultRegistry
 	}
 	_ = os.MkdirAll(filepath.Join(dir, "db"), 0777)
