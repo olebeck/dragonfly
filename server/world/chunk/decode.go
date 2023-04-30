@@ -62,15 +62,14 @@ func NetworkDecode(air uint32, data []byte, count int, r cube.Range, pre118 bool
 		}
 	}
 
-	if buf.Len() > 0 {
+	for buf.Len() > 0 {
 		b, _ := buf.ReadByte()
 		if b != 0x00 {
 			buf.UnreadByte()
 		}
 
 		t, _ := buf.ReadByte()
-		if t == 0x00 { // tag End = empty nbt
-		} else {
+		if t != 0x00 { // tag End = empty nbt
 			buf.UnreadByte()
 			dec := nbt.NewDecoderWithEncoding(buf, nbt.NetworkLittleEndian)
 			blockNBT := make(map[string]any, 0)

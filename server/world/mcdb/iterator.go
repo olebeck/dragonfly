@@ -30,14 +30,16 @@ type ColumnIterator struct {
 	pos     world.ChunkPos
 	dim     world.Dimension
 	seen    map[dbKey]struct{}
+	legacy  bool
 }
 
-func newColumnIterator(db *DB, r *IteratorRange) *ColumnIterator {
+func newColumnIterator(db *DB, r *IteratorRange, legacy bool) *ColumnIterator {
 	return &ColumnIterator{
 		db:     db,
 		dbIter: db.ldb.NewIterator(nil, nil),
 		seen:   make(map[dbKey]struct{}),
 		r:      r,
+		legacy: legacy,
 	}
 }
 
@@ -75,17 +77,17 @@ func (iter *ColumnIterator) Next() bool {
 		// multiple version keys.
 		return iter.Next()
 	}
-	iter.current, iter.err = iter.db.LoadColumn(iter.pos, iter.dim)
-	if iter.err != nil {
-		iter.err = fmt.Errorf("load chunk %v: %w", iter.pos, iter.err)
-		return false
-	}
 	iter.seen[key] = struct{}{}
 	return true
 }
 
 // Column returns the value of the current position/column pair, or nil if none.
 func (iter *ColumnIterator) Column() *world.Column {
+	iter.current, iter.err = iter.db.LoadColumn(iter.pos, iter.dim)
+	if iter.err != nil {
+		iter.err = fmt.Errorf("load chunk %v: %w", iter.pos, iter.err)
+		return nil
+	}
 	return iter.current
 }
 

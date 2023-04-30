@@ -381,7 +381,10 @@ func (db *DB) StoreColumn(pos world.ChunkPos, dim world.Dimension, col *world.Co
 
 func (db *DB) storeColumn(k dbKey, col *world.Column) error {
 	data := chunk.Encode(col.Chunk, chunk.DiskEncoding)
-	n := 5 + len(data.SubChunks)
+	n := 5 + len(data.SubChunks) + len(col.Entities)
+	if len(col.Entities) > 0 {
+		n += 1
+	}
 	batch := leveldb.MakeBatch(n)
 
 	db.storeVersion(batch, k, chunkVersion)
@@ -504,11 +507,11 @@ func (db *DB) storeBlockEntities(batch *leveldb.Batch, k dbKey, blockEntities ma
 // position/chunk pairs in a database.
 // An IteratorRange r may be passed to specify limits in terms of what chunks
 // should be read. r may be set to nil to read all chunks from the DB.
-func (db *DB) NewColumnIterator(r *IteratorRange) *ColumnIterator {
+func (db *DB) NewColumnIterator(r *IteratorRange, legacy bool) *ColumnIterator {
 	if r == nil {
 		r = &IteratorRange{}
 	}
-	return newColumnIterator(db, r)
+	return newColumnIterator(db, r, legacy)
 }
 
 // Close closes the provider, saving any file that might need to be saved, such as the level.dat.
