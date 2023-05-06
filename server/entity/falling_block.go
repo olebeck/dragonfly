@@ -1,8 +1,6 @@
 package entity
 
 import (
-	"math/rand"
-
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/world"
@@ -46,7 +44,7 @@ func (FallingBlockType) EncodeNBT(e world.Entity) map[string]any {
 	f := e.(*Ent)
 	b := f.Behaviour().(*FallingBlockBehaviour)
 	return map[string]any{
-		"UniqueID":     -rand.Int63(),
+		"UniqueID":     f.uniqueID,
 		"FallDistance": b.passive.fallDistance,
 		"Pos":          nbtconv.Vec3ToFloat32Slice(f.Position()),
 		"Motion":       nbtconv.Vec3ToFloat32Slice(f.Velocity()),

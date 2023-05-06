@@ -56,8 +56,9 @@ func (TNTType) DecodeNBT(m map[string]any) world.Entity {
 func (TNTType) EncodeNBT(e world.Entity) map[string]any {
 	t := e.(*Ent)
 	return map[string]any{
-		"Pos":    nbtconv.Vec3ToFloat32Slice(t.Position()),
-		"Motion": nbtconv.Vec3ToFloat32Slice(t.Velocity()),
-		"Fuse":   uint8(t.Behaviour().(*PassiveBehaviour).Fuse().Milliseconds() / 50),
+		"UniqueID": t.uniqueID,
+		"Pos":      nbtconv.Vec3ToFloat32Slice(t.Position()),
+		"Motion":   nbtconv.Vec3ToFloat32Slice(t.Velocity()),
+		"Fuse":     uint8(t.Behaviour().(*PassiveBehaviour).Fuse().Milliseconds() / 50),
 	}
 }
