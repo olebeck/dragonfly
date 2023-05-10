@@ -68,7 +68,7 @@ func EncodeSubChunk(c *Chunk, e Encoding, ind int) []byte {
 	s := c.sub[ind]
 	_, _ = buf.Write([]byte{SubChunkVersion, byte(len(s.storages)), uint8(ind + (c.r[0] >> 4))})
 	for _, storage := range s.storages {
-		encodePalettedStorage(buf, storage, e, BlockPaletteEncoding{})
+		encodePalettedStorage(buf, storage, e, BlockPaletteEncoding)
 	}
 	sub := make([]byte, buf.Len())
 	_, _ = buf.Read(sub)
@@ -85,7 +85,7 @@ func EncodeBiomes(c *Chunk, e Encoding) []byte {
 	}()
 
 	for _, b := range c.biomes {
-		encodePalettedStorage(buf, b, e, BiomePaletteEncoding{})
+		encodePalettedStorage(buf, b, e, BiomePaletteEncoding)
 	}
 	biomes := make([]byte, buf.Len())
 	_, _ = buf.Read(biomes)

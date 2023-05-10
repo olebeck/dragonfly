@@ -32,12 +32,10 @@ type Chunk struct {
 	sub []*SubChunk
 	// biomes is an array of biome IDs. There is one biome ID for every column in the chunk.
 	biomes []*PalettedStorage
-	// hasCustom if this chunk is in a world with custom blocks
-	hasCustom bool
 }
 
 // New initialises a new chunk and returns it, so that it may be used.
-func New(air uint32, r cube.Range, hasCustom bool) *Chunk {
+func New(air uint32, r cube.Range) *Chunk {
 	n := (r.Height() >> 4) + 1
 	sub, biomes := make([]*SubChunk, n), make([]*PalettedStorage, n)
 	for i := 0; i < n; i++ {
@@ -53,7 +51,6 @@ func New(air uint32, r cube.Range, hasCustom bool) *Chunk {
 		recalculateHeightMapLiquid: true,
 		heightMap:                  make(HeightMap, 256),
 		heightMapLiquid:            make(HeightMap, 256),
-		hasCustom:                  hasCustom,
 	}
 }
 

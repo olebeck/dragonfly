@@ -15,45 +15,48 @@ var StateToRuntimeID func(name string, properties map[string]any) (runtimeID uin
 // returned is nil and the error non-nil.
 // The sub chunk count passed must be that found in the LevelChunk packet.
 // noinspection GoUnusedExportedFunction
-func NetworkDecode(air uint32, data []byte, count int, r cube.Range, pre118 bool, hasCustom bool) (c *Chunk, blockNBTs []map[string]any, err error) {
-
-	c = New(air, r, hasCustom)
-	var buf = bytes.NewBuffer(data)
+func NetworkDecode(air uint32, data []byte, count int, oldBiomes bool, r cube.Range) (c *Chunk, blockNBTs []map[string]any, err error) {
+	c = New(air, r)
+	buf := bytes.NewBuffer(data)
 	for i := 0; i < count; i++ {
 		index := uint8(i)
-		sub, err := decodeSubChunk(buf, c, &index, NetworkEncoding)
+		c.sub[index], err = decodeSubChunk(buf, c, &index, NetworkEncoding)
 		if err != nil {
 			return nil, nil, err
 		}
-
-		c.sub[index] = sub
 	}
-
-	if pre118 { // uses legacy biome data encoding
-		biome := buf.Next(256)
-		biome_uints := make([]uint32, 256)
-		for i := range biome_uints {
-			biome_uints[i] = uint32(biome[i])
+	if oldBiomes {
+		// Read the old biomes.
+		biomes := make([]byte, 256)
+		if _, err := buf.Read(biomes[:]); err != nil {
+			return nil, nil, fmt.Errorf("error reading biomes: %w", err)
 		}
-		size := paletteSizeFor(256)
-		biome_palette := newPalettedStorage(make([]uint32, size.uint32s()), newPalette(size, biome_uints))
-		for i := range c.biomes {
-			c.biomes[i] = biome_palette
+
+		// Make our 2D biomes 3D.
+		for x := 0; x < 16; x++ {
+			for z := 0; z < 16; z++ {
+				id := biomes[(x&15)|(z&15)<<4]
+				for y := r.Min(); y <= r.Max(); y++ {
+					c.SetBiome(uint8(x), int16(y), uint8(z), uint32(id))
+				}
+			}
 		}
 	} else {
 		var last *PalettedStorage
 		for i := 0; i < len(c.sub); i++ {
-			b, err := decodePalettedStorage(buf, NetworkEncoding, BiomePaletteEncoding{})
+			b, err := decodePalettedStorage(buf, NetworkEncoding, BiomePaletteEncoding)
 			if err != nil {
 				return nil, nil, err
 			}
+			// b == nil means this paletted storage had the flag pointing to the previous one. It basically means we should
+			// inherit whatever palette we decoded last.
+			if i == 0 && b == nil {
+				// This should never happen and there is no way to handle this.
+				return nil, nil, fmt.Errorf("first biome storage pointed to previous one")
+			}
 			if b == nil {
-				// b == nil means this paletted storage had the flag pointing to the previous one. It basically means we should
+				// This means this paletted storage had the flag pointing to the previous one. It basically means we should
 				// inherit whatever palette we decoded last.
-				if i == 0 {
-					// This should never happen and there is no way to handle this.
-					return nil, nil, fmt.Errorf("first biome storage pointed to previous one")
-				}
 				b = last
 			} else {
 				last = b
@@ -92,7 +95,7 @@ func DiskDecode(data SerialisedData, r cube.Range) (*Chunk, error) {
 		panic("cannot find air runtime ID")
 	}
 
-	c := New(air, r, false)
+	c := New(air, r)
 
 	err := decodeBiomes(bytes.NewBuffer(data.Biomes), c, DiskEncoding)
 	if err != nil {
@@ -124,7 +127,7 @@ func decodeSubChunk(buf *bytes.Buffer, c *Chunk, index *byte, e Encoding) (*SubC
 		return nil, fmt.Errorf("unknown sub chunk version %v: can't decode", ver)
 	case 1:
 		// Version 1 only has one layer for each sub chunk, but uses the format with palettes.
-		storage, err := decodePalettedStorage(buf, e, BlockPaletteEncoding{})
+		storage, err := decodePalettedStorage(buf, e, BlockPaletteEncoding)
 		if err != nil {
 			return nil, err
 		}
@@ -147,7 +150,7 @@ func decodeSubChunk(buf *bytes.Buffer, c *Chunk, index *byte, e Encoding) (*SubC
 		sub.storages = make([]*PalettedStorage, storageCount)
 
 		for i := byte(0); i < storageCount; i++ {
-			sub.storages[i], err = decodePalettedStorage(buf, e, BlockPaletteEncoding{HasCustom: c.hasCustom})
+			sub.storages[i], err = decodePalettedStorage(buf, e, BlockPaletteEncoding)
 			if err != nil {
 				return nil, err
 			}
@@ -161,7 +164,7 @@ func decodeBiomes(buf *bytes.Buffer, c *Chunk, e Encoding) error {
 	var last *PalettedStorage
 	if buf.Len() != 0 {
 		for i := 0; i < len(c.sub); i++ {
-			b, err := decodePalettedStorage(buf, e, BiomePaletteEncoding{})
+			b, err := decodePalettedStorage(buf, e, BiomePaletteEncoding)
 			if err != nil {
 				return err
 			}
@@ -191,6 +194,10 @@ func decodePalettedStorage(buf *bytes.Buffer, e Encoding, pe paletteEncoding) (*
 	if err != nil {
 		return nil, fmt.Errorf("error reading block size: %w", err)
 	}
+	if e == NetworkEncoding && blockSize&1 != 1 {
+		e = NetworkPersistentEncoding
+	}
+
 	blockSize >>= 1
 	if blockSize == 0x7f {
 		return nil, nil

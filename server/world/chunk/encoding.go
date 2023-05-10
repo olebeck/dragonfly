@@ -24,7 +24,6 @@ type (
 	paletteEncoding interface {
 		encode(buf *bytes.Buffer, v uint32)
 		decode(buf *bytes.Buffer, e Encoding) (uint32, error)
-		withCustomBlocks() bool
 	}
 )
 
@@ -34,45 +33,37 @@ var (
 	DiskEncoding diskEncoding
 	// NetworkEncoding is the Encoding used for sending a Chunk over network. It does not use NBT and writes varints.
 	NetworkEncoding networkEncoding
-
-	// UnknownRID is the runtime ID (IN VANILLA) of the unknown block.
-	UnknownRID        uint32
-	CountCustomBlocks uint32
+	// NetworkPersistentEncoding is the Encoding used for sending a Chunk over network. It uses NBT, unlike NetworkEncoding.
+	NetworkPersistentEncoding networkPersistentEncoding
+	// BiomePaletteEncoding is the paletteEncoding used for encoding a palette of biomes.
+	BiomePaletteEncoding biomePaletteEncoding
+	// BlockPaletteEncoding is the paletteEncoding used for encoding a palette of block states encoded as NBT.
+	BlockPaletteEncoding blockPaletteEncoding
 )
 
-// BiomePaletteEncoding implements the encoding of biome palettes to disk.
-type BiomePaletteEncoding struct{}
+// biomePaletteEncodings implements the encoding of biome palettes to disk.
+type biomePaletteEncoding struct{}
 
-func (BiomePaletteEncoding) encode(buf *bytes.Buffer, v uint32) {
+func (biomePaletteEncoding) encode(buf *bytes.Buffer, v uint32) {
 	_ = binary.Write(buf, binary.LittleEndian, v)
 }
 
-func (BiomePaletteEncoding) decode(buf *bytes.Buffer, e Encoding) (uint32, error) {
+func (biomePaletteEncoding) decode(buf *bytes.Buffer, e Encoding) (uint32, error) {
 	var v uint32
 	return v, binary.Read(buf, binary.LittleEndian, &v)
 }
 
-func (e BiomePaletteEncoding) withCustomBlocks() bool {
-	return false
-}
+// blockPaletteEncoding implements the encoding of block palettes to disk.
+type blockPaletteEncoding struct{}
 
-// BlockPaletteEncoding implements the encoding of block palettes to disk.
-type BlockPaletteEncoding struct {
-	HasCustom bool
-}
-
-func (e BlockPaletteEncoding) withCustomBlocks() bool {
-	return e.HasCustom
-}
-
-func (BlockPaletteEncoding) encode(buf *bytes.Buffer, v uint32) {
+func (blockPaletteEncoding) encode(buf *bytes.Buffer, v uint32) {
 	// Get the block state registered with the runtime IDs we have in the palette of the block storage
 	// as we need the name and data value to store.
 	name, props, _ := RuntimeIDToState(v)
 	_ = nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian).Encode(blockEntry{Name: name, State: props, Version: CurrentBlockVersion})
 }
 
-func (BlockPaletteEncoding) decode(buf *bytes.Buffer, e Encoding) (uint32, error) {
+func (blockPaletteEncoding) decode(buf *bytes.Buffer, e Encoding) (uint32, error) {
 	var m map[string]any
 
 	var nbt_e nbt.Encoding = nbt.LittleEndian
@@ -108,10 +99,6 @@ func (BlockPaletteEncoding) decode(buf *bytes.Buffer, e Encoding) (uint32, error
 	state, ok := stateI.(map[string]any)
 	if !ok {
 		return 0, fmt.Errorf("invalid state in block entry")
-	}
-
-	if !strings.Contains(name, ":") { // why is this needed?
-		name = "minecraft:" + name
 	}
 
 	// Upgrade the block state if necessary.
@@ -175,8 +162,7 @@ func (networkEncoding) encodePalette(buf *bytes.Buffer, p *Palette, _ paletteEnc
 		_ = protocol.WriteVarint32(buf, int32(val))
 	}
 }
-
-func (networkEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, e paletteEncoding) (*Palette, error) {
+func (networkEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, _ paletteEncoding) (*Palette, error) {
 	var paletteCount int32 = 1
 	if blockSize != 0 {
 		if err := protocol.Varint32(buf, &paletteCount); err != nil {
@@ -187,35 +173,71 @@ func (networkEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, e
 		}
 	}
 
-	magic := buf.Bytes()[0:2]
-	is_legacy := bytes.Equal(magic, []byte{0x0A, 0x00})
-
-	if is_legacy { // is using nbt data
-		var err error
-		palette := newPalette(blockSize, make([]uint32, paletteCount))
-		for i := int32(0); i < paletteCount; i++ {
-			palette.values[i], err = e.decode(buf, NetworkEncoding)
-			if err != nil {
-				return nil, err
-			}
+	var err error
+	palette, temp := newPalette(blockSize, make([]uint32, paletteCount)), int32(0)
+	for i := int32(0); i < paletteCount; i++ {
+		if err = protocol.Varint32(buf, &temp); err != nil {
+			return nil, fmt.Errorf("error decoding palette entry: %w", err)
 		}
-		return palette, nil
-	} else { // regular block rid list
-		blocks, temp := make([]uint32, paletteCount), int32(0)
-
-		for i := int32(0); i < paletteCount; i++ {
-			if err := protocol.Varint32(buf, &temp); err != nil {
-				return nil, fmt.Errorf("error decoding palette entry: %w", err)
-			}
-			rid := uint32(temp)
-			if e.withCustomBlocks() {
-				if rid > 1500 {
-					rid -= 1
-				}
-			}
-			blocks[i] = rid
-		}
-
-		return &Palette{values: blocks, size: blockSize}, nil
+		palette.values[i] = uint32(temp)
 	}
+	return palette, nil
+}
+
+// networkPersistentEncoding implements the Chunk encoding for sending over network with persistent storage.
+type networkPersistentEncoding struct{}
+
+func (networkPersistentEncoding) network() byte { return 1 }
+func (networkPersistentEncoding) encodePalette(buf *bytes.Buffer, p *Palette, _ paletteEncoding) {
+	if p.size != 0 {
+		_ = protocol.WriteVarint32(buf, int32(p.Len()))
+	}
+
+	enc := nbt.NewEncoderWithEncoding(buf, nbt.NetworkLittleEndian)
+	for _, val := range p.values {
+		name, props, _ := RuntimeIDToState(val)
+		_ = enc.Encode(blockEntry{Name: strings.TrimPrefix("minecraft:", name), State: props, Version: CurrentBlockVersion})
+	}
+}
+func (networkPersistentEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, _ paletteEncoding) (*Palette, error) {
+	var paletteCount int32 = 1
+	if blockSize != 0 {
+		err := protocol.Varint32(buf, &paletteCount)
+		if err != nil {
+			panic(err)
+		}
+		if paletteCount <= 0 {
+			return nil, fmt.Errorf("invalid palette entry count %v", paletteCount)
+		}
+	}
+
+	blocks := make([]blockEntry, paletteCount)
+	dec := nbt.NewDecoderWithEncoding(buf, nbt.NetworkLittleEndian)
+	for i := int32(0); i < paletteCount; i++ {
+		if err := dec.Decode(&blocks[i]); err != nil {
+			return nil, fmt.Errorf("error decoding block state: %w", err)
+		}
+	}
+
+	var ok bool
+	palette, temp := newPalette(blockSize, make([]uint32, paletteCount)), uint32(0)
+	for i, b := range blocks {
+		if !strings.Contains(b.Name, ":") {
+			b.Name = "minecraft:" + b.Name
+		}
+
+		// Upgrade the block state if necessary.
+		upgraded := blockupgrader.Upgrade(blockupgrader.BlockState{
+			Name:       b.Name,
+			Properties: b.State,
+			Version:    b.Version,
+		})
+
+		temp, ok = StateToRuntimeID(upgraded.Name, upgraded.Properties)
+		if !ok {
+			return nil, fmt.Errorf("cannot get runtime ID of block state %v{%+v}", upgraded.Name, upgraded.Properties)
+		}
+		palette.values[i] = temp
+	}
+	return palette, nil
 }

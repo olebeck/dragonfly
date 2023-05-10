@@ -69,8 +69,6 @@ func init() {
 		rid, ok := stateRuntimeIDs[stateHash{name: name, properties: hashProperties(properties)}]
 		return rid, ok
 	}
-
-	chunk.UnknownRID, _ = chunk.StateToRuntimeID("minecraft:unknown", nil)
 }
 
 func sort_blocks(i, j int) bool {
@@ -224,8 +222,6 @@ func InsertCustomBlocks(entries []protocol.BlockEntry) {
 			})
 		}
 	}
-
-	chunk.CountCustomBlocks = uint32(len(states))
 	registerBlockStates(states)
 }
 

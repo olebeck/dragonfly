@@ -1240,7 +1240,7 @@ func (w *World) loadChunk(pos ChunkPos) (*Column, error) {
 		return col, nil
 	case errors.Is(err, leveldb.ErrNotFound):
 		// The provider doesn't have a chunk saved at this position, so we generate a new one.
-		col = newColumn(chunk.New(airRID, w.Range(), false))
+		col = newColumn(chunk.New(airRID, w.Range()))
 		w.chunks[pos] = col
 
 		col.Lock()
@@ -1249,7 +1249,7 @@ func (w *World) loadChunk(pos ChunkPos) (*Column, error) {
 		w.conf.Generator.GenerateChunk(pos, col.Chunk)
 		return col, nil
 	default:
-		col = newColumn(chunk.New(airRID, w.Range(), false))
+		col = newColumn(chunk.New(airRID, w.Range()))
 		col.Lock()
 		return col, err
 	}
