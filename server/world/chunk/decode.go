@@ -66,11 +66,6 @@ func NetworkDecode(air uint32, data []byte, count int, oldBiomes bool, r cube.Ra
 	}
 
 	for buf.Len() > 0 {
-		b, _ := buf.ReadByte()
-		if b != 0x00 {
-			buf.UnreadByte()
-		}
-
 		t, _ := buf.ReadByte()
 		if t != 0x00 { // tag End = empty nbt
 			buf.UnreadByte()
