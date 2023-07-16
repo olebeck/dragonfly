@@ -4,7 +4,6 @@ import (
 	"bytes"
 	_ "embed"
 	"fmt"
-	"hash/fnv"
 	"image/color"
 	"math"
 	"sort"
@@ -14,6 +13,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
+	"github.com/segmentio/fasthash/fnv1"
 	"golang.org/x/exp/slices"
 )
 
@@ -57,7 +57,7 @@ func init() {
 		if err := dec.Decode(&s); err != nil {
 			break
 		}
-		registerBlockState(s, false)
+		registerBlockState(s)
 	}
 
 	chunk.RuntimeIDToState = func(runtimeID uint32) (name string, properties map[string]any, found bool) {
@@ -76,16 +76,6 @@ func init() {
 	}
 }
 
-func sort_blocks(i, j int) bool {
-	nameOne, _ := blocks[i].EncodeBlock()
-	nameTwo, _ := blocks[j].EncodeBlock()
-	h1 := fnv.New64()
-	h1.Write([]byte(nameOne))
-	h2 := fnv.New64()
-	h2.Write([]byte(nameTwo))
-	return nameOne == nameTwo && h1.Sum64() < h2.Sum64()
-}
-
 // registerBlockStates inserts multiple blockstates
 func registerBlockStates(ss []blockState) {
 	map_rids := map[stateHash]uint32{}
@@ -96,7 +86,11 @@ func registerBlockStates(ss []blockState) {
 		map_rids[stateHash{s.Name, hashProperties(s.Properties)}] = 0
 	}
 	// sort the new blocks
-	sort.SliceStable(blocks, sort_blocks)
+	sort.SliceStable(blocks, func(i, j int) bool {
+		nameOne, _ := blocks[i].EncodeBlock()
+		nameTwo, _ := blocks[j].EncodeBlock()
+		return nameOne == nameTwo && fnv1.HashString64(nameOne) < fnv1.HashString64(nameTwo)
+	})
 
 	for id, b := range blocks {
 		name, properties := b.EncodeBlock()
@@ -127,7 +121,7 @@ func registerBlockStates(ss []blockState) {
 
 // registerBlockState registers a new blockState to the states slice. The function panics if the properties the
 // blockState hold are invalid or if the blockState was already registered.
-func registerBlockState(s blockState, order bool) {
+func registerBlockState(s blockState) {
 	h := stateHash{name: s.Name, properties: hashProperties(s.Properties)}
 	if _, ok := stateRuntimeIDs[h]; ok {
 		panic(fmt.Sprintf("cannot register the same state twice (%+v)", s))
@@ -141,22 +135,6 @@ func registerBlockState(s blockState, order bool) {
 	}
 
 	blocks = append(blocks, unknownBlock{s})
-	if order {
-		sort.SliceStable(blocks, sort_blocks)
-
-		for id, b := range blocks {
-			name, properties := b.EncodeBlock()
-			i := stateHash{name: name, properties: hashProperties(properties)}
-			if name == "minecraft:air" {
-				airRID = uint32(id)
-			}
-			if i == h {
-				rid = uint32(id)
-			}
-			stateRuntimeIDs[i] = uint32(id)
-			hashes.Put(int64(b.Hash()), int64(id))
-		}
-	}
 	stateRuntimeIDs[h] = rid
 
 	isWater := s.Name == "minecraft:water"
@@ -215,7 +193,7 @@ func ns_name_split(identifier string) (ns, name string) {
 	return ns_name[0], ns_name[len(ns_name)-1]
 }
 
-func InsertCustomBlocks(entries []protocol.BlockEntry) {
+func InsertCustomBlocks(entries []protocol.BlockEntry) int {
 	var states []blockState
 	for _, entry := range entries {
 		ns, _ := ns_name_split(entry.Name)
@@ -231,6 +209,7 @@ func InsertCustomBlocks(entries []protocol.BlockEntry) {
 		}
 	}
 	registerBlockStates(states)
+	return len(states)
 }
 
 // unknownBlock represents a block that has not yet been implemented. It is used for registering block

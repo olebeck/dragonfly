@@ -25,6 +25,7 @@ require (
 	github.com/klauspost/compress v1.15.15 // indirect
 	github.com/muhammadmuzzammil1998/jsonc v1.0.0 // indirect
 	github.com/sandertv/go-raknet v1.12.0 // indirect
+	github.com/segmentio/fasthash v1.0.3 // indirect
 	golang.org/x/crypto v0.5.0 // indirect
 	golang.org/x/image v0.5.0 // indirect
 	golang.org/x/net v0.7.0 // indirect
