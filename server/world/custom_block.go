@@ -53,7 +53,30 @@ func ParseBlock(block protocol.BlockEntry) MinecraftBlock {
 
 	if perms, ok := block.Properties["permutations"].([]any); ok {
 		for _, v := range perms {
-			entry.Permutations = append(entry.Permutations, permutation_from_map(v.(map[string]any)))
+			perm := permutation_from_map(v.(map[string]any))
+			if v, ok := perm.Components["minecraft:transformation"].(map[string]any); ok {
+				// rotation
+				rx := v["RX"].(int32)
+				ry := v["RY"].(int32)
+				rz := v["RZ"].(int32)
+
+				// scale
+				sx := v["SX"].(float32)
+				sy := v["SY"].(float32)
+				sz := v["SZ"].(float32)
+
+				// translation
+				tx := v["TX"].(float32)
+				ty := v["TY"].(float32)
+				tz := v["TZ"].(float32)
+
+				perm.Components["minecraft:transformation"] = map[string][]float32{
+					"translation": {tx, ty, tz},
+					"scale":       {sx, sy, sz},
+					"rotation":    {float32(rx) * 90, float32(ry) * 90, float32(rz) * 90},
+				}
+			}
+			entry.Permutations = append(entry.Permutations, perm)
 		}
 	}
 
@@ -79,6 +102,14 @@ func ParseBlock(block protocol.BlockEntry) MinecraftBlock {
 					if m, ok := v["materials"].(map[string]any); ok {
 						comps[k] = m
 					}
+				}
+				// fix {"identifier": "name"} -> "name"
+				if v, ok := v["identifier"]; ok {
+					comps[k] = v
+				}
+				// fix {"emission": "name"} -> "name"
+				if v, ok := v["emission"]; ok {
+					comps[k] = v
 				}
 			}
 		}
