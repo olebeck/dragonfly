@@ -200,8 +200,22 @@ func InsertCustomBlocks(entries []protocol.BlockEntry) int {
 		if ns == "minecraft" {
 			continue
 		}
-		block := ParseBlock(entry)
-		for _, props := range permutate_properties(block.Description.Properties) {
+		var properties map[string]any
+		props, ok := entry.Properties["properties"].([]any)
+		if ok {
+			for _, v := range props {
+				properties = make(map[string]any)
+				v := v.(map[string]any)
+				name := v["name"].(string)
+				switch a := v["enum"].(type) {
+				case []int32:
+					properties[name] = a
+				case []bool:
+					properties[name] = a
+				}
+			}
+		}
+		for _, props := range permutate_properties(properties) {
 			states = append(states, blockState{
 				Name:       entry.Name,
 				Properties: props,
