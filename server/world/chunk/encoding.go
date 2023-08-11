@@ -219,8 +219,34 @@ func (networkPersistentEncoding) decodePalette(buf *bytes.Buffer, blockSize pale
 		}
 	}
 
-	var ok bool
-	palette, temp := newPalette(blockSize, make([]uint32, paletteCount)), uint32(0)
+	// fix for servers where the palette is encoded wrong,
+	// 1 or more duplicate blocks is added to the palette which is not counted to the palette count field in the encoding
+	// however is still part of the encoding
+	// this adds those blocks by checking if there is still nbt data after the last blockEntry
+	// and then reading blocks until it finds none left
+	for {
+		p, _ := buf.ReadByte()
+		buf.UnreadByte()
+		if p != 0x0a {
+			break
+		}
+		block := blockEntry{}
+		if err := dec.Decode(&block); err != nil {
+			return nil, fmt.Errorf("error decoding block state: %w", err)
+		}
+		blocks = append(blocks, block)
+		paletteCount++
+	}
+
+	palette := newPalette(blockSize, make([]uint32, paletteCount))
+	if err := upgradePalette(blocks, palette); err != nil {
+		return nil, err
+	}
+
+	return palette, nil
+}
+
+func upgradePalette(blocks []blockEntry, palette *Palette) error {
 	for i, b := range blocks {
 		if !strings.Contains(b.Name, ":") {
 			b.Name = "minecraft:" + b.Name
@@ -233,11 +259,11 @@ func (networkPersistentEncoding) decodePalette(buf *bytes.Buffer, blockSize pale
 			Version:    b.Version,
 		})
 
-		temp, ok = StateToRuntimeID(upgraded.Name, upgraded.Properties)
+		temp, ok := StateToRuntimeID(upgraded.Name, upgraded.Properties)
 		if !ok {
-			return nil, fmt.Errorf("cannot get runtime ID of block state %v{%+v}", upgraded.Name, upgraded.Properties)
+			return fmt.Errorf("cannot get runtime ID of block state %v{%+v}", upgraded.Name, upgraded.Properties)
 		}
 		palette.values[i] = temp
 	}
-	return palette, nil
+	return nil
 }

@@ -66,15 +66,14 @@ func NetworkDecode(air uint32, data []byte, count int, oldBiomes bool, r cube.Ra
 	}
 
 	for buf.Len() > 0 {
-		t, _ := buf.ReadByte()
-		if t != 0x00 { // tag End = empty nbt
-			buf.UnreadByte()
-			dec := nbt.NewDecoderWithEncoding(buf, nbt.NetworkLittleEndian)
-			blockNBT := make(map[string]any, 0)
-			err = dec.Decode(&blockNBT)
-			if err != nil {
-				return nil, nil, err
-			}
+		dec := nbt.NewDecoderWithEncoding(buf, nbt.NetworkLittleEndian)
+		dec.AllowZero = true
+		blockNBT := make(map[string]any, 0)
+		err = dec.Decode(&blockNBT)
+		if err != nil {
+			return nil, nil, err
+		}
+		if len(blockNBT) > 0 {
 			blockNBTs = append(blockNBTs, blockNBT)
 		}
 	}
