@@ -162,6 +162,7 @@ func init() {
 	registerAll(allLanterns())
 	registerAll(allLava())
 	registerAll(allLeaves())
+	registerAll(allLecterns())
 	registerAll(allLight())
 	registerAll(allLitPumpkins())
 	registerAll(allLogs())
@@ -204,6 +205,7 @@ func init() {
 	registerAll(allWheat())
 	registerAll(allWood())
 	registerAll(allWool())
+	registerAll(allDecoratedPots())
 }
 
 func init() {
@@ -284,6 +286,7 @@ func init() {
 	world.RegisterItem(Kelp{})
 	world.RegisterItem(Ladder{})
 	world.RegisterItem(Lapis{})
+	world.RegisterItem(Lectern{})
 	world.RegisterItem(LitPumpkin{})
 	world.RegisterItem(Loom{})
 	world.RegisterItem(MelonSeeds{})
@@ -348,6 +351,7 @@ func init() {
 	world.RegisterItem(Waterlily{})
 	world.RegisterItem(Vines{})
 	world.RegisterItem(WheatSeeds{})
+	world.RegisterItem(DecoratedPot{})
 	world.RegisterItem(item.Bucket{Content: item.LiquidBucketContent(Lava{})})
 	world.RegisterItem(item.Bucket{Content: item.LiquidBucketContent(Water{})})
 	world.RegisterItem(item.Bucket{Content: item.MilkBucketContent()})

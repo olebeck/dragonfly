@@ -1031,3 +1031,11 @@ func (w Wool) Color() color.RGBA {
 	}
 	return color.RGBA{255, 0, 255, 255}
 }
+
+func (l Lectern) Color() color.RGBA {
+	return color.RGBA{175, 143, 85, 255}
+}
+
+func (DecoratedPot) Color() color.RGBA {
+	return color.RGBA{159, 107, 88, 255}
+}

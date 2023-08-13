@@ -7,12 +7,13 @@ require (
 	github.com/cespare/xxhash v1.1.0
 	github.com/df-mc/atomic v1.10.0
 	github.com/df-mc/goleveldb v1.1.9
-	github.com/df-mc/worldupgrader v1.0.6
+	github.com/df-mc/worldupgrader v1.0.8
 	github.com/go-gl/mathgl v1.0.0
 	github.com/google/uuid v1.3.0
 	github.com/pelletier/go-toml v1.9.5
 	github.com/rogpeppe/go-internal v1.9.0
-	github.com/sandertv/gophertunnel v1.30.0
+	github.com/sandertv/gophertunnel v1.31.0
+	github.com/segmentio/fasthash v1.0.3
 	github.com/sirupsen/logrus v1.9.0
 	go.uber.org/atomic v1.10.0
 	golang.org/x/exp v0.0.0-20230206171751-46f607a40771
@@ -25,7 +26,6 @@ require (
 	github.com/klauspost/compress v1.15.15 // indirect
 	github.com/muhammadmuzzammil1998/jsonc v1.0.0 // indirect
 	github.com/sandertv/go-raknet v1.12.0 // indirect
-	github.com/segmentio/fasthash v1.0.3 // indirect
 	golang.org/x/crypto v0.5.0 // indirect
 	golang.org/x/image v0.5.0 // indirect
 	golang.org/x/net v0.7.0 // indirect

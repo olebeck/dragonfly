@@ -47,6 +47,7 @@ const (
 	hashCoralFan
 	hashCraftingTable
 	hashDeadBush
+	hashDecoratedPot
 	hashDeepslate
 	hashDeepslateBricks
 	hashDeepslateTiles
@@ -98,6 +99,7 @@ const (
 	hashLapisOre
 	hashLava
 	hashLeaves
+	hashLectern
 	hashLight
 	hashLitPumpkin
 	hashLog
@@ -361,6 +363,10 @@ func (DeadBush) Hash() uint64 {
 	return hashDeadBush
 }
 
+func (p DecoratedPot) Hash() uint64 {
+	return hashDecoratedPot | uint64(p.Facing)<<8
+}
+
 func (d Deepslate) Hash() uint64 {
 	return hashDeepslate | uint64(d.Type.Uint8())<<8 | uint64(d.Axis)<<10
 }
@@ -563,6 +569,10 @@ func (l Lava) Hash() uint64 {
 
 func (l Leaves) Hash() uint64 {
 	return hashLeaves | uint64(l.Wood.Uint8())<<8 | uint64(boolByte(l.Persistent))<<12 | uint64(boolByte(l.ShouldUpdate))<<13
+}
+
+func (l Lectern) Hash() uint64 {
+	return hashLectern | uint64(l.Facing)<<8
 }
 
 func (l Light) Hash() uint64 {
