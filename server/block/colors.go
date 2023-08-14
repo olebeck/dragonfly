@@ -806,11 +806,11 @@ func (Smoker) Color() color.RGBA {
 }
 
 func (Snow) Color() color.RGBA {
-	return color.RGBA{255, 255, 255, 255}
+	return color.RGBA{0xf9, 0xfe, 0xfe, 0xff}
 }
 
 func (SnowLayer) Color() color.RGBA {
-	return color.RGBA{255, 255, 255, 255}
+	return color.RGBA{0xf9, 0xfe, 0xfe, 0xff}
 }
 
 func (SoulSand) Color() color.RGBA {
@@ -946,6 +946,8 @@ func (s WheatSeeds) Color() color.RGBA {
 		return color.RGBA{17, 136, 25, 255}
 	case 6:
 		return color.RGBA{141, 119, 61, 255}
+	case 7:
+		return color.RGBA{207, 167, 74, 255}
 	}
 	return color.RGBA{255, 0, 255, 255}
 }
