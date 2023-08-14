@@ -55,7 +55,7 @@ type Liquid interface {
 
 // hashes holds a list of runtime IDs indexed by the hash of the Block that implements the blocks pointed to by those
 // runtime IDs. It is used to look up a block's runtime ID quickly.
-var hashes = intintmap.New(7000, 0.999)
+var hashes *intintmap.Map
 
 // RegisterBlock registers the Block passed. The EncodeBlock method will be used to encode and decode the
 // block passed. RegisterBlock panics if the block properties returned were not valid, existing properties.
@@ -69,7 +69,7 @@ func RegisterBlock(b Block) {
 		// this done through registering of all states present in the block_states.nbt file.
 		panic(fmt.Sprintf("block state returned is not registered (%v {%#v})", name, properties))
 	}
-	if _, ok := blocks[rid].(unknownBlock); !ok {
+	if _, ok := blocks[rid].(UnknownBlock); !ok {
 		panic(fmt.Sprintf("block with name and properties %v {%#v} already registered", name, properties))
 	}
 	hash := int64(b.Hash())

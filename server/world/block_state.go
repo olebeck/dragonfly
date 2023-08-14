@@ -10,6 +10,7 @@ import (
 	"strings"
 	"unsafe"
 
+	"github.com/brentp/intintmap"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -48,6 +49,25 @@ func AirRID() uint32 {
 }
 
 func init() {
+	ResetStates()
+}
+
+func Blocks() []Block {
+	return blocks
+}
+
+func ResetStates() {
+	blockProperties = map[string]map[string]any{}
+	blocks = nil
+	stateRuntimeIDs = map[stateHash]uint32{}
+	nbtBlocks = nil
+	randomTickBlocks = nil
+	liquidBlocks = nil
+	liquidDisplacingBlocks = nil
+	hashes = intintmap.New(7000, 0.999)
+	chunk.FilteringBlocks = nil
+	chunk.LightBlocks = nil
+
 	dec := nbt.NewDecoder(bytes.NewBuffer(blockStateData))
 
 	// Register all block states present in the block_states.nbt file. These are all possible options registered
@@ -82,7 +102,7 @@ func registerBlockStates(ss []blockState) {
 
 	// add blocks
 	for _, s := range ss {
-		blocks = append(blocks, unknownBlock{s})
+		blocks = append(blocks, UnknownBlock{s})
 		map_rids[stateHash{s.Name, hashProperties(s.Properties)}] = 0
 	}
 	// sort the new blocks
@@ -134,7 +154,7 @@ func registerBlockState(s blockState) {
 		airRID = rid
 	}
 
-	blocks = append(blocks, unknownBlock{s})
+	blocks = append(blocks, UnknownBlock{s})
 	stateRuntimeIDs[h] = rid
 
 	isWater := s.Name == "minecraft:water"
@@ -226,28 +246,28 @@ func InsertCustomBlocks(entries []protocol.BlockEntry) int {
 	return len(states)
 }
 
-// unknownBlock represents a block that has not yet been implemented. It is used for registering block
+// UnknownBlock represents a block that has not yet been implemented. It is used for registering block
 // states that haven't yet been added.
-type unknownBlock struct {
+type UnknownBlock struct {
 	blockState
 }
 
 // EncodeBlock ...
-func (b unknownBlock) EncodeBlock() (string, map[string]any) {
+func (b UnknownBlock) EncodeBlock() (string, map[string]any) {
 	return b.Name, b.Properties
 }
 
 // Model ...
-func (unknownBlock) Model() BlockModel {
+func (UnknownBlock) Model() BlockModel {
 	return unknownModel{}
 }
 
 // Hash ...
-func (b unknownBlock) Hash() uint64 {
+func (b UnknownBlock) Hash() uint64 {
 	return math.MaxUint64
 }
 
-func (b unknownBlock) Color() color.RGBA {
+func (b UnknownBlock) Color() color.RGBA {
 	return color.RGBA{255, 0, 255, 255}
 }
 
