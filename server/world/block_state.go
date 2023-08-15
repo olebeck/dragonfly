@@ -98,18 +98,18 @@ func ResetStates() {
 
 // registerBlockStates inserts multiple blockstates
 func registerBlockStates(ss []blockState) {
-	map_rids := map[stateHash]uint32{}
+	newStates := map[stateHash]uint32{}
 
 	// add blocks
 	for _, s := range ss {
 		blocks = append(blocks, UnknownBlock{s})
-		map_rids[stateHash{s.Name, hashProperties(s.Properties)}] = 0
+		newStates[stateHash{s.Name, hashProperties(s.Properties)}] = 0
 	}
 	// sort the new blocks
 	sort.SliceStable(blocks, func(i, j int) bool {
 		nameOne, _ := blocks[i].EncodeBlock()
 		nameTwo, _ := blocks[j].EncodeBlock()
-		return nameOne == nameTwo && fnv1.HashString64(nameOne) < fnv1.HashString64(nameTwo)
+		return fnv1.HashString64(nameOne) < fnv1.HashString64(nameTwo)
 	})
 
 	for id, b := range blocks {
@@ -121,11 +121,10 @@ func registerBlockStates(ss []blockState) {
 		}
 
 		// if its one of the added ones
-		if _, ok := map_rids[i]; ok {
+		if _, ok := newStates[i]; ok {
 			if _, ok := stateRuntimeIDs[i]; ok {
 				panic(fmt.Sprintf("cannot register the same state twice (%+v)", b))
 			}
-			map_rids[i] = rid
 
 			nbtBlocks = slices.Insert(nbtBlocks, int(rid), false)
 			randomTickBlocks = slices.Insert(randomTickBlocks, int(rid), false)
@@ -231,6 +230,8 @@ func InsertCustomBlocks(entries []protocol.BlockEntry) int {
 				case []int32:
 					properties[name] = a
 				case []bool:
+					properties[name] = a
+				case []any:
 					properties[name] = a
 				}
 			}
