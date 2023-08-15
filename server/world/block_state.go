@@ -132,6 +132,7 @@ func registerBlockStates(ss []blockState) {
 			liquidDisplacingBlocks = slices.Insert(liquidDisplacingBlocks, int(rid), false)
 			chunk.FilteringBlocks = slices.Insert(chunk.FilteringBlocks, int(rid), 15)
 			chunk.LightBlocks = slices.Insert(chunk.LightBlocks, int(rid), 0)
+			chunk.WaterBlocks = slices.Insert(chunk.WaterBlocks, int(rid), false)
 		}
 		stateRuntimeIDs[i] = rid
 		hashes.Put(int64(b.Hash()), int64(id))
@@ -157,9 +158,6 @@ func registerBlockState(s blockState) {
 	stateRuntimeIDs[h] = rid
 
 	isWater := s.Name == "minecraft:water"
-	if isWater {
-		chunk.WaterBlocks = append(chunk.WaterBlocks, rid)
-	}
 
 	nbtBlocks = slices.Insert(nbtBlocks, int(rid), false)
 	randomTickBlocks = slices.Insert(randomTickBlocks, int(rid), false)
@@ -167,6 +165,7 @@ func registerBlockState(s blockState) {
 	liquidDisplacingBlocks = slices.Insert(liquidDisplacingBlocks, int(rid), false)
 	chunk.FilteringBlocks = slices.Insert(chunk.FilteringBlocks, int(rid), 15)
 	chunk.LightBlocks = slices.Insert(chunk.LightBlocks, int(rid), 0)
+	chunk.WaterBlocks = slices.Insert(chunk.WaterBlocks, int(rid), isWater)
 }
 
 func permutate_properties(props map[string]any) []map[string]any {

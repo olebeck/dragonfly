@@ -15,7 +15,7 @@ var (
 	// Light is able to propagate through these blocks, but will have its level reduced.
 	FilteringBlocks = make([]uint8, 0, 7000)
 	// WaterBlocks is a list of water blocks
-	WaterBlocks = make([]uint32, 255)
+	WaterBlocks = make([]bool, 255)
 )
 
 type (
