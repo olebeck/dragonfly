@@ -565,6 +565,8 @@ func (l Leaves) Color() color.RGBA {
 		return color.RGBA{69, 107, 88, 255}
 	case Mangrove():
 		return color.RGBA{45, 65, 30, 255}
+	case Cherry():
+		return color.RGBA{0xd6, 0xa2, 0xba, 0xff}
 	}
 	return color.RGBA{255, 0, 255, 255}
 }
@@ -667,6 +669,8 @@ func (p Planks) Color() color.RGBA {
 		return color.RGBA{40, 95, 82, 255}
 	case Mangrove():
 		return color.RGBA{117, 49, 52, 255}
+	case Cherry():
+		return color.RGBA{0xe3, 0xb4, 0xae, 0xff}
 	}
 	return color.RGBA{255, 0, 255, 255}
 }
@@ -781,6 +785,8 @@ func (s Sapling) Color() color.RGBA {
 		return color.RGBA{22, 155, 133, 255}
 	case Mangrove():
 		return color.RGBA{84, 195, 87, 255}
+	case Cherry():
+		return color.RGBA{0x83, 0x61, 0x73, 0xff}
 	}
 	return color.RGBA{255, 0, 255, 255}
 }
@@ -988,6 +994,8 @@ func (w wood) Color() color.RGBA {
 		return color.RGBA{40, 126, 130, 255}
 	case 8: // mangrove
 		return color.RGBA{111, 42, 45, 255}
+	case 9:
+		return color.RGBA{0x38, 0x22, 0x2d, 0xff}
 	}
 	return color.RGBA{255, 0, 255, 255}
 }
