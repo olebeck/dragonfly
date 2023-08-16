@@ -918,10 +918,6 @@ func (Tuff) Color() color.RGBA {
 	return color.RGBA{93, 93, 82, 255}
 }
 
-func (Vines) Color() color.RGBA {
-	return color.RGBA{0, 0, 0, 0}
-}
-
 func (Water) Color() color.RGBA {
 	return color.RGBA{113, 133, 253, 255}
 }
@@ -1032,12 +1028,4 @@ func (w Wool) Color() color.RGBA {
 		return color.RGBA{26, 26, 30, 255}
 	}
 	return color.RGBA{255, 0, 255, 255}
-}
-
-func (l Lectern) Color() color.RGBA {
-	return color.RGBA{175, 143, 85, 255}
-}
-
-func (DecoratedPot) Color() color.RGBA {
-	return color.RGBA{159, 107, 88, 255}
 }

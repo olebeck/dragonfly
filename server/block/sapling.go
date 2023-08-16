@@ -143,7 +143,7 @@ func (s Sapling) EncodeBlock() (name string, properties map[string]any) {
 
 func allSapling() (saplings []world.Block) {
 	for _, w := range WoodTypes() {
-		if w == CrimsonWood() || w == WarpedWood() || w == Mangrove() || w == Cherry() {
+		if w == CrimsonWood() || w == WarpedWood() || w == Mangrove() {
 			continue
 		}
 		saplings = append(saplings, Sapling{Wood: w})

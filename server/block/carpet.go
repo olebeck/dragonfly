@@ -34,12 +34,12 @@ func (c Carpet) BreakInfo() BreakInfo {
 
 // EncodeItem ...
 func (c Carpet) EncodeItem() (name string, meta int16) {
-	return "minecraft:" + c.Colour.String() + "_carpet", 0
+	return "minecraft:carpet", int16(c.Colour.Uint8())
 }
 
 // EncodeBlock ...
 func (c Carpet) EncodeBlock() (name string, properties map[string]any) {
-	return "minecraft:" + c.Colour.String() + "_carpet", nil
+	return "minecraft:carpet", map[string]any{"color": c.Colour.SilverString()}
 }
 
 // HasLiquidDrops ...

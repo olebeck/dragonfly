@@ -1,13 +1,14 @@
 package block
 
 import (
+	"math/rand"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
-	"time"
 )
 
 // Coral is a non-solid block that comes in 5 variants.
@@ -94,18 +95,15 @@ func (c Coral) BreakInfo() BreakInfo {
 
 // EncodeBlock ...
 func (c Coral) EncodeBlock() (name string, properties map[string]any) {
-	if c.Dead {
-		return "minecraft:dead_" + c.Type.String() + "_coral", nil
-	}
-	return "minecraft:" + c.Type.String() + "_coral", nil
+	return "minecraft:coral", map[string]any{"coral_color": c.Type.Colour().String(), "dead_bit": c.Dead}
 }
 
 // EncodeItem ...
 func (c Coral) EncodeItem() (name string, meta int16) {
 	if c.Dead {
-		return "minecraft:dead_" + c.Type.String() + "_coral", 0
+		return "minecraft:coral", int16(c.Type.Uint8() | 8)
 	}
-	return "minecraft:" + c.Type.String() + "_coral", 0
+	return "minecraft:coral", int16(c.Type.Uint8())
 }
 
 // allCoral returns a list of all coral block variants

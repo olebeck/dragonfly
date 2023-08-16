@@ -1,12 +1,13 @@
 package block
 
 import (
+	"math/rand"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
 )
 
 // TallGrass is a transparent plant block which can be used to obtain seeds and as decoration.
@@ -15,8 +16,8 @@ type TallGrass struct {
 	transparent
 	empty
 
-	// Type is the type of tall grass that the plant represents.
-	Type TallGrassType
+	// Type is the type of grass that the plant represents.
+	Type GrassType
 }
 
 // FlammabilityInfo ...
@@ -39,9 +40,9 @@ func (g TallGrass) BreakInfo() BreakInfo {
 
 // BoneMeal attempts to affect the block using a bone meal item.
 func (g TallGrass) BoneMeal(pos cube.Pos, w *world.World) bool {
-	upper := DoubleTallGrass{Type: g.Type.Double(), UpperPart: true}
+	upper := DoubleTallGrass{Type: g.Type, UpperPart: true}
 	if replaceableWith(w, pos.Side(cube.FaceUp), upper) {
-		w.SetBlock(pos, DoubleTallGrass{Type: g.Type.Double()}, nil)
+		w.SetBlock(pos, DoubleTallGrass{Type: g.Type}, nil)
 		w.SetBlock(pos.Side(cube.FaceUp), upper, nil)
 		return true
 	}
@@ -50,7 +51,7 @@ func (g TallGrass) BoneMeal(pos cube.Pos, w *world.World) bool {
 
 // CompostChance ...
 func (g TallGrass) CompostChance() float64 {
-	if g.Type == FernTallGrass() {
+	if g.Type == Fern() {
 		return 0.65
 	}
 	return 0.3
@@ -85,17 +86,23 @@ func (g TallGrass) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 
 // EncodeItem ...
 func (g TallGrass) EncodeItem() (name string, meta int16) {
-	return "minecraft:tallgrass", int16(g.Type.Uint8())
+	return "minecraft:tallgrass", int16(g.Type.Uint8() + 1)
 }
 
 // EncodeBlock ...
 func (g TallGrass) EncodeBlock() (name string, properties map[string]any) {
-	return "minecraft:tallgrass", map[string]any{"tall_grass_type": g.Type.String()}
+	switch g.Type {
+	case NormalGrass():
+		return "minecraft:tallgrass", map[string]any{"tall_grass_type": "tall"}
+	case Fern():
+		return "minecraft:tallgrass", map[string]any{"tall_grass_type": "fern"}
+	}
+	panic("should never happen")
 }
 
 // allTallGrass ...
 func allTallGrass() (grasses []world.Block) {
-	for _, g := range TallGrassTypes() {
+	for _, g := range GrassTypes() {
 		grasses = append(grasses, TallGrass{Type: g})
 	}
 	return

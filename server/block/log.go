@@ -1,11 +1,12 @@
 package block
 
 import (
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"time"
 )
 
 // Log is a naturally occurring block found in trees, primarily used to create planks. It comes in six
@@ -72,6 +73,10 @@ func (l Log) Strip() (world.Block, bool) {
 func (l Log) EncodeItem() (name string, meta int16) {
 	if !l.Stripped {
 		switch l.Wood {
+		case OakWood(), SpruceWood(), BirchWood(), JungleWood():
+			return "minecraft:log", int16(l.Wood.Uint8())
+		case AcaciaWood(), DarkOakWood():
+			return "minecraft:log2", int16(l.Wood.Uint8()) - 4
 		case CrimsonWood(), WarpedWood():
 			return "minecraft:" + l.Wood.String() + "_stem", 0
 		default:
@@ -90,6 +95,10 @@ func (l Log) EncodeItem() (name string, meta int16) {
 func (l Log) EncodeBlock() (name string, properties map[string]any) {
 	if !l.Stripped {
 		switch l.Wood {
+		case OakWood(), SpruceWood(), BirchWood(), JungleWood():
+			return "minecraft:log", map[string]any{"pillar_axis": l.Axis.String(), "old_log_type": l.Wood.String()}
+		case AcaciaWood(), DarkOakWood():
+			return "minecraft:log2", map[string]any{"pillar_axis": l.Axis.String(), "new_log_type": l.Wood.String()}
 		case CrimsonWood(), WarpedWood():
 			return "minecraft:" + l.Wood.String() + "_stem", map[string]any{"pillar_axis": l.Axis.String()}
 		default:

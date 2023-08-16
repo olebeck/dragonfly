@@ -11,8 +11,8 @@ import (
 
 // TODO: Dragon Heads can be powered by redstone
 
-// Skull is a decorative block. There are seven types of skulls: player, zombie, skeleton, wither skeleton, creeper,
-// dragon, and piglin.
+// Skull is a decorative block. There are six types of skulls: player, zombie, skeleton, wither skeleton, creeper,
+// and dragon.
 type Skull struct {
 	transparent
 	sourceWaterDisplacer

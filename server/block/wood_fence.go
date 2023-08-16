@@ -1,11 +1,12 @@
 package block
 
 import (
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"time"
 )
 
 // WoodFence are blocks similar to Walls, which cannot normally be jumped over. Unlike walls however,
@@ -45,7 +46,12 @@ func (WoodFence) FuelInfo() item.FuelInfo {
 
 // EncodeBlock ...
 func (w WoodFence) EncodeBlock() (name string, properties map[string]any) {
-	return "minecraft:" + w.Wood.String() + "_fence", nil
+	switch w.Wood {
+	case OakWood(), SpruceWood(), BirchWood(), JungleWood(), AcaciaWood(), DarkOakWood():
+		return "minecraft:fence", map[string]any{"wood_type": w.Wood.String()}
+	default:
+		return "minecraft:" + w.Wood.String() + "_fence", nil
+	}
 }
 
 // Model ...
@@ -55,7 +61,12 @@ func (w WoodFence) Model() world.BlockModel {
 
 // EncodeItem ...
 func (w WoodFence) EncodeItem() (name string, meta int16) {
-	return "minecraft:" + w.Wood.String() + "_fence", 0
+	switch w.Wood {
+	case OakWood(), SpruceWood(), BirchWood(), JungleWood(), AcaciaWood(), DarkOakWood():
+		return "minecraft:fence", int16(w.Wood.Uint8())
+	default:
+		return "minecraft:" + w.Wood.String() + "_fence", 0
+	}
 }
 
 // allFence ...

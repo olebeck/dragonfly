@@ -1,12 +1,13 @@
 package block
 
 import (
+	"math/rand"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
 )
 
 // DoubleTallGrass is a two-block high variety of grass.
@@ -17,8 +18,8 @@ type DoubleTallGrass struct {
 
 	// UpperPart is set if the plant is the upper part.
 	UpperPart bool
-	// Type is the type of double tall grass.
-	Type DoubleTallGrassType
+	// Type is the type of grass
+	Type GrassType
 }
 
 // HasLiquidDrops ...
@@ -84,7 +85,7 @@ func (d DoubleTallGrass) BreakInfo() BreakInfo {
 
 // CompostChance ...
 func (d DoubleTallGrass) CompostChance() float64 {
-	if d.Type == FernDoubleTallGrass() {
+	if d.Type == Fern() {
 		return 0.65
 	}
 	return 0.5
@@ -102,7 +103,7 @@ func (d DoubleTallGrass) EncodeBlock() (string, map[string]any) {
 
 // allDoubleTallGrass ...
 func allDoubleTallGrass() (b []world.Block) {
-	for _, g := range DoubleTallGrassTypes() {
+	for _, g := range GrassTypes() {
 		b = append(b, DoubleTallGrass{Type: g})
 		b = append(b, DoubleTallGrass{Type: g, UpperPart: true})
 	}

@@ -284,24 +284,25 @@ func (db *DB) loadEntity(m map[string]any, pos world.ChunkPos) world.Entity {
 	return nil
 }
 
-func (db *DB) entities(k dbKey) ([]world.Entity, error) {
+func (db *DB) entities(k dbKey) (entities []world.Entity, err error) {
 	data, err := db.ldb.Get(k.Sum(keyEntities), nil)
 	if err != nil {
-		return nil, err
-	}
-	var entities []world.Entity
-
-	buf := bytes.NewBuffer(data)
-	dec := nbt.NewDecoderWithEncoding(buf, nbt.LittleEndian)
-
-	var m map[string]any
-	for buf.Len() != 0 {
-		maps.Clear(m)
-		if err := dec.Decode(&m); err != nil {
-			return nil, fmt.Errorf("decode nbt: %w", err)
+		if !errors.Is(err, leveldb.ErrNotFound) {
+			return nil, err
 		}
-		if entity := db.loadEntity(m, k.pos); entity != nil {
-			entities = append(entities, entity)
+	} else {
+		buf := bytes.NewBuffer(data)
+		dec := nbt.NewDecoderWithEncoding(buf, nbt.LittleEndian)
+
+		var m map[string]any
+		for buf.Len() != 0 {
+			maps.Clear(m)
+			if err := dec.Decode(&m); err != nil {
+				return nil, fmt.Errorf("decode nbt: %w", err)
+			}
+			if entity := db.loadEntity(m, k.pos); entity != nil {
+				entities = append(entities, entity)
+			}
 		}
 	}
 
@@ -383,6 +384,15 @@ func (db *DB) StoreColumn(pos world.ChunkPos, dim world.Dimension, col *world.Co
 }
 
 func (db *DB) storeColumn(k dbKey, col *world.Column) error {
+	if k.pos.X() == 17 && k.pos.Z() == -16 {
+		s := col.Chunk.Sub()[col.Chunk.SubIndex(48)]
+		r := s.Block(0, 0, 0, 0)
+		name, state, _ := chunk.RuntimeIDToState(r)
+		_ = r
+		_ = name
+		_ = state
+		println()
+	}
 	data := chunk.Encode(col.Chunk, chunk.DiskEncoding)
 	n := 5 + len(data.SubChunks) + len(col.Entities)
 	if len(col.Entities) > 0 {
