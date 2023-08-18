@@ -4,6 +4,11 @@ import "github.com/df-mc/dragonfly/server/world"
 
 // init registers all biomes that can be used in a world.World.
 func init() {
+	RegisterDefaultBiomes()
+	world.RegisterDefaultBiomes = RegisterDefaultBiomes
+}
+
+func RegisterDefaultBiomes() {
 	world.RegisterBiome(BadlandsPlateau{})
 	world.RegisterBiome(Badlands{})
 	world.RegisterBiome(BambooJungleHills{})

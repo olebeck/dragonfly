@@ -286,22 +286,24 @@ func (db *DB) loadEntity(m map[string]any, pos world.ChunkPos) world.Entity {
 
 func (db *DB) entities(k dbKey) ([]world.Entity, error) {
 	data, err := db.ldb.Get(k.Sum(keyEntities), nil)
-	if err != nil {
+	if err != nil && !errors.Is(err, leveldb.ErrNotFound) {
 		return nil, err
 	}
 	var entities []world.Entity
 
-	buf := bytes.NewBuffer(data)
-	dec := nbt.NewDecoderWithEncoding(buf, nbt.LittleEndian)
+	if len(data) > 0 {
+		buf := bytes.NewBuffer(data)
+		dec := nbt.NewDecoderWithEncoding(buf, nbt.LittleEndian)
 
-	var m map[string]any
-	for buf.Len() != 0 {
-		maps.Clear(m)
-		if err := dec.Decode(&m); err != nil {
-			return nil, fmt.Errorf("decode nbt: %w", err)
-		}
-		if entity := db.loadEntity(m, k.pos); entity != nil {
-			entities = append(entities, entity)
+		var m map[string]any
+		for buf.Len() != 0 {
+			maps.Clear(m)
+			if err := dec.Decode(&m); err != nil {
+				return nil, fmt.Errorf("decode nbt: %w", err)
+			}
+			if entity := db.loadEntity(m, k.pos); entity != nil {
+				entities = append(entities, entity)
+			}
 		}
 	}
 

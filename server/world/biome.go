@@ -19,6 +19,14 @@ var biomes = map[int]Biome{}
 
 var biomeByName = map[string]Biome{}
 
+var RegisterDefaultBiomes func()
+
+func ResetBiomes() {
+	biomes = map[int]Biome{}
+	biomeByName = map[string]Biome{}
+	RegisterDefaultBiomes()
+}
+
 // RegisterBiome registers a biome to the map so that it can be saved and loaded with the world.
 func RegisterBiome(b Biome) {
 	id := b.EncodeBiome()
