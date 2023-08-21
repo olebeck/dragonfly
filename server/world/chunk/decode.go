@@ -10,12 +10,13 @@ import (
 
 // StateToRuntimeID must hold a function to convert a name and its state properties to a runtime ID.
 var StateToRuntimeID func(name string, properties map[string]any) (runtimeID uint32, found bool)
+var ridHashLookup map[uint32]uint32
 
 // NetworkDecode decodes the network serialised data passed into a Chunk if successful. If not, the chunk
 // returned is nil and the error non-nil.
 // The sub chunk count passed must be that found in the LevelChunk packet.
 // noinspection GoUnusedExportedFunction
-func NetworkDecode(air uint32, data []byte, count int, oldBiomes bool, r cube.Range) (c *Chunk, blockNBTs []map[string]any, err error) {
+func NetworkDecode(air uint32, data []byte, count int, oldBiomes bool, hashedRids bool, r cube.Range) (c *Chunk, blockNBTs []map[string]any, err error) {
 	c = New(air, r)
 	buf := bytes.NewBuffer(data)
 	for i := 0; i < count; i++ {
@@ -23,6 +24,13 @@ func NetworkDecode(air uint32, data []byte, count int, oldBiomes bool, r cube.Ra
 		c.sub[index], err = decodeSubChunk(buf, c, &index, NetworkEncoding)
 		if err != nil {
 			return nil, nil, err
+		}
+		if hashedRids {
+			for _, storage := range c.sub[index].storages {
+				for i2, v := range storage.palette.values {
+					storage.palette.values[i2] = ridHashLookup[v]
+				}
+			}
 		}
 	}
 	if oldBiomes {
