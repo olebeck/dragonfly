@@ -25,7 +25,8 @@ var (
 	blockProperties = map[string]map[string]any{}
 	// blocks holds a list of all registered Blocks indexed by their runtime ID. Blocks that were not explicitly
 	// registered are of the type unknownBlock.
-	blocks []Block
+	blocks     []Block
+	BlockCount int
 	// stateRuntimeIDs holds a map for looking up the runtime ID of a block by the stateHash it produces.
 	stateRuntimeIDs = map[stateHash]uint32{}
 	// nbtBlocks holds a list of NBTer implementations for blocks registered that implement the NBTer interface.
@@ -105,6 +106,8 @@ func registerBlockStates(ss []blockState) {
 		blocks = append(blocks, UnknownBlock{s})
 		newStates[stateHash{s.Name, hashProperties(s.Properties)}] = 0
 	}
+	BlockCount = len(blocks)
+
 	// sort the new blocks
 	sort.SliceStable(blocks, func(i, j int) bool {
 		nameOne, _ := blocks[i].EncodeBlock()
@@ -166,6 +169,7 @@ func registerBlockState(s blockState) {
 	chunk.FilteringBlocks = slices.Insert(chunk.FilteringBlocks, int(rid), 15)
 	chunk.LightBlocks = slices.Insert(chunk.LightBlocks, int(rid), 0)
 	chunk.WaterBlocks = slices.Insert(chunk.WaterBlocks, int(rid), isWater)
+	BlockCount = len(blocks)
 }
 
 func permutate_properties(props map[string]any) []map[string]any {

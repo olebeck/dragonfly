@@ -1049,3 +1049,7 @@ func (l Lectern) Color() color.RGBA {
 func (DecoratedPot) Color() color.RGBA {
 	return color.RGBA{159, 107, 88, 255}
 }
+
+func (w Wall) Color() color.RGBA {
+	return w.Block.Color()
+}
