@@ -15,9 +15,10 @@ require (
 	github.com/sandertv/gophertunnel v1.31.0
 	github.com/segmentio/fasthash v1.0.3
 	github.com/sirupsen/logrus v1.9.3
+	github.com/thomaso-mirodin/intmath v0.0.0-20160323211736-5dc6d854e46e
 	go.uber.org/atomic v1.11.0
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
-	golang.org/x/text v0.9.0
+	golang.org/x/text v0.10.0
 )
 
 require (
@@ -27,14 +28,14 @@ require (
 	github.com/klauspost/compress v1.16.5 // indirect
 	github.com/muhammadmuzzammil1998/jsonc v1.0.0 // indirect
 	github.com/sandertv/go-raknet v1.12.0 // indirect
-	github.com/stretchr/testify v1.8.3 // indirect
-	golang.org/x/crypto v0.9.0 // indirect
+	github.com/stretchr/testify v1.8.4 // indirect
+	golang.org/x/crypto v0.10.0 // indirect
 	golang.org/x/image v0.7.0 // indirect
-	golang.org/x/net v0.10.0 // indirect
+	golang.org/x/net v0.11.0 // indirect
 	golang.org/x/oauth2 v0.8.0 // indirect
-	golang.org/x/sys v0.8.0 // indirect
+	golang.org/x/sys v0.10.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
-	gopkg.in/yaml.v2 v2.3.0 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
