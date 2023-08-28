@@ -11,13 +11,13 @@ require (
 	github.com/go-gl/mathgl v1.1.0
 	github.com/google/uuid v1.3.1
 	github.com/pelletier/go-toml v1.9.5
-	github.com/rogpeppe/go-internal v1.9.0
+	github.com/rogpeppe/go-internal v1.10.0
 	github.com/sandertv/gophertunnel v1.31.1-0.20230822231139-d4949d32a3ad
 	github.com/segmentio/fasthash v1.0.3
-	github.com/sirupsen/logrus v1.9.0
+	github.com/sirupsen/logrus v1.9.3
 	github.com/thomaso-mirodin/intmath v0.0.0-20160323211736-5dc6d854e46e
-	go.uber.org/atomic v1.10.0
-	golang.org/x/exp v0.0.0-20230206171751-46f607a40771
+	go.uber.org/atomic v1.11.0
+	golang.org/x/exp v0.0.0-20230817173708-d852ddb80c63
 	golang.org/x/text v0.12.0
 )
 
