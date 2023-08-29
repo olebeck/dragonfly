@@ -161,6 +161,10 @@ func decodeSubChunk(buf *bytes.Buffer, c *Chunk, index *byte, e Encoding) (*SubC
 	return sub, nil
 }
 
+func DecodeSubChunk(buf *bytes.Buffer, air uint32, r cube.Range, index *byte, e Encoding) (*SubChunk, error) {
+	return decodeSubChunk(buf, &Chunk{air: air, r: r}, index, e)
+}
+
 // decodeBiomes reads the paletted storages holding biomes from buf and stores it into the Chunk passed.
 func decodeBiomes(buf *bytes.Buffer, c *Chunk, e Encoding) error {
 	var last *PalettedStorage

@@ -1,11 +1,7 @@
 package chunk
 
 import (
-	"bytes"
-
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/sandertv/gophertunnel/minecraft/nbt"
-	"github.com/sandertv/gophertunnel/minecraft/protocol"
 )
 
 // Chunk is a segment in the world with a size of 16x16x256 blocks. A chunk contains multiple sub chunks
@@ -87,48 +83,10 @@ func (chunk *Chunk) SetBlock(x uint8, y int16, z uint8, layer uint8, block uint3
 	chunk.recalculateHeightMapLiquid = true
 }
 
-// ApplySubChunkEntry sets the subchunk at a given y
-func (chunk *Chunk) ApplySubChunkEntry(y uint8, sub *protocol.SubChunkEntry) (blockNBTs []map[string]any, err error) {
-	if sub.Result == protocol.SubChunkResultSuccessAllAir {
-		return nil, nil
-	} else if sub.Result == protocol.SubChunkResultSuccess {
-		buf := bytes.NewBuffer(sub.RawPayload)
-		index := y
-		chunk.sub[index], err = decodeSubChunk(
-			buf,
-			chunk,
-			&index,
-			NetworkEncoding,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		if buf.Len() > 0 {
-			dec := nbt.NewDecoderWithEncoding(buf, nbt.NetworkLittleEndian)
-			for buf.Len() > 0 {
-				blockNBT := make(map[string]any, 0)
-				err = dec.Decode(&blockNBT)
-				if err != nil {
-					return nil, err
-				}
-				blockNBTs = append(blockNBTs, blockNBT)
-			}
-		}
-
-		if sub.HeightMapType == protocol.HeightMapDataHasData {
-			for i, v := range sub.HeightMapData {
-				x, z := uint8(i/16), uint8(i%16)
-				chunk.heightMap.Set(x, z, int16(v))
-			}
-		}
-
-		chunk.recalculateHeightMap = true
-		chunk.recalculateHeightMapLiquid = true
-
-		return blockNBTs, nil
-	}
-	return nil, nil
+// RecalcHeight ...
+func (chunk *Chunk) RecalcHeight() {
+	chunk.recalculateHeightMap = true
+	chunk.recalculateHeightMapLiquid = true
 }
 
 // Biome returns the biome ID at a specific column in the chunk.

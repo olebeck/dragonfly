@@ -275,6 +275,16 @@ func (b UnknownBlock) Color() color.RGBA {
 	return color.RGBA{255, 0, 255, 255}
 }
 
+func (b UnknownBlock) DecodeNBT(data map[string]any) any {
+	b.Properties = data
+	return b
+}
+
+// EncodeNBT encodes the entity into a map which can then be encoded as NBT to be written.
+func (b UnknownBlock) EncodeNBT() map[string]any {
+	return b.Properties
+}
+
 // blockState holds a combination of a name and properties, together with a version.
 type blockState struct {
 	Name       string         `nbt:"name"`

@@ -424,6 +424,14 @@ func (db *DB) storeFinalisation(batch *leveldb.Batch, k dbKey, finalisation uint
 	batch.Put(k.Sum(keyFinalisation), p)
 }
 
+func (db *DB) StoreEntities(pos world.ChunkPos, dim world.Dimension, e []world.Entity) error {
+	k := dbKey{pos: pos, dim: dim}
+	n := 1 + len(e)
+	batch := leveldb.MakeBatch(n)
+	db.storeEntities(batch, k, e)
+	return db.ldb.Write(batch, nil)
+}
+
 func (db *DB) storeEntities(batch *leveldb.Batch, k dbKey, entities []world.Entity) {
 	if len(entities) == 0 {
 		batch.Delete(k.Sum(keyEntities))
