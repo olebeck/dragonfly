@@ -22,13 +22,12 @@ var (
 	//go:embed block_states.nbt
 	blockStateData []byte
 
-	blockProperties = map[string]map[string]any{}
+	blockProperties map[string]map[string]any
 	// blocks holds a list of all registered Blocks indexed by their runtime ID. Blocks that were not explicitly
 	// registered are of the type unknownBlock.
-	blocks     []Block
-	BlockCount int
+	blocks []Block
 	// stateRuntimeIDs holds a map for looking up the runtime ID of a block by the stateHash it produces.
-	stateRuntimeIDs = map[stateHash]uint32{}
+	stateRuntimeIDs map[stateHash]uint32
 	// nbtBlocks holds a list of NBTer implementations for blocks registered that implement the NBTer interface.
 	// These are indexed by their runtime IDs. Blocks that do not implement NBTer have a false value in this slice.
 	nbtBlocks []bool
@@ -50,36 +49,8 @@ func AirRID() uint32 {
 }
 
 func init() {
-	ResetStates()
-}
-
-func Blocks() []Block {
-	return blocks
-}
-
-func ResetStates() {
-	blockProperties = map[string]map[string]any{}
-	blocks = nil
-	stateRuntimeIDs = map[stateHash]uint32{}
-	nbtBlocks = nil
-	randomTickBlocks = nil
-	liquidBlocks = nil
-	liquidDisplacingBlocks = nil
-	hashes = intintmap.New(7000, 0.999)
-	chunk.FilteringBlocks = nil
-	chunk.LightBlocks = nil
-
-	dec := nbt.NewDecoder(bytes.NewBuffer(blockStateData))
-
-	// Register all block states present in the block_states.nbt file. These are all possible options registered
-	// blocks may encode to.
-	var s blockState
-	for {
-		if err := dec.Decode(&s); err != nil {
-			break
-		}
-		registerBlockState(s)
-	}
+	ClearStates()
+	LoadBlockStates()
 
 	chunk.RuntimeIDToState = func(runtimeID uint32) (name string, properties map[string]any, found bool) {
 		if runtimeID >= uint32(len(blocks)) {
@@ -97,6 +68,35 @@ func ResetStates() {
 	}
 }
 
+func ClearStates() {
+	blockProperties = map[string]map[string]any{}
+	stateRuntimeIDs = map[stateHash]uint32{}
+	hashes = intintmap.New(7000, 0.999)
+
+	blocks = nil
+	nbtBlocks = nil
+	randomTickBlocks = nil
+	liquidBlocks = nil
+	liquidDisplacingBlocks = nil
+	chunk.FilteringBlocks = nil
+	chunk.LightBlocks = nil
+	chunk.WaterBlocks = nil
+}
+
+func LoadBlockStates() {
+	dec := nbt.NewDecoder(bytes.NewBuffer(blockStateData))
+
+	// Register all block states present in the block_states.nbt file. These are all possible options registered
+	// blocks may encode to.
+	var s blockState
+	for {
+		if err := dec.Decode(&s); err != nil {
+			break
+		}
+		registerBlockState(s)
+	}
+}
+
 // registerBlockStates inserts multiple blockstates
 func registerBlockStates(ss []blockState) {
 	newStates := map[stateHash]uint32{}
@@ -106,7 +106,6 @@ func registerBlockStates(ss []blockState) {
 		blocks = append(blocks, UnknownBlock{s})
 		newStates[stateHash{s.Name, hashProperties(s.Properties)}] = 0
 	}
-	BlockCount = len(blocks)
 
 	// sort the new blocks
 	sort.SliceStable(blocks, func(i, j int) bool {
@@ -169,7 +168,6 @@ func registerBlockState(s blockState) {
 	chunk.FilteringBlocks = slices.Insert(chunk.FilteringBlocks, int(rid), 15)
 	chunk.LightBlocks = slices.Insert(chunk.LightBlocks, int(rid), 0)
 	chunk.WaterBlocks = slices.Insert(chunk.WaterBlocks, int(rid), isWater)
-	BlockCount = len(blocks)
 }
 
 func permutate_properties(props map[string]any) []map[string]any {

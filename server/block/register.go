@@ -8,7 +8,8 @@ import (
 //go:generate go run ../../cmd/blockhash -o hash.go .
 
 // init registers all blocks implemented by Dragonfly.
-func init() {
+
+func InitBlocks() {
 	world.RegisterBlock(Air{})
 	world.RegisterBlock(Amethyst{})
 	world.RegisterBlock(AncientDebris{})
@@ -206,6 +207,10 @@ func init() {
 	registerAll(allWood())
 	registerAll(allWool())
 	registerAll(allDecoratedPots())
+}
+
+func init() {
+	InitBlocks()
 }
 
 func init() {
