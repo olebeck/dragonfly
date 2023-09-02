@@ -49,6 +49,10 @@ func AirRID() uint32 {
 	return airRID
 }
 
+func Blocks() []Block {
+	return blocks
+}
+
 func init() {
 	ClearStates()
 	LoadBlockStates()
