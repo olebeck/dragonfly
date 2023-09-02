@@ -432,6 +432,14 @@ func (db *DB) StoreEntities(pos world.ChunkPos, dim world.Dimension, e []world.E
 	return db.ldb.Write(batch, nil)
 }
 
+func (db *DB) StoreBlockNBTs(pos world.ChunkPos, dim world.Dimension, blockEntities map[cube.Pos]world.Block) error {
+	k := dbKey{pos: pos, dim: dim}
+	n := 1
+	batch := leveldb.MakeBatch(n)
+	db.storeBlockEntities(batch, k, blockEntities)
+	return db.ldb.Write(batch, nil)
+}
+
 func (db *DB) storeEntities(batch *leveldb.Batch, k dbKey, entities []world.Entity) {
 	if len(entities) == 0 {
 		batch.Delete(k.Sum(keyEntities))
