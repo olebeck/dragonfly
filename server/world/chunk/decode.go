@@ -6,6 +6,7 @@ import (
 
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
+	"golang.org/x/exp/slices"
 )
 
 // StateToRuntimeID must hold a function to convert a name and its state properties to a runtime ID.
@@ -39,15 +40,28 @@ func NetworkDecode(air uint32, data []byte, count int, oldBiomes bool, hashedRid
 		if _, err := buf.Read(biomes[:]); err != nil {
 			return nil, nil, fmt.Errorf("error reading biomes: %w", err)
 		}
+		var values []uint32
+		for _, v := range biomes {
+			if !slices.Contains(values, uint32(v)) {
+				values = append(values, uint32(v))
+			}
+		}
+
+		size := paletteSizeFor(len(values))
+		biome := newPalettedStorage(make([]uint32, size.uint32s()), newPalette(size, values))
 
 		// Make our 2D biomes 3D.
 		for x := 0; x < 16; x++ {
 			for z := 0; z < 16; z++ {
 				id := biomes[(x&15)|(z&15)<<4]
-				for y := r.Min(); y <= r.Max(); y++ {
-					c.SetBiome(uint8(x), int16(y), uint8(z), uint32(id))
+				for y := 0; y < 16; y++ {
+					biome.Set(uint8(x), uint8(y), uint8(z), uint32(id))
 				}
 			}
+		}
+
+		for i := range c.biomes {
+			c.biomes[i] = biome
 		}
 	} else {
 		var last *PalettedStorage
