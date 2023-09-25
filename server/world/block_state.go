@@ -223,7 +223,9 @@ func ns_name_split(identifier string) (ns, name string) {
 	return ns_name[0], ns_name[len(ns_name)-1]
 }
 
-func InsertCustomBlocks(entries []protocol.BlockEntry) int {
+type BlockState = blockState
+
+func InsertCustomBlocks(entries []protocol.BlockEntry) []BlockState {
 	customBlocks = entries
 	var states []blockState
 	for _, entry := range entries {
@@ -256,7 +258,7 @@ func InsertCustomBlocks(entries []protocol.BlockEntry) int {
 		}
 	}
 	registerBlockStates(states)
-	return len(states)
+	return states
 }
 
 func CustomBlocks() []protocol.BlockEntry {
