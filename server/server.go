@@ -362,6 +362,7 @@ func (srv *Server) defaultGameData() minecraft.GameData {
 		PlayerPermissions: packet.PermissionLevelMember,
 		PlayerPosition:    vec64To32(srv.world.Spawn().Vec3Centre().Add(mgl64.Vec3{0, 1.62})),
 
+		//CustomBlocks: srv.customBlockEntries(),
 		Items:     srv.itemEntries(),
 		GameRules: []protocol.GameRule{{Name: "naturalregeneration", Value: false}},
 
@@ -543,6 +544,10 @@ func (srv *Server) itemEntries() []protocol.ItemEntry {
 		})
 	}
 	return entries
+}
+
+func (srv *Server) customBlockEntries() []protocol.BlockEntry {
+	return world.CustomBlocks()
 }
 
 // ashyBiome represents a biome that has any form of ash.

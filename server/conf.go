@@ -97,6 +97,8 @@ type Config struct {
 	// may be added to the Server's worlds. If no entity types are registered,
 	// Entities will be set to entity.DefaultRegistry.
 	Entities world.EntityRegistry
+
+	LegacyHeight bool
 }
 
 // Logger is used to report information and errors from a dragonfly Server. Any
@@ -148,13 +150,18 @@ func (conf Config) New() *Server {
 	// Copy resources so that the slice can't be edited afterwards.
 	conf.Resources = slices.Clone(conf.Resources)
 
+	overworldDimension := world.Overworld
+	if conf.LegacyHeight {
+		overworldDimension = world.Overworld_legacy
+	}
+
 	srv := &Server{
 		conf:     conf,
 		incoming: make(chan *session.Session),
 		p:        make(map[uuid.UUID]*player.Player),
 		world:    &world.World{}, nether: &world.World{}, end: &world.World{},
 	}
-	srv.world = srv.createWorld(world.Overworld, &srv.nether, &srv.end)
+	srv.world = srv.createWorld(overworldDimension, &srv.nether, &srv.end)
 	srv.nether = srv.createWorld(world.Nether, &srv.world, &srv.end)
 	srv.end = srv.createWorld(world.End, &srv.nether, &srv.world)
 

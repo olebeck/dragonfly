@@ -43,6 +43,8 @@ var (
 	liquidDisplacingBlocks []bool
 	// airRID is the runtime ID of an air block.
 	airRID uint32
+
+	customBlocks []protocol.BlockEntry
 )
 
 func AirRID() uint32 {
@@ -79,6 +81,7 @@ func ClearStates() {
 	stateRuntimeIDs = map[stateHash]uint32{}
 	hashes = intintmap.New(7000, 0.999)
 
+	customBlocks = nil
 	blocks = nil
 	nbtBlocks = nil
 	randomTickBlocks = nil
@@ -221,6 +224,7 @@ func ns_name_split(identifier string) (ns, name string) {
 }
 
 func InsertCustomBlocks(entries []protocol.BlockEntry) int {
+	customBlocks = entries
 	var states []blockState
 	for _, entry := range entries {
 		ns, _ := ns_name_split(entry.Name)
@@ -253,6 +257,10 @@ func InsertCustomBlocks(entries []protocol.BlockEntry) int {
 	}
 	registerBlockStates(states)
 	return len(states)
+}
+
+func CustomBlocks() []protocol.BlockEntry {
+	return customBlocks
 }
 
 // UnknownBlock represents a block that has not yet been implemented. It is used for registering block
