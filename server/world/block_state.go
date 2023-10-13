@@ -3,6 +3,7 @@ package world
 import (
 	"bytes"
 	_ "embed"
+	"encoding/json"
 	"fmt"
 	"image/color"
 	"math"
@@ -180,6 +181,71 @@ func registerBlockState(s blockState) {
 	chunk.WaterBlocks = slices.Insert(chunk.WaterBlocks, int(rid), isWater)
 }
 
+type kv struct {
+	K string
+	V any
+}
+
+func permute_props(props []kv) (o []map[string]any) {
+	if len(props) == 0 {
+		return []map[string]any{make(map[string]any)}
+	}
+	k := make([]int, len(props))
+
+	leng := func(a any) int {
+		switch a := a.(type) {
+		case []int32:
+			return len(a)
+		case []any:
+			return len(a)
+		case []uint8:
+			return len(a)
+		default:
+			panic("")
+		}
+	}
+	get := func(a any, i int) any {
+		switch a := a.(type) {
+		case []int32:
+			return a[i]
+		case []any:
+			return a[i]
+		case []uint8:
+			return a[i]
+		default:
+			panic("")
+		}
+	}
+
+	incK := func() bool {
+		a := len(k) - 1
+		for {
+			i := k[a]
+			if i == leng(props[a].V)-1 {
+				k[a] = 0
+				if a == 0 {
+					return false
+				}
+				a -= 1
+			} else {
+				k[a] = i + 1
+				return true
+			}
+		}
+	}
+	for {
+		m := make(map[string]any)
+		for i, p := range props {
+			m[p.K] = get(p.V, k[i])
+		}
+		o = append(o, m)
+		if !incK() {
+			break
+		}
+	}
+	return o
+}
+
 func permutate_properties(props map[string]any) []map[string]any {
 	var result []map[string]any
 	if len(props) == 0 {
@@ -213,6 +279,12 @@ func permutate_properties(props map[string]any) []map[string]any {
 			for _, p1 := range propVal {
 				f(propName, p1)
 			}
+		case []uint8:
+			for _, p1 := range propVal {
+				f(propName, p1)
+			}
+		default:
+			panic("")
 		}
 	}
 	return result
@@ -225,32 +297,70 @@ func ns_name_split(identifier string) (ns, name string) {
 
 type BlockState = blockState
 
+var traitLookup = map[string][]any{
+	"facing_direction": {
+		"north", "east", "south", "west", "down", "up",
+	},
+}
+
 func InsertCustomBlocks(entries []protocol.BlockEntry) []BlockState {
 	customBlocks = entries
 	var states []blockState
 	for _, entry := range entries {
+		if entry.Name == "mule:badlands1" {
+			println()
+		}
 		ns, _ := ns_name_split(entry.Name)
 		if ns == "minecraft" {
 			continue
 		}
-		var properties map[string]any
+		var properties map[string]any = make(map[string]any)
+		var prop2 []kv
 		props, ok := entry.Properties["properties"].([]any)
 		if ok {
 			for _, v := range props {
-				properties = make(map[string]any)
 				v := v.(map[string]any)
 				name := v["name"].(string)
-				switch a := v["enum"].(type) {
+				enum := v["enum"]
+				prop2 = append(prop2, kv{name, enum})
+				switch enum.(type) {
 				case []int32:
-					properties[name] = a
+					properties[name] = enum
 				case []bool:
-					properties[name] = a
+					properties[name] = enum
 				case []any:
-					properties[name] = a
+					properties[name] = enum
+				case []uint8:
+					properties[name] = enum
+				default:
+					panic("")
 				}
 			}
 		}
-		for _, props := range permutate_properties(properties) {
+
+		traits, ok := entry.Properties["traits"].([]any)
+		if ok {
+			for _, trait := range traits {
+				trait := trait.(map[string]any)
+				enabled_states := trait["enabled_states"].(map[string]any)
+				for k, enabled := range enabled_states {
+					enabled := enabled.(uint8)
+					if enabled == 0 {
+						continue
+					}
+					v, ok := traitLookup[k]
+					if !ok {
+						panic("unresolved trait " + k)
+					}
+					prop2 = append(prop2, kv{"minecraft:" + k, v})
+				}
+				println(trait)
+			}
+		}
+
+		for _, props := range permute_props(prop2) {
+			j, _ := json.Marshal(props)
+			fmt.Printf("%s\n", string(j))
 			states = append(states, blockState{
 				Name:       entry.Name,
 				Properties: props,
