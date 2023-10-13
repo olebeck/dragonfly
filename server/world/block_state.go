@@ -200,6 +200,8 @@ func permute_props(props []kv) (o []map[string]any) {
 			return len(a)
 		case []uint8:
 			return len(a)
+		case []bool:
+			return len(a)
 		default:
 			panic("")
 		}
@@ -211,6 +213,8 @@ func permute_props(props []kv) (o []map[string]any) {
 		case []any:
 			return a[i]
 		case []uint8:
+			return a[i]
+		case []bool:
 			return a[i]
 		default:
 			panic("")
@@ -246,50 +250,6 @@ func permute_props(props []kv) (o []map[string]any) {
 	return o
 }
 
-func permutate_properties(props map[string]any) []map[string]any {
-	var result []map[string]any
-	if len(props) == 0 {
-		return append(result, map[string]any{})
-	}
-
-	f := func(propName string, p1 any) {
-		if len(props) == 1 {
-			result = append(result, map[string]any{propName: p1})
-			return
-		}
-
-		delete(props, propName)
-		for _, p2 := range permutate_properties(props) {
-			res := make(map[string]any)
-			res[propName] = p1
-			for k, v := range p2 {
-				res[k] = v
-			}
-			result = append(result, res)
-		}
-	}
-
-	for propName, propVal := range props {
-		switch propVal := propVal.(type) {
-		case []int32:
-			for _, p1 := range propVal {
-				f(propName, p1)
-			}
-		case []any:
-			for _, p1 := range propVal {
-				f(propName, p1)
-			}
-		case []uint8:
-			for _, p1 := range propVal {
-				f(propName, p1)
-			}
-		default:
-			panic("")
-		}
-	}
-	return result
-}
-
 func ns_name_split(identifier string) (ns, name string) {
 	ns_name := strings.Split(identifier, ":")
 	return ns_name[0], ns_name[len(ns_name)-1]
@@ -314,7 +274,6 @@ func InsertCustomBlocks(entries []protocol.BlockEntry) []BlockState {
 		if ns == "minecraft" {
 			continue
 		}
-		var properties map[string]any = make(map[string]any)
 		var prop2 []kv
 		props, ok := entry.Properties["properties"].([]any)
 		if ok {
@@ -323,18 +282,6 @@ func InsertCustomBlocks(entries []protocol.BlockEntry) []BlockState {
 				name := v["name"].(string)
 				enum := v["enum"]
 				prop2 = append(prop2, kv{name, enum})
-				switch enum.(type) {
-				case []int32:
-					properties[name] = enum
-				case []bool:
-					properties[name] = enum
-				case []any:
-					properties[name] = enum
-				case []uint8:
-					properties[name] = enum
-				default:
-					panic("")
-				}
 			}
 		}
 
