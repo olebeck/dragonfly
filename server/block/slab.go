@@ -162,7 +162,11 @@ func (s Slab) EncodeItem() (string, int16) {
 // EncodeBlock ...
 func (s Slab) EncodeBlock() (string, map[string]any) {
 	id, slabType, _ := encodeSlabBlock(s.Block)
-	properties := map[string]any{"minecraft:vertical_half": s.verticalHalf()}
+	side := "bottom"
+	if s.Top {
+		side = "top"
+	}
+	properties := map[string]any{"minecraft:vertical_half": side}
 	if slabType != "" {
 		properties[slabType] = id
 		id = encodeLegacySlabId(slabType)

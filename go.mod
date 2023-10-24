@@ -16,6 +16,7 @@ require (
 	github.com/segmentio/fasthash v1.0.3
 	github.com/sirupsen/logrus v1.9.3
 	github.com/thomaso-mirodin/intmath v0.0.0-20160323211736-5dc6d854e46e
+	github.com/zaataylor/cartesian v0.0.0-20221028053253-3b3244d82727
 	go.uber.org/atomic v1.11.0
 	golang.org/x/exp v0.0.0-20230817173708-d852ddb80c63
 	golang.org/x/text v0.12.0
@@ -28,7 +29,6 @@ require (
 	github.com/muhammadmuzzammil1998/jsonc v1.0.0 // indirect
 	github.com/sandertv/go-raknet v1.12.1 // indirect
 	github.com/stretchr/testify v1.8.4 // indirect
-	github.com/zaataylor/cartesian v0.0.0-20221028053253-3b3244d82727 // indirect
 	golang.org/x/crypto v0.12.0 // indirect
 	golang.org/x/image v0.11.0 // indirect
 	golang.org/x/net v0.14.0 // indirect
