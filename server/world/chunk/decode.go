@@ -216,7 +216,7 @@ func decodePalettedStorage(buf *bytes.Buffer, e Encoding, pe paletteEncoding) (*
 	if err != nil {
 		return nil, fmt.Errorf("error reading block size: %w", err)
 	}
-	if e == NetworkEncoding && blockSize&1 != 1 {
+	if e == NetworkEncoding && pe == BlockPaletteEncoding && blockSize&1 != 1 {
 		e = NetworkPersistentEncoding
 	}
 
