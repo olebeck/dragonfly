@@ -4,6 +4,7 @@ import (
 	"bytes"
 	_ "embed"
 	"fmt"
+	"hash/fnv"
 	"image/color"
 	"math"
 	"sort"
@@ -80,6 +81,7 @@ func init() {
 func ClearStates() {
 	blockProperties = map[string]map[string]any{}
 	stateRuntimeIDs = map[stateHash]uint32{}
+	chunk.HashToRuntimeID = make(map[uint32]uint32)
 	hashes = intintmap.New(7000, 0.999)
 
 	customBlocks = nil
@@ -98,16 +100,33 @@ func LoadBlockStates() {
 
 	// Register all block states present in the block_states.nbt file. These are all possible options registered
 	// blocks may encode to.
-	var s blockState
+	var states []blockState
 	for {
+		s := blockState{}
 		if err := dec.Decode(&s); err != nil {
 			break
 		}
-		registerBlockState(s)
+		states = append(states, s)
 	}
+	registerBlockStates(states)
 }
 
-// registerBlockStates inserts multiple blockstates
+func networkBlockHash(name string, properties map[string]any) uint32 {
+	data, err := nbt.MarshalEncoding(map[string]any{
+		"name":   name,
+		"states": properties,
+	}, nbt.LittleEndian)
+	if err != nil {
+		panic(err)
+	}
+
+	h := fnv.New32a()
+	h.Write(data)
+	return h.Sum32()
+}
+
+// registerBlockStates registers multiple new blockStates to the states slice. The function panics if the properties the
+// blockState hold are invalid or if the blockState was already registered.
 func registerBlockStates(ss []blockState) {
 	newStates := map[stateHash]uint32{}
 
@@ -128,10 +147,15 @@ func registerBlockStates(ss []blockState) {
 	for id, b := range blocks {
 		name, properties := b.EncodeBlock()
 		i := stateHash{name: name, properties: hashProperties(properties)}
+		if _, ok := blockProperties[name]; !ok {
+			blockProperties[name] = properties
+		}
 		rid := uint32(id)
 		if name == "minecraft:air" {
 			airRID = rid
 		}
+
+		isWater := name == "minecraft:water"
 
 		// if its one of the added ones
 		if _, ok := newStates[i]; ok {
@@ -145,40 +169,12 @@ func registerBlockStates(ss []blockState) {
 			liquidDisplacingBlocks = slices.Insert(liquidDisplacingBlocks, int(rid), false)
 			chunk.FilteringBlocks = slices.Insert(chunk.FilteringBlocks, int(rid), 15)
 			chunk.LightBlocks = slices.Insert(chunk.LightBlocks, int(rid), 0)
-			chunk.WaterBlocks = slices.Insert(chunk.WaterBlocks, int(rid), false)
+			chunk.WaterBlocks = slices.Insert(chunk.WaterBlocks, int(rid), isWater)
 		}
 		stateRuntimeIDs[i] = rid
+		chunk.HashToRuntimeID[networkBlockHash(name, properties)] = rid
 		hashes.Put(int64(b.Hash()), int64(id))
 	}
-}
-
-// registerBlockState registers a new blockState to the states slice. The function panics if the properties the
-// blockState hold are invalid or if the blockState was already registered.
-func registerBlockState(s blockState) {
-	h := stateHash{name: s.Name, properties: hashProperties(s.Properties)}
-	if _, ok := stateRuntimeIDs[h]; ok {
-		panic(fmt.Sprintf("cannot register the same state twice (%+v)", s))
-	}
-	if _, ok := blockProperties[s.Name]; !ok {
-		blockProperties[s.Name] = s.Properties
-	}
-	rid := uint32(len(blocks))
-	if s.Name == "minecraft:air" {
-		airRID = rid
-	}
-
-	blocks = append(blocks, UnknownBlock{s})
-	stateRuntimeIDs[h] = rid
-
-	isWater := s.Name == "minecraft:water"
-
-	nbtBlocks = slices.Insert(nbtBlocks, int(rid), false)
-	randomTickBlocks = slices.Insert(randomTickBlocks, int(rid), false)
-	liquidBlocks = slices.Insert(liquidBlocks, int(rid), false)
-	liquidDisplacingBlocks = slices.Insert(liquidDisplacingBlocks, int(rid), false)
-	chunk.FilteringBlocks = slices.Insert(chunk.FilteringBlocks, int(rid), 15)
-	chunk.LightBlocks = slices.Insert(chunk.LightBlocks, int(rid), 0)
-	chunk.WaterBlocks = slices.Insert(chunk.WaterBlocks, int(rid), isWater)
 }
 
 func ns_name_split(identifier string) (ns, name string) {

@@ -11,7 +11,7 @@ import (
 
 // StateToRuntimeID must hold a function to convert a name and its state properties to a runtime ID.
 var StateToRuntimeID func(name string, properties map[string]any) (runtimeID uint32, found bool)
-var ridHashLookup map[uint32]uint32
+var HashToRuntimeID map[uint32]uint32
 
 // NetworkDecode decodes the network serialised data passed into a Chunk if successful. If not, the chunk
 // returned is nil and the error non-nil.
@@ -22,16 +22,9 @@ func NetworkDecode(air uint32, data []byte, count int, oldBiomes bool, hashedRid
 	buf := bytes.NewBuffer(data)
 	for i := 0; i < count; i++ {
 		index := uint8(i)
-		c.sub[index], err = decodeSubChunk(buf, c, &index, NetworkEncoding)
+		c.sub[index], err = decodeSubChunk(buf, c, &index, NetworkEncoding, hashedRids)
 		if err != nil {
 			return nil, nil, err
-		}
-		if hashedRids {
-			for _, storage := range c.sub[index].storages {
-				for i2, v := range storage.palette.values {
-					storage.palette.values[i2] = ridHashLookup[v]
-				}
-			}
 		}
 	}
 	if oldBiomes {
@@ -87,6 +80,7 @@ func NetworkDecode(air uint32, data []byte, count int, oldBiomes bool, hashedRid
 		}
 	}
 
+	// read block nbt data
 	if buf.Len() > 0 {
 		dec := nbt.NewDecoderWithEncoding(buf, nbt.NetworkLittleEndian)
 		dec.AllowZero = true
@@ -125,7 +119,7 @@ func DiskDecode(data SerialisedData, r cube.Range) (*Chunk, error) {
 			continue
 		}
 		index := uint8(i)
-		if c.sub[index], err = decodeSubChunk(bytes.NewBuffer(sub), c, &index, DiskEncoding); err != nil {
+		if c.sub[index], err = decodeSubChunk(bytes.NewBuffer(sub), c, &index, DiskEncoding, false); err != nil {
 			return nil, err
 		}
 	}
@@ -134,7 +128,7 @@ func DiskDecode(data SerialisedData, r cube.Range) (*Chunk, error) {
 
 // decodeSubChunk decodes a SubChunk from a bytes.Buffer. The Encoding passed defines how the block storages of the
 // SubChunk are decoded.
-func decodeSubChunk(buf *bytes.Buffer, c *Chunk, index *byte, e Encoding) (*SubChunk, error) {
+func decodeSubChunk(buf *bytes.Buffer, c *Chunk, index *byte, e Encoding, hashedRids bool) (*SubChunk, error) {
 	ver, err := buf.ReadByte()
 	if err != nil {
 		return nil, fmt.Errorf("error reading version: %w", err)
@@ -168,17 +162,28 @@ func decodeSubChunk(buf *bytes.Buffer, c *Chunk, index *byte, e Encoding) (*SubC
 		sub.storages = make([]*PalettedStorage, storageCount)
 
 		for i := byte(0); i < storageCount; i++ {
-			sub.storages[i], err = decodePalettedStorage(buf, e, BlockPaletteEncoding)
+			storage, err := decodePalettedStorage(buf, e, BlockPaletteEncoding)
 			if err != nil {
 				return nil, err
 			}
+			if hashedRids {
+				for i2, v := range storage.palette.values {
+					var ok bool
+					storage.palette.values[i2], ok = HashToRuntimeID[v]
+					if !ok {
+						println("rid hash not found, data sorting wrong.")
+					}
+				}
+			}
+			sub.storages[i] = storage
+
 		}
 	}
 	return sub, nil
 }
 
-func DecodeSubChunk(buf *bytes.Buffer, air uint32, r cube.Range, index *byte, e Encoding) (*SubChunk, error) {
-	return decodeSubChunk(buf, &Chunk{air: air, r: r}, index, e)
+func DecodeSubChunk(buf *bytes.Buffer, air uint32, r cube.Range, index *byte, e Encoding, hashedRids bool) (*SubChunk, error) {
+	return decodeSubChunk(buf, &Chunk{air: air, r: r}, index, e, hashedRids)
 }
 
 // decodeBiomes reads the paletted storages holding biomes from buf and stores it into the Chunk passed.
