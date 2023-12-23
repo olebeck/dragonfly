@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"slices"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/internal/packbuilder"
@@ -18,7 +20,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/resource"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/exp/slices"
 )
 
 // Config contains options for starting a Minecraft server.

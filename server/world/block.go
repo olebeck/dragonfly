@@ -2,12 +2,14 @@ package world
 
 import (
 	"fmt"
+	"image"
 	"image/color"
 	"math"
 	"math/rand"
 
 	"github.com/brentp/intintmap"
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/customblock"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 )
 
@@ -27,6 +29,26 @@ type Block interface {
 	Model() BlockModel
 	// Color returns an RGBA color used to represent this block on a map
 	Color() color.RGBA
+}
+
+// CustomBlock represents a block that is non-vanilla and requires a resource pack and extra steps to show it to the
+// client.
+type CustomBlock interface {
+	Block
+	Properties() customblock.Properties
+}
+
+type CustomBlockBuildable interface {
+	CustomBlock
+	// Name is the name displayed to clients using the block.
+	Name() string
+	// Geometries is the geometries for the block that define the shape of the block. If false is returned, no custom
+	// geometry will be applied. Permutation-specific geometry can be defined by returning a map of permutations to
+	// geometry.
+	Geometry() []byte
+	// Textures is a map of images indexed by their target, used to map textures on to the block. Permutation-specific
+	// textures can be defined by returning a map of permutations to textures.
+	Textures() map[string]image.Image
 }
 
 // Liquid represents a block that can be moved through and which can flow in the world after placement. There
@@ -61,9 +83,10 @@ var hashes *intintmap.Map
 // block passed. RegisterBlock panics if the block properties returned were not valid, existing properties.
 func RegisterBlock(b Block) {
 	name, properties := b.EncodeBlock()
-	h := stateHash{name: name, properties: hashProperties(properties)}
-
-	rid, ok := stateRuntimeIDs[h]
+	if _, ok := b.(CustomBlock); ok {
+		registerBlockStates([]blockState{{Name: name, Properties: properties}})
+	}
+	rid, ok := stateRuntimeIDs[stateHash{name: name, properties: hashProperties(properties)}]
 	if !ok {
 		// We assume all blocks must have all their states registered beforehand. Vanilla blocks will have
 		// this done through registering of all states present in the block_states.nbt file.
@@ -96,6 +119,11 @@ func RegisterBlock(b Block) {
 	}
 	if _, ok := b.(LiquidDisplacer); ok {
 		liquidDisplacingBlocks[rid] = true
+	}
+	if c, ok := b.(CustomBlock); ok {
+		if _, ok := customBlocks[name]; !ok {
+			customBlocks[name] = c
+		}
 	}
 }
 
@@ -143,6 +171,12 @@ func BlockByName(name string, properties map[string]any) (Block, bool) {
 		return nil, false
 	}
 	return blocks[rid], true
+}
+
+// CustomBlocks returns a map of all custom blocks registered with their names as keys.
+func CustomBlocksa() map[string]CustomBlock {
+	CustomBlocks()
+	return customBlocks
 }
 
 // air returns an air block.

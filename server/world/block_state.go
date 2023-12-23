@@ -7,6 +7,7 @@ import (
 	"hash/fnv"
 	"image/color"
 	"math"
+	"slices"
 	"sort"
 	"strings"
 	"unsafe"
@@ -17,7 +18,6 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/segmentio/fasthash/fnv1"
 	"github.com/zaataylor/cartesian/cartesian"
-	"golang.org/x/exp/slices"
 )
 
 var (
@@ -29,6 +29,8 @@ var (
 	// registered are of the type unknownBlock.
 	blocks     []Block
 	BlockCount int
+	// customBlocks maps a custom block's identifier to a slice of custom blocks.
+	customBlocks = map[string]CustomBlock{}
 	// stateRuntimeIDs holds a map for looking up the runtime ID of a block by the stateHash it produces.
 	stateRuntimeIDs map[stateHash]uint32
 	// nbtBlocks holds a list of NBTer implementations for blocks registered that implement the NBTer interface.
@@ -46,7 +48,7 @@ var (
 	// airRID is the runtime ID of an air block.
 	airRID uint32
 
-	customBlocks []protocol.BlockEntry
+	customBlockEntries = []protocol.BlockEntry{}
 )
 
 func AirRID() uint32 {
@@ -84,7 +86,7 @@ func ClearStates() {
 	chunk.HashToRuntimeID = make(map[uint32]uint32)
 	hashes = intintmap.New(7000, 0.999)
 
-	customBlocks = nil
+	customBlockEntries = nil
 	blocks = nil
 	nbtBlocks = nil
 	randomTickBlocks = nil
@@ -191,7 +193,7 @@ var traitLookup = map[string][]any{
 }
 
 func InsertCustomBlocks(entries []protocol.BlockEntry) []BlockState {
-	customBlocks = entries
+	customBlockEntries = entries
 	var states []blockState
 	for _, entry := range entries {
 		ns, _ := ns_name_split(entry.Name)
@@ -252,7 +254,11 @@ func InsertCustomBlocks(entries []protocol.BlockEntry) []BlockState {
 	return states
 }
 
-func CustomBlocks() []protocol.BlockEntry {
+func CustomBlockEntries() []protocol.BlockEntry {
+	return customBlockEntries
+}
+
+func CustomBlocks() map[string]CustomBlock {
 	return customBlocks
 }
 

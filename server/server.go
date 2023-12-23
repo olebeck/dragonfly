@@ -6,7 +6,6 @@ import (
 	_ "embed"
 	"encoding/base64"
 	"fmt"
-	"math/rand"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -14,10 +13,10 @@ import (
 	"strings"
 	"sync"
 	"syscall"
-	"time"
 
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/cmd"
+	"github.com/df-mc/dragonfly/server/internal/blockinternal"
 	"github.com/df-mc/dragonfly/server/internal/iteminternal"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	_ "github.com/df-mc/dragonfly/server/item" // Imported for maintaining correct initialisation order.
@@ -49,7 +48,8 @@ type Server struct {
 
 	world, nether, end *world.World
 
-	customItems []protocol.ItemComponentEntry
+	customBlocks []protocol.BlockEntry
+	customItems  []protocol.ItemComponentEntry
 
 	listeners []Listener
 	incoming  chan *session.Session
@@ -275,6 +275,7 @@ func (srv *Server) listen(l Listener) {
 // startListening starts making the EncodeBlock listener listen, accepting new
 // connections from players.
 func (srv *Server) startListening() {
+	srv.makeBlockEntries()
 	srv.makeItemComponents()
 
 	srv.wg.Add(len(srv.conf.Listeners))
@@ -285,6 +286,21 @@ func (srv *Server) startListening() {
 		}
 		srv.listeners = append(srv.listeners, l)
 		go srv.listen(l)
+	}
+}
+
+// makeBlockEntries initializes the server's block components map using the registered custom blocks. It allows block
+// components to be created only once at startup.
+func (srv *Server) makeBlockEntries() {
+	custom := maps.Values(world.CustomBlocks())
+	srv.customBlocks = make([]protocol.BlockEntry, len(custom))
+
+	for i, b := range custom {
+		name, _ := b.EncodeBlock()
+		srv.customBlocks[i] = protocol.BlockEntry{
+			Name:       name,
+			Properties: blockinternal.Components(name, b),
+		}
 	}
 }
 
@@ -362,9 +378,9 @@ func (srv *Server) defaultGameData() minecraft.GameData {
 		PlayerPermissions: packet.PermissionLevelMember,
 		PlayerPosition:    vec64To32(srv.world.Spawn().Vec3Centre().Add(mgl64.Vec3{0, 1.62})),
 
-		//CustomBlocks: srv.customBlockEntries(),
-		Items:     srv.itemEntries(),
-		GameRules: []protocol.GameRule{{Name: "naturalregeneration", Value: false}},
+		Items:        srv.itemEntries(),
+		CustomBlocks: srv.customBlocks,
+		GameRules:    []protocol.GameRule{{Name: "naturalregeneration", Value: false}},
 
 		ServerAuthoritativeInventory: true,
 		PlayerMovementSettings: protocol.PlayerMovementSettings{
@@ -546,10 +562,6 @@ func (srv *Server) itemEntries() []protocol.ItemEntry {
 	return entries
 }
 
-func (srv *Server) customBlockEntries() []protocol.BlockEntry {
-	return world.CustomBlocks()
-}
-
 // ashyBiome represents a biome that has any form of ash.
 type ashyBiome interface {
 	// Ash returns the ash and white ash of the biome.
@@ -596,8 +608,5 @@ var (
 // values in the runtime ID maps. init also seeds the global `rand` with the
 // current time.
 func init() {
-	// Seeding the random for things like lightning that need to use RNG.
-	rand.Seed(time.Now().UnixNano())
-
 	_ = nbt.Unmarshal(itemRuntimeIDData, &itemRuntimeIDs)
 }
