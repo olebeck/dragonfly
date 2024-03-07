@@ -168,6 +168,7 @@ func (conf Config) New() *Server {
 
 	srv.registerTargetFunc()
 	srv.checkNetIsolation()
+	world_finaliseBlockRegistry()
 
 	return srv
 }
@@ -331,3 +332,8 @@ func DefaultConfig() UserConfig {
 	c.Resources.Required = false
 	return c
 }
+
+// noinspection ALL
+//
+//go:linkname world_finaliseBlockRegistry github.com/df-mc/dragonfly/server/world.finaliseBlockRegistry
+func world_finaliseBlockRegistry()

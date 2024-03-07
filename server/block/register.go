@@ -209,9 +209,6 @@ func InitBlocks() {
 	registerAll(allDecoratedPots())
 }
 
-func init() {
-	InitBlocks()
-}
 
 func init() {
 	world.RegisterItem(Air{})

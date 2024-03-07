@@ -7,7 +7,6 @@ import (
 	"hash/fnv"
 	"image/color"
 	"math"
-	"slices"
 	"sort"
 	"strings"
 	"unsafe"
@@ -16,7 +15,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
-	"github.com/segmentio/fasthash/fnv1"
 	"github.com/zaataylor/cartesian/cartesian"
 )
 
@@ -47,8 +45,6 @@ var (
 	liquidDisplacingBlocks []bool
 	// airRID is the runtime ID of an air block.
 	airRID uint32
-
-	customBlockEntries = []protocol.BlockEntry{}
 )
 
 func AirRID() uint32 {
@@ -59,9 +55,16 @@ func Blocks() []Block {
 	return blocks
 }
 
+// noinspection ALL
+//
+//go:linkname block_initBlocks github.com/df-mc/dragonfly/server/block.InitBlocks
+func block_initBlocks()
+
 func init() {
 	ClearStates()
 	LoadBlockStates()
+	block_initBlocks()
+	FinaliseBlockRegistry()
 	BlockCount = len(blocks)
 
 	chunk.RuntimeIDToState = func(runtimeID uint32) (name string, properties map[string]any, found bool) {
@@ -84,9 +87,10 @@ func ClearStates() {
 	blockProperties = map[string]map[string]any{}
 	stateRuntimeIDs = map[stateHash]uint32{}
 	chunk.HashToRuntimeID = make(map[uint32]uint32)
+	bitSize = 0
 	hashes = intintmap.New(7000, 0.999)
+	networkHashes = make(map[uint32]int)
 
-	customBlockEntries = nil
 	blocks = nil
 	nbtBlocks = nil
 	randomTickBlocks = nil
@@ -102,15 +106,13 @@ func LoadBlockStates() {
 
 	// Register all block states present in the block_states.nbt file. These are all possible options registered
 	// blocks may encode to.
-	var states []blockState
 	for {
 		s := blockState{}
 		if err := dec.Decode(&s); err != nil {
 			break
 		}
-		states = append(states, s)
+		registerBlockState(s)
 	}
-	registerBlockStates(states)
 }
 
 func networkBlockHash(name string, properties map[string]any) uint32 {
@@ -129,57 +131,20 @@ func networkBlockHash(name string, properties map[string]any) uint32 {
 
 // registerBlockStates registers multiple new blockStates to the states slice. The function panics if the properties the
 // blockState hold are invalid or if the blockState was already registered.
-func registerBlockStates(ss []blockState) {
-	newStates := map[stateHash]uint32{}
-
-	// add blocks
-	for _, s := range ss {
-		blocks = append(blocks, UnknownBlock{s})
-		newStates[stateHash{s.Name, hashProperties(s.Properties)}] = 0
+func registerBlockState(s blockState) {
+	h := stateHash{name: s.Name, properties: hashProperties(s.Properties)}
+	if _, ok := stateRuntimeIDs[h]; ok {
+		panic(fmt.Sprintf("cannot register the same state twice (%+v)", s))
 	}
-	BlockCount = len(blocks)
-
-	// sort the new blocks
-	sort.SliceStable(blocks, func(i, j int) bool {
-		nameOne, _ := blocks[i].EncodeBlock()
-		nameTwo, _ := blocks[j].EncodeBlock()
-		return fnv1.HashString64(nameOne) < fnv1.HashString64(nameTwo)
-	})
-
-	for id, b := range blocks {
-		name, properties := b.EncodeBlock()
-		i := stateHash{name: name, properties: hashProperties(properties)}
-		if _, ok := blockProperties[name]; !ok {
-			blockProperties[name] = properties
-		}
-		rid := uint32(id)
-		if name == "minecraft:air" {
-			airRID = rid
-		}
-
-		isWater := name == "minecraft:water"
-
-		// if its one of the added ones
-		if _, ok := newStates[i]; ok {
-			if _, ok := stateRuntimeIDs[i]; ok {
-				panic(fmt.Sprintf("cannot register the same state twice (%+v)", b))
-			}
-
-			nbtBlocks = slices.Insert(nbtBlocks, int(rid), false)
-			randomTickBlocks = slices.Insert(randomTickBlocks, int(rid), false)
-			liquidBlocks = slices.Insert(liquidBlocks, int(rid), false)
-			liquidDisplacingBlocks = slices.Insert(liquidDisplacingBlocks, int(rid), false)
-			chunk.FilteringBlocks = slices.Insert(chunk.FilteringBlocks, int(rid), 15)
-			chunk.LightBlocks = slices.Insert(chunk.LightBlocks, int(rid), 0)
-			chunk.WaterBlocks = slices.Insert(chunk.WaterBlocks, int(rid), isWater)
-		}
-		stateRuntimeIDs[i] = rid
-		chunk.HashToRuntimeID[networkBlockHash(name, properties)] = rid
-		hashes.Put(int64(b.Hash()), int64(id))
+	if _, ok := blockProperties[s.Name]; !ok {
+		blockProperties[s.Name] = s.Properties
 	}
+	rid := uint32(len(blocks))
+	blocks = append(blocks, UnknownBlock{s})
+	stateRuntimeIDs[h] = rid
 }
 
-func ns_name_split(identifier string) (ns, name string) {
+func splitNamespace(identifier string) (ns, name string) {
 	ns_name := strings.Split(identifier, ":")
 	return ns_name[0], ns_name[len(ns_name)-1]
 }
@@ -192,11 +157,9 @@ var traitLookup = map[string][]any{
 	},
 }
 
-func InsertCustomBlocks(entries []protocol.BlockEntry) []BlockState {
-	customBlockEntries = entries
-	var states []blockState
+func InsertCustomBlocks(entries []protocol.BlockEntry) {
 	for _, entry := range entries {
-		ns, _ := ns_name_split(entry.Name)
+		ns, _ := splitNamespace(entry.Name)
 		if ns == "minecraft" {
 			continue
 		}
@@ -244,22 +207,15 @@ func InsertCustomBlocks(entries []protocol.BlockEntry) []BlockState {
 				name := propertyNames[i]
 				m[name] = value
 			}
-			states = append(states, blockState{
+			registerBlockState(blockState{
 				Name:       entry.Name,
 				Properties: m,
 			})
 		}
 	}
-	registerBlockStates(states)
-	return states
-}
-
-func CustomBlockEntries() []protocol.BlockEntry {
-	return customBlockEntries
-}
-
-func CustomBlocks() map[string]CustomBlock {
-	return customBlocks
+	bitSize = 0
+	hashes = intintmap.New(len(blocks), 0.999)
+	FinaliseBlockRegistry()
 }
 
 // UnknownBlock represents a block that has not yet been implemented. It is used for registering block
@@ -276,6 +232,11 @@ func (b UnknownBlock) EncodeBlock() (string, map[string]any) {
 // Model ...
 func (UnknownBlock) Model() BlockModel {
 	return unknownModel{}
+}
+
+// BaseHash ...
+func (b UnknownBlock) BaseHash() uint64 {
+	return 0
 }
 
 // Hash ...
