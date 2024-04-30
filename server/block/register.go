@@ -141,7 +141,7 @@ func InitBlocks() {
 	registerAll(allCopper())
 	registerAll(allCoral())
 	registerAll(allCoralBlocks())
-	registerAll(allCoralFan())
+	//registerAll(allCoralFan())
 	registerAll(allDeepslate())
 	registerAll(allDoors())
 	registerAll(allDoubleFlowers())
@@ -182,7 +182,7 @@ func InitBlocks() {
 	registerAll(allPurpurs())
 	registerAll(allQuartz())
 	registerAll(allSandstones())
-	registerAll(allSapling())
+	//registerAll(allSapling())
 	registerAll(allSeaPickles())
 	registerAll(allSeagrass())
 	registerAll(allSigns())
@@ -208,7 +208,6 @@ func InitBlocks() {
 	registerAll(allWool())
 	registerAll(allDecoratedPots())
 }
-
 
 func init() {
 	world.RegisterItem(Air{})
