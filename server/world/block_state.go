@@ -6,7 +6,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"hash/fnv"
-	"os"
 	"sort"
 	"strings"
 	"unsafe"
@@ -108,8 +107,6 @@ func networkBlockHash(name string, properties map[string]any) uint32 {
 	}
 	data = append(data, 0) // end
 	data = append(data, 0) // end
-
-	os.WriteFile("filego.bin", data, 0777)
 
 	h := fnv.New32a()
 	h.Write(data)

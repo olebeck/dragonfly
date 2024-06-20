@@ -44,6 +44,7 @@ type Config struct {
 	Entities world.EntityRegistry
 
 	Biomes *world.BiomeRegistry
+	Blocks world.BlockRegistry
 }
 
 // Open creates a new DB reading and writing from/to files under the path
@@ -62,6 +63,9 @@ func (conf Config) Open(dir string) (*DB, error) {
 	}
 	if conf.Biomes == nil {
 		conf.Biomes = world.DefaultBiomes
+	}
+	if conf.Blocks == nil {
+		conf.Blocks = world.DefaultBlockRegistry
 	}
 	_ = os.MkdirAll(filepath.Join(dir, "db"), 0777)
 
