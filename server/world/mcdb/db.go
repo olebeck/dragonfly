@@ -29,6 +29,7 @@ type DB struct {
 	dir  string
 	ldat *leveldat.Data
 	set  *world.Settings
+	br   world.BlockRegistry
 }
 
 // Open creates a new provider reading and writing from/to files under the path
@@ -189,7 +190,7 @@ func (db *DB) column(k dbKey) (*world.Column, error) {
 	if err != nil {
 		return nil, fmt.Errorf("read sub chunks: %w", err)
 	}
-	col.Chunk, err = chunk.DiskDecode(cdata, k.dim.Range())
+	col.Chunk, err = chunk.DiskDecode(db.br, cdata, k.dim.Range())
 	if err != nil {
 		return nil, fmt.Errorf("decode chunk data: %w", err)
 	}
@@ -359,7 +360,7 @@ func (db *DB) blockEntities(k dbKey, c *chunk.Chunk) (map[cube.Pos]world.Block, 
 		pos := blockPosFromNBT(m)
 
 		id := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
-		b, ok := world.BlockByRuntimeID(id)
+		b, ok := db.br.BlockByRuntimeID(id)
 		if !ok {
 			db.conf.Log.Errorf("no block registered with runtime id %v", id)
 			continue

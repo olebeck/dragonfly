@@ -1,12 +1,13 @@
 package world
 
 import (
-	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/internal/sliceutil"
-	"golang.org/x/exp/maps"
 	"math/rand"
 	"slices"
 	"time"
+
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/internal/sliceutil"
+	"golang.org/x/exp/maps"
 )
 
 // ticker implements World ticking methods. World embeds this struct, so any exported methods on ticker are exported
@@ -164,7 +165,7 @@ func (t ticker) tickBlocksRandomly(loaders []*Loader, tick int64) {
 				// Generally we would want to make sure the block has its block entities, but provided blocks
 				// with block entities are generally ticked already, we are safe to assume that blocks
 				// implementing the RandomTicker don't rely on additional block entity data.
-				if rid := sub.Layers()[0].At(x, y, z); randomTickBlocks[rid] {
+				if rid := sub.Layers()[0].At(x, y, z); t.w.br.RandomTickBlock(rid) {
 					subY := (i + (t.w.Range().Min() >> 4)) << 4
 					randomBlocks = append(randomBlocks, cube.Pos{cx + int(x), subY + int(y), cz + int(z)})
 

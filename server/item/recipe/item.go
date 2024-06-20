@@ -1,9 +1,10 @@
 package recipe
 
 import (
+	"math"
+
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"math"
 )
 
 // Item represents an item that can be used as either the input or output of an item. These do not
@@ -45,7 +46,7 @@ func (d inputItems) Items() ([]Item, bool) {
 			if !ok {
 				return nil, false
 			}
-			if b, ok := world.BlockByName(i.State.Name, i.State.Properties); ok {
+			if b, ok := world.DefaultBlockRegistry.BlockByName(i.State.Name, i.State.Properties); ok {
 				if it, ok = b.(world.Item); !ok {
 					return nil, false
 				}
@@ -86,7 +87,7 @@ func (d outputItems) Stacks() ([]item.Stack, bool) {
 		if !ok {
 			return nil, false
 		}
-		if b, ok := world.BlockByName(o.State.Name, o.State.Properties); ok {
+		if b, ok := world.DefaultBlockRegistry.BlockByName(o.State.Name, o.State.Properties); ok {
 			if it, ok = b.(world.Item); !ok {
 				return nil, false
 			}

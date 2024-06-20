@@ -292,15 +292,15 @@ func (srv *Server) startListening() {
 // makeBlockEntries initializes the server's block components map using the registered custom blocks. It allows block
 // components to be created only once at startup.
 func (srv *Server) makeBlockEntries() {
-	custom := maps.Values(world.CustomBlocks())
-	srv.customBlocks = make([]protocol.BlockEntry, len(custom))
+	custom := srv.conf.Blocks.CustomBlocks()
+	srv.customBlocks = make([]protocol.BlockEntry, 0, len(custom))
 
-	for i, b := range custom {
+	for _, b := range custom {
 		name, _ := b.EncodeBlock()
-		srv.customBlocks[i] = protocol.BlockEntry{
+		srv.customBlocks = append(srv.customBlocks, protocol.BlockEntry{
 			Name:       name,
-			Properties: blockinternal.Components(name, b, 10000+int32(i)),
-		}
+			Properties: blockinternal.Components(name, b, 10000+int32(len(srv.customBlocks))),
+		})
 	}
 }
 
@@ -444,7 +444,7 @@ func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player.Da
 	if data != nil {
 		w, gm, pos = data.World, data.GameMode, data.Position
 	}
-	s := session.New(conn, srv.conf.MaxChunkRadius, srv.conf.Log, srv.conf.JoinMessage, srv.conf.QuitMessage)
+	s := session.New(conn, srv.conf.MaxChunkRadius, srv.conf.Log, srv.conf.JoinMessage, srv.conf.QuitMessage, srv.conf.Blocks)
 	p := player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, srv.parseSkin(conn.ClientData()), s, pos, data)
 
 	s.Spawn(p, pos, w, gm, srv.handleSessionClose)
@@ -483,6 +483,8 @@ func (srv *Server) createWorld(dim world.Dimension, nether, end **world.World) *
 			}
 			return nil
 		},
+		Biomes: srv.conf.Biomes,
+		Blocks: srv.conf.Blocks,
 	}
 	w := conf.New()
 	logger.Infof(`Opened world "%v".`, w.Name())
@@ -578,7 +580,7 @@ type sporingBiome interface {
 // listener.
 func biomes() map[string]any {
 	definitions := make(map[string]any)
-	for _, b := range world.Biomes() {
+	for _, b := range world.DefaultBiomes.Biomes() {
 		definition := map[string]any{
 			"name_hash":   b.String(), // This isn't actually a hash despite what the field name may suggest.
 			"temperature": float32(b.Temperature()),

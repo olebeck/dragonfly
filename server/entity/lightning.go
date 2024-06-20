@@ -1,12 +1,13 @@
 package entity
 
 import (
+	"math/rand"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
-	"time"
 )
 
 // NewLightning creates a lightning entity. The lightning entity will be
@@ -103,7 +104,7 @@ func (s *lightningState) fire() interface {
 
 // fire returns a fire block.
 func fire() world.Block {
-	f, ok := world.BlockByName("minecraft:fire", map[string]any{"age": int32(0)})
+	f, ok := world.DefaultBlockRegistry.BlockByName("minecraft:fire", map[string]any{"age": int32(0)})
 	if !ok {
 		panic("could not find fire block")
 	}

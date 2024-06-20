@@ -2,6 +2,7 @@ package chunk
 
 import (
 	"container/list"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 )
 
@@ -9,7 +10,7 @@ import (
 // If one is found, a node is added for it to the node queue.
 func (a *lightArea) insertBlockLightNodes(queue *list.List) {
 	a.iterSubChunks(anyLightBlocks, func(pos cube.Pos) {
-		if level := a.highest(pos, LightBlocks); level > 0 {
+		if level := a.highest(pos, a.br.LightBlocks()); level > 0 {
 			queue.PushBack(node(pos, level, BlockLight))
 		}
 	})
@@ -19,7 +20,7 @@ func (a *lightArea) insertBlockLightNodes(queue *list.List) {
 func anyLightBlocks(sub *SubChunk) bool {
 	for _, layer := range sub.storages {
 		for _, id := range layer.palette.values {
-			if LightBlocks[id] != 0 {
+			if sub.br.LightBlocks()[id] != 0 {
 				return true
 			}
 		}
@@ -37,7 +38,7 @@ func (a *lightArea) insertSkyLightNodes(queue *list.List) {
 		a.setLight(pos, SkyLight, 15)
 
 		if pos[1] > lowestY {
-			if level := a.highest(pos.Sub(cube.Pos{0, 1}), FilteringBlocks); level != 15 && level != 0 {
+			if level := a.highest(pos.Sub(cube.Pos{0, 1}), a.br.FilteringBlocks()); level != 15 && level != 0 {
 				queue.PushBack(node(pos, 15, SkyLight))
 			}
 		}
@@ -64,9 +65,9 @@ func (a *lightArea) insertLightSpreadingNodes(queue *list.List, lt light) {
 			// No chance for this to spread. Don't check for the highest filtering blocks on the side.
 			return
 		}
-		if filter := a.highest(pb, FilteringBlocks) + 1; la > filter && la-filter > lb {
+		if filter := a.highest(pb, a.br.FilteringBlocks()) + 1; la > filter && la-filter > lb {
 			queue.PushBack(node(pb, la-filter, lt))
-		} else if filter = a.highest(pa, FilteringBlocks) + 1; lb > filter && lb-filter > la {
+		} else if filter = a.highest(pa, a.br.FilteringBlocks()) + 1; lb > filter && lb-filter > la {
 			queue.PushBack(node(pa, lb-filter, lt))
 		}
 	})
@@ -96,7 +97,7 @@ func (a *lightArea) propagate(queue *list.List) {
 	a.setLight(n.pos, n.lt, n.level)
 
 	for _, neighbour := range a.neighbours(n) {
-		filter := a.highest(neighbour.pos, FilteringBlocks) + 1
+		filter := a.highest(neighbour.pos, a.br.FilteringBlocks()) + 1
 		if n.level > filter && a.light(neighbour.pos, n.lt) < n.level-filter {
 			neighbour.level = n.level - filter
 			queue.PushBack(neighbour)

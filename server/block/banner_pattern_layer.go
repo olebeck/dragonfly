@@ -1,8 +1,8 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/nbtconv"
 )
 
 // BannerPatternLayer is a wrapper over BannerPatternType with a colour property.

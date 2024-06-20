@@ -8,6 +8,8 @@ import (
 
 	"github.com/df-mc/goleveldb/leveldb"
 
+	"slices"
+
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/event"
@@ -16,7 +18,6 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"golang.org/x/exp/maps"
-	"slices"
 )
 
 // World implements a Minecraft world. It manages all aspects of what players can see, such as blocks,
@@ -66,6 +67,8 @@ type World struct {
 
 	viewersMu sync.Mutex
 	viewers   map[*Loader]Viewer
+
+	br BlockRegistry
 }
 
 // New creates a new initialised world. The world may be used right away, but it will not be saved or loaded
@@ -114,18 +117,18 @@ func (w *World) EntityRegistry() EntityRegistry {
 func (w *World) Block(pos cube.Pos) Block {
 	if w == nil || pos.OutOfBounds(w.Range()) {
 		// Fast way out.
-		return air()
+		return w.br.Air()
 	}
 	c := w.chunk(chunkPosFromBlockPos(pos))
 
 	rid := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
-	if nbtBlocks[rid] {
+	if w.br.NBTBlock(rid) {
 		// The block was also a block entity, so we look it up in the block entity map.
 		if nbtB, ok := c.BlockEntities[pos]; ok {
 			c.Unlock()
 			return nbtB
 		}
-		b, _ := BlockByRuntimeID(rid)
+		b, _ := w.br.BlockByRuntimeID(rid)
 		nbtB := b.(NBTer).DecodeNBT(map[string]any{}).(Block)
 		c.BlockEntities[pos] = nbtB
 		viewers := slices.Clone(c.viewers)
@@ -136,7 +139,7 @@ func (w *World) Block(pos cube.Pos) Block {
 		return nbtB
 	}
 	c.Unlock()
-	b, _ := BlockByRuntimeID(rid)
+	b, _ := w.br.BlockByRuntimeID(rid)
 	return b
 }
 
@@ -152,7 +155,7 @@ func (w *World) Biome(pos cube.Pos) Biome {
 	defer c.Unlock()
 
 	id := int(c.Biome(uint8(pos[0]), int16(pos[1]), uint8(pos[2])))
-	b, ok := BiomeByID(id)
+	b, ok := w.conf.Biomes.BiomeByID(id)
 	if !ok {
 		w.conf.Log.Errorf("could not find biome by ID %v", id)
 	}
@@ -164,16 +167,16 @@ func (w *World) Biome(pos cube.Pos) Biome {
 func (w *World) blockInChunk(c *Column, pos cube.Pos) Block {
 	if pos.OutOfBounds(w.Range()) {
 		// Fast way out.
-		return air()
+		return w.br.Air()
 	}
 	rid := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
-	if nbtBlocks[rid] {
+	if w.br.NBTBlock(rid) {
 		// The block was also a block entity, so we look it up in the block entity map.
 		if b, ok := c.BlockEntities[pos]; ok {
 			return b
 		}
 	}
-	b, _ := BlockByRuntimeID(rid)
+	b, _ := w.br.BlockByRuntimeID(rid)
 	return b
 }
 
@@ -250,16 +253,16 @@ func (w *World) SetBlock(pos cube.Pos, b Block, opts *SetOpts) {
 	x, y, z := uint8(pos[0]), int16(pos[1]), uint8(pos[2])
 	c := w.chunk(chunkPosFromBlockPos(pos))
 
-	rid := BlockRuntimeID(b)
+	rid := w.br.BlockRuntimeID(b)
 
 	var before uint32
-	if rid != airRID && !opts.DisableLiquidDisplacement {
+	if rid != w.br.AirRuntimeID() && !opts.DisableLiquidDisplacement {
 		before = c.Block(x, y, z, 0)
 	}
 
 	c.modified = true
 	c.SetBlock(x, y, z, 0, rid)
-	if nbtBlocks[rid] {
+	if w.br.NBTBlock(rid) {
 		c.BlockEntities[pos] = b
 	} else {
 		delete(c.BlockEntities, pos)
@@ -270,15 +273,16 @@ func (w *World) SetBlock(pos cube.Pos, b Block, opts *SetOpts) {
 	if !opts.DisableLiquidDisplacement {
 		var secondLayer Block
 
+		airRID := w.br.AirRuntimeID()
 		if rid == airRID {
 			if li := c.Block(x, y, z, 1); li != airRID {
 				c.SetBlock(x, y, z, 0, li)
 				c.SetBlock(x, y, z, 1, airRID)
-				secondLayer = air()
-				b, _ = BlockByRuntimeID(li)
+				secondLayer = w.br.Air()
+				b, _ = w.br.BlockByRuntimeID(li)
 			}
-		} else if liquidDisplacingBlocks[rid] && liquidBlocks[before] {
-			l, _ := BlockByRuntimeID(before)
+		} else if w.br.LiquidDisplacingBlock(rid) && w.br.LiquidBlock(before) {
+			l, _ := w.br.BlockByRuntimeID(before)
 			if b.(LiquidDisplacer).CanDisplace(l.(Liquid)) {
 				c.SetBlock(x, y, z, 1, before)
 				secondLayer = l
@@ -378,20 +382,20 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 							}
 							b, liq := s.At(xOffset-pos[0], yOffset-pos[1], zOffset-pos[2], f)
 							if b != nil {
-								rid := BlockRuntimeID(b)
+								rid := w.br.BlockRuntimeID(b)
 								sub.SetBlock(uint8(xOffset), uint8(yOffset), uint8(zOffset), 0, rid)
 
 								nbtPos := cube.Pos{xOffset, yOffset, zOffset}
-								if nbtBlocks[rid] {
+								if w.br.NBTBlock(rid) {
 									c.BlockEntities[nbtPos] = b
 								} else {
 									delete(c.BlockEntities, nbtPos)
 								}
 							}
 							if liq != nil {
-								sub.SetBlock(uint8(xOffset), uint8(yOffset), uint8(zOffset), 1, BlockRuntimeID(liq))
+								sub.SetBlock(uint8(xOffset), uint8(yOffset), uint8(zOffset), 1, w.br.BlockRuntimeID(liq))
 							} else if len(sub.Layers()) > 1 {
-								sub.SetBlock(uint8(xOffset), uint8(yOffset), uint8(zOffset), 1, airRID)
+								sub.SetBlock(uint8(xOffset), uint8(yOffset), uint8(zOffset), 1, w.br.AirRuntimeID())
 							}
 						}
 					}
@@ -423,7 +427,7 @@ func (w *World) Liquid(pos cube.Pos) (Liquid, bool) {
 	x, y, z := uint8(pos[0]), int16(pos[1]), uint8(pos[2])
 
 	id := c.Block(x, y, z, 0)
-	b, ok := BlockByRuntimeID(id)
+	b, ok := w.br.BlockByRuntimeID(id)
 	if !ok {
 		w.conf.Log.Errorf("failed getting liquid: cannot get block by runtime ID %v", id)
 		return nil, false
@@ -433,7 +437,7 @@ func (w *World) Liquid(pos cube.Pos) (Liquid, bool) {
 	}
 	id = c.Block(x, y, z, 1)
 
-	b, ok = BlockByRuntimeID(id)
+	b, ok = w.br.BlockByRuntimeID(id)
 	if !ok {
 		w.conf.Log.Errorf("failed getting liquid: cannot get block by runtime ID %v", id)
 		return nil, false
@@ -466,7 +470,7 @@ func (w *World) SetLiquid(pos cube.Pos, b Liquid) {
 			return
 		}
 	}
-	rid := BlockRuntimeID(b)
+	rid := w.br.BlockRuntimeID(b)
 	if w.removeLiquids(c, pos) {
 		c.SetBlock(x, y, z, 0, rid)
 		for _, v := range c.viewers {
@@ -494,14 +498,14 @@ func (w *World) removeLiquids(c *Column, pos cube.Pos) bool {
 	if noLeft, changed := w.removeLiquidOnLayer(c.Chunk, x, y, z, 0); noLeft {
 		if changed {
 			for _, v := range c.viewers {
-				v.ViewBlockUpdate(pos, air(), 0)
+				v.ViewBlockUpdate(pos, w.br.Air(), 0)
 			}
 		}
 		noneLeft = true
 	}
 	if _, changed := w.removeLiquidOnLayer(c.Chunk, x, y, z, 1); changed {
 		for _, v := range c.viewers {
-			v.ViewBlockUpdate(pos, air(), 1)
+			v.ViewBlockUpdate(pos, w.br.Air(), 1)
 		}
 	}
 	return noneLeft
@@ -511,8 +515,9 @@ func (w *World) removeLiquids(c *Column, pos cube.Pos) bool {
 // successful.
 func (w *World) removeLiquidOnLayer(c *chunk.Chunk, x uint8, y int16, z, layer uint8) (bool, bool) {
 	id := c.Block(x, y, z, layer)
+	airRID := w.br.AirRuntimeID()
 
-	b, ok := BlockByRuntimeID(id)
+	b, ok := w.br.BlockByRuntimeID(id)
 	if !ok {
 		w.conf.Log.Errorf("failed removing liquids: cannot get block by runtime ID %v", id)
 		return false, false
@@ -534,7 +539,7 @@ func (w *World) additionalLiquid(pos cube.Pos) (Liquid, bool) {
 	c := w.chunk(chunkPosFromBlockPos(pos))
 	id := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 1)
 	c.Unlock()
-	b, ok := BlockByRuntimeID(id)
+	b, ok := w.br.BlockByRuntimeID(id)
 	if !ok {
 		w.conf.Log.Errorf("failed getting liquid: cannot get block by runtime ID %v", id)
 		return nil, false
@@ -1230,6 +1235,7 @@ func (w *World) loadChunk(pos ChunkPos) (*Column, error) {
 	col, err := w.provider().LoadColumn(pos, w.conf.Dim)
 	switch {
 	case err == nil:
+		col.Chunk.BlockRegistry = w.br
 		w.chunks[pos] = col
 		// Iterate through the entities twice and make sure they're added to all relevant maps. Note that this iteration
 		// happens twice to avoid having to lock both worldsMu and entityMu. This is intentional, to avoid deadlocks.
@@ -1250,7 +1256,7 @@ func (w *World) loadChunk(pos ChunkPos) (*Column, error) {
 		return col, nil
 	case errors.Is(err, leveldb.ErrNotFound):
 		// The provider doesn't have a chunk saved at this position, so we generate a new one.
-		col = newColumn(chunk.New(airRID, w.Range()))
+		col = newColumn(chunk.New(w.br, w.Range()))
 		w.chunks[pos] = col
 
 		col.Lock()
@@ -1259,7 +1265,7 @@ func (w *World) loadChunk(pos ChunkPos) (*Column, error) {
 		w.conf.Generator.GenerateChunk(pos, col.Chunk)
 		return col, nil
 	default:
-		col = newColumn(chunk.New(airRID, w.Range()))
+		col = newColumn(chunk.New(w.br, w.Range()))
 		col.Lock()
 		return col, err
 	}

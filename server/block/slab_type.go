@@ -34,7 +34,7 @@ func encodeSlabBlock(block world.Block) (id, slabType string, meta int16, halfFl
 		if block.Weather != NotWeathered() {
 			id += block.Weather.String() + "_"
 		}
-		return id + "cut_copper", "", 0
+		return id + "cut_copper", "", 0, false
 	case Deepslate:
 		if block.Type == CobbledDeepslate() {
 			return "cobbled_deepslate", "", 0, false

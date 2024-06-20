@@ -1,19 +1,13 @@
 package world
 
 import (
-	"fmt"
 	"image"
 	"image/color"
 	"math"
-	"math/bits"
 	"math/rand"
-	"sort"
 
-	"github.com/brentp/intintmap"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/customblock"
-	"github.com/df-mc/dragonfly/server/world/chunk"
-	"github.com/segmentio/fasthash/fnv1"
 )
 
 // Block is a block that may be placed or found in a world. In addition, the block may also be added to an
@@ -77,172 +71,6 @@ type Liquid interface {
 	// Harden checks if the block should harden when looking at the surrounding blocks and sets the position
 	// to the hardened block when adequate. If the block was hardened, the method returns true.
 	Harden(pos cube.Pos, w *World, flownIntoBy *cube.Pos) bool
-}
-
-// hashes holds a list of runtime IDs indexed by the hash of the Block that implements the blocks pointed to by those
-// runtime IDs. It is used to look up a block's runtime ID quickly.
-var (
-	bitSize       int
-	hashes        = intintmap.New(7000, 0.999)
-	networkHashes = make(map[uint32]int)
-)
-
-// RegisterBlock registers the Block passed. The EncodeBlock method will be used to encode and decode the
-// block passed. RegisterBlock panics if the block properties returned were not valid, existing properties.
-func RegisterBlock(b Block) {
-	if bitSize > 0 {
-		panic(fmt.Errorf("tried to register a block after the block registry was finalised"))
-	}
-	name, properties := b.EncodeBlock()
-	if _, ok := b.(CustomBlock); ok {
-		registerBlockState(blockState{Name: name, Properties: properties})
-	}
-	rid, ok := stateRuntimeIDs[stateHash{name: name, properties: hashProperties(properties)}]
-	if !ok {
-		// We assume all blocks must have all their states registered beforehand. Vanilla blocks will have
-		// this done through registering of all states present in the block_states.nbt file.
-		panic(fmt.Sprintf("block state returned is not registered (%v {%#v})", name, properties))
-	}
-	if _, ok := blocks[rid].(UnknownBlock); !ok {
-		panic(fmt.Sprintf("block with name and properties %v {%#v} already registered", name, properties))
-	}
-	blocks[rid] = b
-	if c, ok := b.(CustomBlock); ok {
-		if _, ok := customBlocks[name]; !ok {
-			customBlocks[name] = c
-		}
-	}
-}
-
-func FinaliseBlockRegistry() {
-	if bitSize > 0 {
-		panic("already finalized")
-	}
-	bitSize = bits.Len64(uint64(len(blocks)))
-	sort.SliceStable(blocks, func(i, j int) bool {
-		nameOne, _ := blocks[i].EncodeBlock()
-		nameTwo, _ := blocks[j].EncodeBlock()
-		return fnv1.HashString64(nameOne) < fnv1.HashString64(nameTwo)
-	})
-
-	nbtBlocks = make([]bool, len(blocks))
-	randomTickBlocks = make([]bool, len(blocks))
-	liquidBlocks = make([]bool, len(blocks))
-	liquidDisplacingBlocks = make([]bool, len(blocks))
-	chunk.FilteringBlocks = make([]uint8, len(blocks))
-	chunk.LightBlocks = make([]uint8, len(blocks))
-	chunk.WaterBlocks = make([]bool,  len(blocks))
-
-	for rid, b := range blocks {
-		finaliseBlock(uint32(rid), b)
-		if b.Hash() != math.MaxUint64 {
-			h := int64(BlockHash(b))
-			if other, ok := hashes.Get(h); ok {
-				panic(fmt.Sprintf("block %#v with hash %v already registered by %#v", b, h, blocks[other]))
-			}
-			hashes.Put(h, int64(rid))
-		}
-		name, properties := b.EncodeBlock()
-		networkHashes[networkBlockHash(name, properties)] = rid
-	}
-}
-
-func finaliseBlock(rid uint32, b Block) {
-	name, properties := b.EncodeBlock()
-	i := stateHash{name: name, properties: hashProperties(properties)}
-	if name == "minecraft:air" {
-		airRID = rid
-	}
-	stateRuntimeIDs[i] = rid
-
-	if diffuser, ok := b.(lightDiffuser); ok {
-		chunk.FilteringBlocks[rid] = diffuser.LightDiffusionLevel()
-	}
-	if emitter, ok := b.(lightEmitter); ok {
-		chunk.LightBlocks[rid] = emitter.LightEmissionLevel()
-	}
-	if _, ok := b.(NBTer); ok {
-		nbtBlocks[rid] = true
-	}
-	if _, ok := b.(RandomTicker); ok {
-		randomTickBlocks[rid] = true
-	}
-	if _, ok := b.(Liquid); ok {
-		liquidBlocks[rid] = true
-	}
-	if _, ok := b.(LiquidDisplacer); ok {
-		liquidDisplacingBlocks[rid] = true
-	}
-}
-
-func BlockHash(b Block) uint64 {
-	return b.BaseHash() | (b.Hash() << bitSize)
-}
-
-// BlockRuntimeID attempts to return a runtime ID of a block previously registered using RegisterBlock().
-// If the runtime ID cannot be found because the Block wasn't registered, BlockRuntimeID will panic.
-func BlockRuntimeID(b Block) uint32 {
-	if b == nil {
-		return airRID
-	}
-	if h := BlockHash(b); h != math.MaxUint64 {
-		if rid, ok := hashes.Get(int64(h)); ok {
-			return uint32(rid)
-		}
-		panic(fmt.Sprintf("cannot find block by non-0 hash of block %#v", b))
-	}
-	return slowBlockRuntimeID(b)
-}
-
-// slowBlockRuntimeID finds the runtime ID of a Block by hashing the properties produced by calling the
-// Block.EncodeBlock method and looking it up in the stateRuntimeIDs map.
-func slowBlockRuntimeID(b Block) uint32 {
-	name, properties := b.EncodeBlock()
-
-	rid, ok := stateRuntimeIDs[stateHash{name: name, properties: hashProperties(properties)}]
-	if !ok {
-		panic(fmt.Sprintf("cannot find block by (name + properties): %#v", b))
-	}
-	return rid
-}
-
-// BlockByRuntimeID attempts to return a Block by its runtime ID. If not found, the bool returned is
-// false. If found, the block is non-nil and the bool true.
-func BlockByRuntimeID(rid uint32) (Block, bool) {
-	if rid >= uint32(len(blocks)) {
-		return air(), false
-	}
-	return blocks[rid], true
-}
-
-// BlockByNetworkID attempts to return a Block by its static network ID. If not found, the bool returned is
-// false. If found, the block is non-nil and the bool true.
-func BlockByNetworkID(rid uint32) (Block, bool) {
-	if rid >= uint32(len(blocks)) {
-		return air(), false
-	}
-	return blocks[rid], true
-}
-
-// BlockByName attempts to return a Block by its name and properties. If not found, the bool returned is
-// false.
-func BlockByName(name string, properties map[string]any) (Block, bool) {
-	rid, ok := stateRuntimeIDs[stateHash{name: name, properties: hashProperties(properties)}]
-	if !ok {
-		return nil, false
-	}
-	return blocks[rid], true
-}
-
-// CustomBlocks returns a map of all custom blocks registered with their names as keys.
-func CustomBlocks() map[string]CustomBlock {
-	return customBlocks
-}
-
-// air returns an air block.
-func air() Block {
-	b, _ := BlockByRuntimeID(airRID)
-	return b
 }
 
 // RandomTicker represents a block that executes an action when it is ticked randomly. Every 20th of a second,
@@ -327,4 +155,48 @@ func replaceable(w *World, c *Column, pos cube.Pos, with Block) bool {
 // viewers in a world so that they can see these actions.
 type BlockAction interface {
 	BlockAction()
+}
+
+// UnknownBlock represents a block that has not yet been implemented. It is used for registering block
+// states that haven't yet been added.
+type UnknownBlock struct {
+	BlockState
+}
+
+// EncodeBlock ...
+func (b UnknownBlock) EncodeBlock() (string, map[string]any) {
+	return b.Name, b.Properties
+}
+
+// Model ...
+func (UnknownBlock) Model() BlockModel {
+	return unknownModel{}
+}
+
+// BaseHash ...
+func (b UnknownBlock) BaseHash() uint64 {
+	return 0
+}
+
+// Hash ...
+func (b UnknownBlock) Hash() uint64 {
+	return math.MaxUint64
+}
+
+func (b UnknownBlock) Color() color.RGBA {
+	return color.RGBA{255, 0, 255, 255}
+}
+
+func (b UnknownBlock) DecodeNBT(data map[string]any) any {
+	b.Properties = data
+	return b
+}
+
+// EncodeNBT encodes the entity into a map which can then be encoded as NBT to be written.
+func (b UnknownBlock) EncodeNBT() map[string]any {
+	return b.Properties
+}
+
+func BlockHash(b Block) uint64 {
+	return b.BaseHash() | (b.Hash() << DefaultBlockRegistry.BitSize())
 }

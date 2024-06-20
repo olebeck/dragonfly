@@ -3,12 +3,14 @@ package chunk
 import (
 	"bytes"
 	"container/list"
-	"github.com/df-mc/dragonfly/server/block/cube"
 	"math"
+
+	"github.com/df-mc/dragonfly/server/block/cube"
 )
 
 // lightArea represents a square area of N*N chunks. It is used for light calculation specifically.
 type lightArea struct {
+	br           BlockRegistry
 	baseX, baseZ int
 	c            []*Chunk
 	w            int
@@ -22,7 +24,7 @@ func LightArea(c []*Chunk, baseX, baseY int) *lightArea {
 	if len(c) != w*w {
 		panic("area must have a square chunk area")
 	}
-	return &lightArea{c: c, w: w, baseX: baseX << 4, baseZ: baseY << 4, r: c[0].r}
+	return &lightArea{br: c[0].BlockRegistry, c: c, w: w, baseX: baseX << 4, baseZ: baseY << 4, r: c[0].r}
 }
 
 // Fill executes the light 'filling' stage, where the lightArea is filled with light coming only from the

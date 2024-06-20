@@ -42,6 +42,8 @@ type Config struct {
 	// Entities is an EntityRegistry with all entity types registered that may
 	// be read from the DB. Entities will default to entity.DefaultRegistry.
 	Entities world.EntityRegistry
+
+	Biomes *world.BiomeRegistry
 }
 
 // Open creates a new DB reading and writing from/to files under the path
@@ -57,6 +59,9 @@ func (conf Config) Open(dir string) (*DB, error) {
 	}
 	if conf.Entities == nil || len(conf.Entities.Types()) == 0 {
 		conf.Entities = entity.DefaultRegistry
+	}
+	if conf.Biomes == nil {
+		conf.Biomes = world.DefaultBiomes
 	}
 	_ = os.MkdirAll(filepath.Join(dir, "db"), 0777)
 

@@ -83,6 +83,8 @@ type Session struct {
 	joinMessage, quitMessage string
 
 	closeBackground chan struct{}
+
+	br world.BlockRegistry
 }
 
 // Conn represents a connection that packets are read from and written to by a Session. In addition, it holds some
@@ -140,7 +142,7 @@ var errSelfRuntimeID = errors.New("invalid entity runtime ID: runtime ID for sel
 // packets that it receives.
 // New takes the connection from which to accept packets. It will start handling these packets after a call to
 // Session.Spawn().
-func New(conn Conn, maxChunkRadius int, log Logger, joinMessage, quitMessage string) *Session {
+func New(conn Conn, maxChunkRadius int, log Logger, joinMessage, quitMessage string, br world.BlockRegistry) *Session {
 	r := conn.ChunkRadius()
 	if r > maxChunkRadius {
 		r = maxChunkRadius
@@ -166,6 +168,7 @@ func New(conn Conn, maxChunkRadius int, log Logger, joinMessage, quitMessage str
 		joinMessage:            joinMessage,
 		quitMessage:            quitMessage,
 		openedWindow:           *atomic.NewValue(inventory.New(1, nil)),
+		br: br,
 	}
 
 	s.registerHandlers()
@@ -208,7 +211,7 @@ func (s *Session) Spawn(c Controllable, pos mgl64.Vec3, w *world.World, gm world
 	s.sendInv(s.ui, protocol.WindowIDUI)
 	s.sendInv(s.offHand, protocol.WindowIDOffHand)
 	s.sendInv(s.armour.Inventory(), protocol.WindowIDArmour)
-	s.writePacket(&packet.CreativeContent{Items: creativeItems()})
+	s.writePacket(&packet.CreativeContent{Items: s.creativeItems()})
 	s.sendRecipes()
 	s.sendArmourTrimData()
 }

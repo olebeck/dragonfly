@@ -1,14 +1,15 @@
 package block
 
 import (
+	"math/rand"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/nbtconv"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
-	"time"
 )
 
 // Smoker is a type of furnace that cooks food items, similar to a furnace, but twice as fast. It also serves as a

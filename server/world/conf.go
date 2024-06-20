@@ -1,11 +1,12 @@
 package world
 
 import (
+	"math/rand"
+	"time"
+
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/sirupsen/logrus"
-	"math/rand"
-	"time"
 )
 
 // Config may be used to create a new World. It holds a variety of fields that influence the World.
@@ -39,6 +40,9 @@ type Config struct {
 	// Entities is an EntityRegistry with all entity types registered that may
 	// be added to the World.
 	Entities EntityRegistry
+
+	Biomes *BiomeRegistry
+	Blocks BlockRegistry
 }
 
 // Logger is a logger implementation that may be passed to the Log field of Config. World will send errors and debug

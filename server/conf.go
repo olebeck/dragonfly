@@ -99,6 +99,9 @@ type Config struct {
 	// Entities will be set to entity.DefaultRegistry.
 	Entities world.EntityRegistry
 
+	Biomes *world.BiomeRegistry
+	Blocks world.BlockRegistry
+
 	LegacyHeight bool
 }
 
@@ -143,8 +146,14 @@ func (conf Config) New() *Server {
 	if conf.Entities == nil || len(conf.Entities.Types()) == 0 {
 		conf.Entities = entity.DefaultRegistry
 	}
+	if conf.Biomes == nil {
+		conf.Biomes = world.DefaultBiomes
+	}
+	if conf.Blocks == nil {
+		conf.Blocks = world.DefaultBlockRegistry
+	}
 	if !conf.DisableResourceBuilding {
-		if pack, ok := packbuilder.BuildResourcePack(); ok {
+		if pack, ok := packbuilder.BuildResourcePack(conf.Blocks); ok {
 			conf.Resources = append(conf.Resources, pack)
 		}
 	}

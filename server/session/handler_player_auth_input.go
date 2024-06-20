@@ -2,12 +2,13 @@ package session
 
 import (
 	"fmt"
+	"math"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"math"
 )
 
 // PlayerAuthInputHandler handles the PlayerAuthInput packet.
@@ -135,7 +136,7 @@ func (h PlayerAuthInputHandler) handleUseItemData(data protocol.UseItemTransacti
 	defer s.swingingArm.Store(false)
 
 	held, _ := s.c.HeldItems()
-	if !held.Equal(stackToItem(data.HeldItem.Stack)) {
+	if !held.Equal(s.stackToItem(data.HeldItem.Stack)) {
 		s.log.Debugf("failed processing item interaction from %v (%v): PlayerAuthInput: actual held and client held item mismatch", s.conn.RemoteAddr(), s.c.Name())
 		return nil
 	}

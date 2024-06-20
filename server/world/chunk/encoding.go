@@ -16,14 +16,14 @@ type (
 	// NetworkEncoding, which can be used to encode a Chunk to an intermediate disk or network representation respectively.
 	Encoding interface {
 		encodePalette(buf *bytes.Buffer, p *Palette, e paletteEncoding)
-		decodePalette(buf *bytes.Buffer, blockSize paletteSize, e paletteEncoding) (*Palette, error)
+		decodePalette(buf *bytes.Buffer, blockSize paletteSize, e paletteEncoding, br BlockRegistry) (*Palette, error)
 		network() byte
 	}
 	// paletteEncoding is an encoding type used for Chunk encoding. It is used to encode different types of palettes
 	// (for example, blocks or biomes) differently.
 	paletteEncoding interface {
 		encode(buf *bytes.Buffer, v uint32)
-		decode(buf *bytes.Buffer, e Encoding) (uint32, error)
+		decode(buf *bytes.Buffer, e Encoding, br BlockRegistry) (uint32, error)
 	}
 )
 
@@ -41,14 +41,14 @@ var (
 	BlockPaletteEncoding blockPaletteEncoding
 )
 
-// biomePaletteEncodings implements the encoding of biome palettes to disk.
+// biomePaletteEncoding implements the encoding of biome palettes to disk.
 type biomePaletteEncoding struct{}
 
 func (biomePaletteEncoding) encode(buf *bytes.Buffer, v uint32) {
 	_ = binary.Write(buf, binary.LittleEndian, v)
 }
 
-func (biomePaletteEncoding) decode(buf *bytes.Buffer, e Encoding) (uint32, error) {
+func (biomePaletteEncoding) decode(buf *bytes.Buffer, e Encoding, _ BlockRegistry) (uint32, error) {
 	var v uint32
 	return v, binary.Read(buf, binary.LittleEndian, &v)
 }
@@ -63,15 +63,15 @@ func (blockPaletteEncoding) encode(buf *bytes.Buffer, v uint32) {
 	_ = nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian).Encode(blockEntry{Name: name, State: props, Version: CurrentBlockVersion})
 }
 
-func (blockPaletteEncoding) decode(buf *bytes.Buffer, e Encoding) (uint32, error) {
+func (blockPaletteEncoding) decode(buf *bytes.Buffer, e Encoding, br BlockRegistry) (uint32, error) {
 	var m map[string]any
 
-	var nbt_e nbt.Encoding = nbt.LittleEndian
+	var encoding nbt.Encoding = nbt.LittleEndian
 	if e.network() == 1 {
-		nbt_e = nbt.NetworkLittleEndian
+		encoding = nbt.NetworkLittleEndian
 	}
 
-	if err := nbt.NewDecoderWithEncoding(buf, nbt_e).Decode(&m); err != nil {
+	if err := nbt.NewDecoderWithEncoding(buf, encoding).Decode(&m); err != nil {
 		return 0, fmt.Errorf("error decoding block palette entry: %w", err)
 	}
 
@@ -108,7 +108,7 @@ func (blockPaletteEncoding) decode(buf *bytes.Buffer, e Encoding) (uint32, error
 		Version:    version,
 	})
 
-	v, ok := StateToRuntimeID(upgraded.Name, upgraded.Properties)
+	v, ok := br.StateToRuntimeID(upgraded.Name, upgraded.Properties)
 	if !ok {
 		return 0, fmt.Errorf("cannot get runtime ID of block state %v{%+v} %v", upgraded.Name, upgraded.Properties, upgraded.Version)
 	}
@@ -128,7 +128,7 @@ func (diskEncoding) encodePalette(buf *bytes.Buffer, p *Palette, e paletteEncodi
 	}
 }
 
-func (diskEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, e paletteEncoding) (*Palette, error) {
+func (diskEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, e paletteEncoding, br BlockRegistry) (*Palette, error) {
 	paletteCount := uint32(1)
 	if blockSize != 0 {
 		if err := binary.Read(buf, binary.LittleEndian, &paletteCount); err != nil {
@@ -139,7 +139,7 @@ func (diskEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, e pa
 	var err error
 	palette := newPalette(blockSize, make([]uint32, paletteCount))
 	for i := uint32(0); i < paletteCount; i++ {
-		palette.values[i], err = e.decode(buf, DiskEncoding)
+		palette.values[i], err = e.decode(buf, DiskEncoding, br)
 		if err != nil {
 			return nil, err
 		}
@@ -162,7 +162,7 @@ func (networkEncoding) encodePalette(buf *bytes.Buffer, p *Palette, _ paletteEnc
 		_ = protocol.WriteVarint32(buf, int32(val))
 	}
 }
-func (networkEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, _ paletteEncoding) (*Palette, error) {
+func (networkEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, _ paletteEncoding, _ BlockRegistry) (*Palette, error) {
 	var paletteCount int32 = 1
 	if blockSize != 0 {
 		if err := protocol.Varint32(buf, &paletteCount); err != nil {
@@ -173,10 +173,9 @@ func (networkEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, _
 		}
 	}
 
-	var err error
 	palette, temp := newPalette(blockSize, make([]uint32, paletteCount)), int32(0)
 	for i := int32(0); i < paletteCount; i++ {
-		if err = protocol.Varint32(buf, &temp); err != nil {
+		if err := protocol.Varint32(buf, &temp); err != nil {
 			return nil, fmt.Errorf("error decoding palette entry: %w", err)
 		}
 		palette.values[i] = uint32(temp)
@@ -199,7 +198,7 @@ func (networkPersistentEncoding) encodePalette(buf *bytes.Buffer, p *Palette, _ 
 		_ = enc.Encode(blockEntry{Name: strings.TrimPrefix("minecraft:", name), State: props, Version: CurrentBlockVersion})
 	}
 }
-func (networkPersistentEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, _ paletteEncoding) (*Palette, error) {
+func (networkPersistentEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, _ paletteEncoding, br BlockRegistry) (*Palette, error) {
 	var paletteCount int32 = 1
 	if blockSize != 0 {
 		err := protocol.Varint32(buf, &paletteCount)
@@ -239,14 +238,14 @@ func (networkPersistentEncoding) decodePalette(buf *bytes.Buffer, blockSize pale
 	}
 
 	palette := newPalette(blockSize, make([]uint32, paletteCount))
-	if err := upgradePalette(blocks, palette); err != nil {
+	if err := upgradePalette(blocks, palette, br); err != nil {
 		return nil, err
 	}
 
 	return palette, nil
 }
 
-func upgradePalette(blocks []blockEntry, palette *Palette) error {
+func upgradePalette(blocks []blockEntry, palette *Palette, br BlockRegistry) error {
 	for i, b := range blocks {
 		if !strings.Contains(b.Name, ":") {
 			b.Name = "minecraft:" + b.Name
@@ -259,7 +258,7 @@ func upgradePalette(blocks []blockEntry, palette *Palette) error {
 			Version:    b.Version,
 		})
 
-		temp, ok := StateToRuntimeID(upgraded.Name, upgraded.Properties)
+		temp, ok := br.StateToRuntimeID(upgraded.Name, upgraded.Properties)
 		if !ok {
 			return fmt.Errorf("cannot get runtime ID of block state %v{%+v}", upgraded.Name, upgraded.Properties)
 		}

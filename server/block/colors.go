@@ -888,7 +888,7 @@ func (StoneBricks) Color() color.RGBA {
 	return color.RGBA{139, 137, 139, 255}
 }
 
-func (t TallGrass) Color() color.RGBA {
+func (t Fern) Color() color.RGBA {
 	return color.RGBA{86, 124, 77, 255}
 }
 
