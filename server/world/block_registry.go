@@ -6,7 +6,7 @@ import (
 	"math/bits"
 	"sort"
 
-	"github.com/brentp/intintmap"
+	"github.com/df-mc/dragonfly/server/intintmap"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/segmentio/fasthash/fnv1"
