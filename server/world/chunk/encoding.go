@@ -15,14 +15,14 @@ type (
 	// Encoding is an encoding type used for Chunk encoding. Implementations of this interface are DiskEncoding and
 	// NetworkEncoding, which can be used to encode a Chunk to an intermediate disk or network representation respectively.
 	Encoding interface {
-		encodePalette(buf *bytes.Buffer, p *Palette, e paletteEncoding)
+		encodePalette(buf *bytes.Buffer, p *Palette, e paletteEncoding, br BlockRegistry)
 		decodePalette(buf *bytes.Buffer, blockSize paletteSize, e paletteEncoding, br BlockRegistry) (*Palette, error)
 		network() byte
 	}
 	// paletteEncoding is an encoding type used for Chunk encoding. It is used to encode different types of palettes
 	// (for example, blocks or biomes) differently.
 	paletteEncoding interface {
-		encode(buf *bytes.Buffer, v uint32)
+		encode(buf *bytes.Buffer, v uint32, br BlockRegistry)
 		decode(buf *bytes.Buffer, e Encoding, br BlockRegistry) (uint32, error)
 	}
 )
@@ -44,7 +44,7 @@ var (
 // biomePaletteEncoding implements the encoding of biome palettes to disk.
 type biomePaletteEncoding struct{}
 
-func (biomePaletteEncoding) encode(buf *bytes.Buffer, v uint32) {
+func (biomePaletteEncoding) encode(buf *bytes.Buffer, v uint32, _ BlockRegistry) {
 	_ = binary.Write(buf, binary.LittleEndian, v)
 }
 
@@ -56,10 +56,10 @@ func (biomePaletteEncoding) decode(buf *bytes.Buffer, e Encoding, _ BlockRegistr
 // blockPaletteEncoding implements the encoding of block palettes to disk.
 type blockPaletteEncoding struct{}
 
-func (blockPaletteEncoding) encode(buf *bytes.Buffer, v uint32) {
+func (blockPaletteEncoding) encode(buf *bytes.Buffer, v uint32, br BlockRegistry) {
 	// Get the block state registered with the runtime IDs we have in the palette of the block storage
 	// as we need the name and data value to store.
-	name, props, _ := RuntimeIDToState(v)
+	name, props, _ := br.RuntimeIDToState(v)
 	_ = nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian).Encode(blockEntry{Name: name, State: props, Version: CurrentBlockVersion})
 }
 
@@ -119,12 +119,12 @@ func (blockPaletteEncoding) decode(buf *bytes.Buffer, e Encoding, br BlockRegist
 type diskEncoding struct{}
 
 func (diskEncoding) network() byte { return 0 }
-func (diskEncoding) encodePalette(buf *bytes.Buffer, p *Palette, e paletteEncoding) {
+func (diskEncoding) encodePalette(buf *bytes.Buffer, p *Palette, e paletteEncoding, br BlockRegistry) {
 	if p.size != 0 {
 		_ = binary.Write(buf, binary.LittleEndian, uint32(p.Len()))
 	}
 	for _, v := range p.values {
-		e.encode(buf, v)
+		e.encode(buf, v, br)
 	}
 }
 
@@ -154,7 +154,7 @@ func (diskEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, e pa
 type networkEncoding struct{}
 
 func (networkEncoding) network() byte { return 1 }
-func (networkEncoding) encodePalette(buf *bytes.Buffer, p *Palette, _ paletteEncoding) {
+func (networkEncoding) encodePalette(buf *bytes.Buffer, p *Palette, _ paletteEncoding, _ BlockRegistry) {
 	if p.size != 0 {
 		_ = protocol.WriteVarint32(buf, int32(p.Len()))
 	}
@@ -187,14 +187,14 @@ func (networkEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, _
 type networkPersistentEncoding struct{}
 
 func (networkPersistentEncoding) network() byte { return 1 }
-func (networkPersistentEncoding) encodePalette(buf *bytes.Buffer, p *Palette, _ paletteEncoding) {
+func (networkPersistentEncoding) encodePalette(buf *bytes.Buffer, p *Palette, _ paletteEncoding, br BlockRegistry) {
 	if p.size != 0 {
 		_ = protocol.WriteVarint32(buf, int32(p.Len()))
 	}
 
 	enc := nbt.NewEncoderWithEncoding(buf, nbt.NetworkLittleEndian)
 	for _, val := range p.values {
-		name, props, _ := RuntimeIDToState(val)
+		name, props, _ := br.RuntimeIDToState(val)
 		_ = enc.Encode(blockEntry{Name: strings.TrimPrefix("minecraft:", name), State: props, Version: CurrentBlockVersion})
 	}
 }

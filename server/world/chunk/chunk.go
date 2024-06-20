@@ -40,6 +40,7 @@ func New(br BlockRegistry, r cube.Range) *Chunk {
 		biomes[i] = emptyStorage(0)
 	}
 	return &Chunk{
+		BlockRegistry:              br,
 		r:                          r,
 		sub:                        sub,
 		biomes:                     biomes,
