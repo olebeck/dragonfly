@@ -109,7 +109,7 @@ type Conn interface {
 	RemoteAddr() net.Addr
 	// ReadPacket reads a packet.Packet from the Conn. An error is returned if a deadline was set that was
 	// exceeded or if the Conn was closed while awaiting a packet.
-	ReadPacket() (pk packet.Packet, timeReceived time.Time, err error)
+	ReadPacket() (pk packet.Packet, err error)
 	// WritePacket writes a packet.Packet to the Conn. An error is returned if the Conn was closed before sending the
 	// packet.
 	WritePacket(pk packet.Packet) error
@@ -310,7 +310,7 @@ func (s *Session) handlePackets() {
 		_ = s.Close()
 	}()
 	for {
-		pk, _, err := s.conn.ReadPacket()
+		pk, err := s.conn.ReadPacket()
 		if err != nil {
 			return
 		}
