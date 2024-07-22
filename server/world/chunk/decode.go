@@ -20,6 +20,12 @@ func NetworkDecode(br BlockRegistry, data []byte, count int, oldBiomes bool, has
 		err       error
 		blockNBTs []map[string]any
 	)
+
+	//hack
+	if data[0] == 0x03 && count == 0 {
+		return c, nil, nil
+	}
+
 	for i := 0; i < count; i++ {
 		index := uint8(i)
 		c.sub[index], err = decodeSubChunk(buf, c, &index, NetworkEncoding, hashedRids)
