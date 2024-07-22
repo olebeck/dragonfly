@@ -159,7 +159,7 @@ func (chunk *Chunk) highestLightBlocker(x, z uint8, addOne bool) int16 {
 	for index := int16(len(chunk.sub) - 1); index >= 0; index-- {
 		if sub := chunk.sub[index]; !sub.Empty() {
 			for y := 15; y >= 0; y-- {
-				if chunk.BlockRegistry.FilteringBlocks()[sub.storages[0].At(x, uint8(y), z)] == 15 {
+				if chunk.BlockRegistry.FilteringBlock(sub.storages[0].At(x, uint8(y), z)) == 15 {
 					return int16(y) | chunk.SubY(index) + plus
 				}
 			}

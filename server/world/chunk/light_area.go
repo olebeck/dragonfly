@@ -166,7 +166,7 @@ func (a *lightArea) iterSubChunk(f func(x, y, z int)) {
 
 // highest looks up through the blocks at first and second layer at the cube.Pos passed and runs their runtime IDs
 // through the slice m passed, finding the highest value in this slice between those runtime IDs and returning it.
-func (a *lightArea) highest(pos cube.Pos, m []uint8) uint8 {
+func (a *lightArea) highest(pos cube.Pos, lightBlocking func(rid uint32) uint8) uint8 {
 	x, y, z, sub := uint8(pos[0]&0xf), uint8(pos[1]&0xf), uint8(pos[2]&0xf), a.sub(pos)
 	storages, l := sub.storages, len(sub.storages)
 
@@ -174,10 +174,10 @@ func (a *lightArea) highest(pos cube.Pos, m []uint8) uint8 {
 	case 0:
 		return 0
 	case 1:
-		return m[storages[0].At(x, y, z)]
+		return lightBlocking(storages[0].At(x, y, z))
 	default:
-		level := m[storages[0].At(x, y, z)]
-		if v := m[storages[1].At(x, y, z)]; v > level {
+		level := lightBlocking(storages[0].At(x, y, z))
+		if v := lightBlocking(storages[1].At(x, y, z)); v > level {
 			return v
 		}
 		return level

@@ -17,7 +17,7 @@ type debugGenerator struct{}
 
 // GenerateChunk ...
 func (debugGenerator) GenerateChunk(cp world.ChunkPos, chunk *chunk.Chunk) {
-	blockCount := len(chunk.BlockRegistry.LightBlocks())
+	blockCount := chunk.BlockRegistry.BlockCount()
 	length := i32.Sqrt(int32(blockCount))
 
 	for x := uint8(0); x < 16; x++ {

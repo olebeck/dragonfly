@@ -39,7 +39,7 @@ type Config struct {
 	// Resources is a slice of resource packs to use on the server. When joining
 	// the server, the player will then first be requested to download these
 	// resource packs.
-	Resources []*resource.Pack
+	Resources []resource.Pack
 	// ResourcesRequires specifies if the downloading of resource packs is
 	// required to join the server. If set to true, players will not be able to
 	// join without first downloading and applying the Resources above.
@@ -291,14 +291,14 @@ func (uc UserConfig) Config(log Logger) (Config, error) {
 }
 
 // loadResources loads all resource packs found in a directory passed.
-func loadResources(dir string) ([]*resource.Pack, error) {
+func loadResources(dir string) ([]resource.Pack, error) {
 	_ = os.MkdirAll(dir, 0o777)
 
 	resources, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, fmt.Errorf("read dir: %w", err)
 	}
-	packs := make([]*resource.Pack, len(resources))
+	packs := make([]resource.Pack, len(resources))
 	for i, entry := range resources {
 		packs[i], err = resource.ReadPath(filepath.Join(dir, entry.Name()))
 		if err != nil {

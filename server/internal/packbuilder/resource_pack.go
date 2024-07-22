@@ -15,7 +15,7 @@ var packIcon []byte
 // BuildResourcePack builds a resource pack based on custom features that have been registered to the server.
 // It creates a UUID based on the hash of the directory so the client will only be prompted to download it
 // once it is changed.
-func BuildResourcePack(reg world.BlockRegistry) (*resource.Pack, bool) {
+func BuildResourcePack(reg world.BlockRegistry) (resource.Pack, bool) {
 	dir, err := os.MkdirTemp("", "dragonfly_resource_pack-")
 	if err != nil {
 		panic(err)

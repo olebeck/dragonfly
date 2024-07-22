@@ -32,18 +32,21 @@ func init() {
 	}
 }
 
+var bufNetworkhash []byte = make([]byte, 0xff)
+
 func networkBlockHash(name string, properties map[string]any) uint32 {
 	if name == "minecraft:unknown" {
 		return 0xfffffffe // -2
 	}
 
-	var keys []string
+	keys := make([]string, 0, len(properties))
 	for k := range properties {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
 
-	var data []byte
+	bufNetworkhash = bufNetworkhash[:0]
+	var data = bufNetworkhash
 	writeString := func(str string) {
 		data = binary.LittleEndian.AppendUint16(data, uint16(len(str)))
 		data = append(data, []byte(str)...)
@@ -118,7 +121,7 @@ func splitNamespace(identifier string) (ns, name string) {
 	return ns_name[0], ns_name[len(ns_name)-1]
 }
 
-// blockState holds a combination of a name and properties, together with a version.
+// BlockState holds a combination of a name and properties, together with a version.
 type BlockState struct {
 	Name       string         `nbt:"name"`
 	Properties map[string]any `nbt:"states"`
@@ -132,6 +135,8 @@ type stateHash struct {
 }
 
 // hashProperties produces a hash for the block properties held by the blockState.
+var hashPropertiesBuilder strings.Builder
+
 func hashProperties(properties map[string]any) string {
 	if properties == nil {
 		return ""
@@ -140,11 +145,10 @@ func hashProperties(properties map[string]any) string {
 	for k := range properties {
 		keys = append(keys, k)
 	}
-	sort.Slice(keys, func(i, j int) bool {
-		return keys[i] < keys[j]
-	})
+	sort.Strings(keys)
 
-	var b strings.Builder
+	hashPropertiesBuilder.Reset()
+	var b = hashPropertiesBuilder
 	for _, k := range keys {
 		switch v := properties[k].(type) {
 		case bool:

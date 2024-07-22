@@ -18,7 +18,7 @@ var DefaultBlockRegistry BlockRegistry = &BlockRegistryImpl{
 	stateRuntimeIDs: make(map[stateHash]uint32),
 }
 
-// this interface is split into 2 because chunk package cant import world.Block...
+// BlockRegistry interface is split into 2 because chunk package cant import world.Block
 type BlockRegistry interface {
 	chunk.BlockRegistry
 	BlockByRuntimeID(rid uint32) (Block, bool)
@@ -32,6 +32,40 @@ type BlockRegistry interface {
 	Clone() BlockRegistry
 	Finalize()
 	BitSize() int
+}
+
+const (
+	blockFlagNBT uint16 = 1 << iota
+	blockFlagRandomTick
+	blockFlagLiquid
+	blockFlagLiquidDisplacing
+	blockFlagWater
+)
+
+type blockInfo uint16
+
+func (b *blockInfo) set(flag uint16) {
+	*b ^= blockInfo(flag)
+}
+
+func (b *blockInfo) get(flag uint16) bool {
+	return uint16(*b)&(uint16(1)<<flag) != 0
+}
+
+func (b *blockInfo) setLight(light uint8) {
+	*b ^= blockInfo(light) << 8
+}
+
+func (b *blockInfo) setLightFilter(light uint8) {
+	*b ^= blockInfo(light) << 12
+}
+
+func (b blockInfo) getLight() uint8 {
+	return uint8((b >> 8) & 0xF)
+}
+
+func (b blockInfo) getLightFilter() uint8 {
+	return uint8((b >> 12) & 0xF)
 }
 
 type BlockRegistryImpl struct {
@@ -49,61 +83,46 @@ type BlockRegistryImpl struct {
 	blocks []Block
 	// customBlocks maps a custom block's identifier to a slice of custom blocks.
 	customBlocks map[string]CustomBlock
-	// nbtBlocks holds a list of NBTer implementations for blocks registered that implement the NBTer interface.
-	// These are indexed by their runtime IDs. Blocks that do not implement NBTer have a false value in this slice.
-	nbtBlocks []bool
-	// randomTickBlocks holds a list of RandomTicker implementations for blocks registered that implement the RandomTicker interface.
-	// These are indexed by their runtime IDs. Blocks that do not implement RandomTicker have a false value in this slice.
-	randomTickBlocks []bool
-	// liquidBlocks holds a list of Liquid implementations for blocks registered that implement the Liquid interface.
-	// These are indexed by their runtime IDs. Blocks that do not implement Liquid have a false value in this slice.
-	liquidBlocks []bool
-	// liquidDisplacingBlocks holds a list of LiquidDisplacer implementations for blocks registered that implement the LiquidDisplacer interface.
-	// These are indexed by their runtime IDs. Blocks that do not implement LiquidDisplacer have a false value in this slice.
-	liquidDisplacingBlocks []bool
-	// airRID is the runtime ID of an air block.
-	airRID uint32
 
-	// LightBlocks is a list of block light levels (0-15) indexed by block runtime IDs. The map is used to do a
-	// fast lookup of block light.
-	lightBlocks []uint8
-	// FilteringBlocks is a map for checking if a block runtime ID filters light, and if so, how many levels.
-	// Light is able to propagate through these blocks, but will have its level reduced.
-	filteringBlocks []uint8
-	// WaterBlocks is a list of water blocks
-	waterBlocks []bool
+	blockInfos []blockInfo
+
+	airRID uint32
 }
 
 func (br *BlockRegistryImpl) BitSize() int {
 	return br.bitSize
 }
 
-func (br *BlockRegistryImpl) RandomTickBlock(rid uint32) bool {
-	return br.randomTickBlocks[rid]
+func (br *BlockRegistryImpl) BlockCount() int {
+	return len(br.blockInfos)
 }
 
-func (br *BlockRegistryImpl) FilteringBlocks() []uint8 {
-	return br.filteringBlocks
+func (br *BlockRegistryImpl) RandomTickBlock(rid uint32) bool {
+	return br.blockInfos[rid].get(blockFlagRandomTick)
+}
+
+func (br *BlockRegistryImpl) FilteringBlock(rid uint32) uint8 {
+	return br.blockInfos[rid].getLightFilter()
+}
+
+func (br *BlockRegistryImpl) LightBlock(rid uint32) uint8 {
+	return br.blockInfos[rid].getLight()
 }
 
 func (br *BlockRegistryImpl) IsWater(rid uint32) bool {
-	return br.waterBlocks[rid]
+	return br.blockInfos[rid].get(blockFlagWater)
 }
 
 func (br *BlockRegistryImpl) NBTBlock(rid uint32) bool {
-	return br.nbtBlocks[rid]
-}
-
-func (br *BlockRegistryImpl) LightBlocks() []uint8 {
-	return br.lightBlocks
+	return br.blockInfos[rid].get(blockFlagNBT)
 }
 
 func (br *BlockRegistryImpl) LiquidDisplacingBlock(rid uint32) bool {
-	return br.liquidDisplacingBlocks[rid]
+	return br.blockInfos[rid].get(blockFlagLiquidDisplacing)
 }
 
 func (br *BlockRegistryImpl) LiquidBlock(rid uint32) bool {
-	return br.liquidBlocks[rid]
+	return br.blockInfos[rid].get(blockFlagLiquid)
 }
 
 func (br *BlockRegistryImpl) Blocks() []Block {
@@ -121,9 +140,7 @@ func (br *BlockRegistryImpl) Clone() BlockRegistry {
 		stateRuntimeIDs: make(map[stateHash]uint32),
 	}
 	br2.blocks = make([]Block, len(br.blocks))
-	for i, block := range br.blocks {
-		br2.blocks[i] = block
-	}
+	copy(br2.blocks, br.blocks)
 	return br2
 }
 
@@ -157,7 +174,7 @@ func (br *BlockRegistryImpl) RegisterBlock(b Block) {
 	}
 }
 
-// registerBlockStates registers multiple new blockStates to the states slice. The function panics if the properties the
+// RegisterBlockState registers a blockStates to the states slice. The function panics if the properties the
 // blockState hold are invalid or if the blockState was already registered.
 func (br *BlockRegistryImpl) RegisterBlockState(s BlockState) {
 	if br.finalized {
@@ -183,22 +200,28 @@ func (br *BlockRegistryImpl) Finalize() {
 
 	br.bitSize = bits.Len64(uint64(len(br.blocks)))
 	sort.SliceStable(br.blocks, func(i, j int) bool {
-		nameOne, _ := br.blocks[i].EncodeBlock()
-		nameTwo, _ := br.blocks[j].EncodeBlock()
+		var nameOne string
+		b1, ok := br.blocks[i].(UnknownBlock)
+		if ok {
+			nameOne = b1.Name
+		} else {
+			nameOne, _ = br.blocks[i].EncodeBlock()
+		}
+
+		var nameTwo string
+		b2, ok := br.blocks[j].(UnknownBlock)
+		if ok {
+			nameTwo = b2.Name
+		} else {
+			nameTwo, _ = br.blocks[j].EncodeBlock()
+		}
 		return fnv1.HashString64(nameOne) < fnv1.HashString64(nameTwo)
 	})
 
-	// create LUTs
-	br.nbtBlocks = make([]bool, len(br.blocks))
-	br.randomTickBlocks = make([]bool, len(br.blocks))
-	br.liquidBlocks = make([]bool, len(br.blocks))
-	br.liquidDisplacingBlocks = make([]bool, len(br.blocks))
-	br.filteringBlocks = make([]uint8, len(br.blocks))
-	br.lightBlocks = make([]uint8, len(br.blocks))
-	br.waterBlocks = make([]bool, len(br.blocks))
+	br.blockInfos = make([]blockInfo, len(br.blocks))
 	br.hashes = intintmap.New(len(br.blocks), 0.999)
-	br.networkhashToRids = make(map[uint32]uint32)
-	br.stateRuntimeIDs = make(map[stateHash]uint32)
+	br.networkhashToRids = make(map[uint32]uint32, len(br.blocks))
+	br.stateRuntimeIDs = make(map[stateHash]uint32, len(br.blocks))
 
 	for idx, b := range br.blocks {
 		rid := uint32(idx)
@@ -212,25 +235,26 @@ func (br *BlockRegistryImpl) Finalize() {
 		}
 		br.stateRuntimeIDs[h] = rid
 
-		// add to tables
+		var info blockInfo
 		if diffuser, ok := b.(lightDiffuser); ok {
-			br.filteringBlocks[rid] = diffuser.LightDiffusionLevel()
+			info.setLightFilter(diffuser.LightDiffusionLevel())
 		}
 		if emitter, ok := b.(lightEmitter); ok {
-			br.lightBlocks[rid] = emitter.LightEmissionLevel()
+			info.setLight(emitter.LightEmissionLevel())
 		}
 		if _, ok := b.(NBTer); ok {
-			br.nbtBlocks[rid] = true
+			info.set(blockFlagNBT)
 		}
 		if _, ok := b.(RandomTicker); ok {
-			br.randomTickBlocks[rid] = true
+			info.set(blockFlagRandomTick)
 		}
 		if _, ok := b.(Liquid); ok {
-			br.liquidBlocks[rid] = true
+			info.set(blockFlagLiquid)
 		}
 		if _, ok := b.(LiquidDisplacer); ok {
-			br.liquidDisplacingBlocks[rid] = true
+			info.set(blockFlagLiquidDisplacing)
 		}
+		br.blockInfos[rid] = info
 
 		if b.Hash() != math.MaxUint64 {
 			h := int64(br.BlockHash(b))
@@ -330,7 +354,7 @@ func (br *BlockRegistryImpl) CustomBlocks() map[string]CustomBlock {
 	return br.customBlocks
 }
 
-// air returns an air block.
+// Air returns an air block.
 func (br *BlockRegistryImpl) Air() Block {
 	b, _ := br.BlockByRuntimeID(br.airRID)
 	return b
