@@ -5,6 +5,7 @@ import (
 	"math"
 	"math/bits"
 	"sort"
+	"strings"
 
 	"github.com/df-mc/dragonfly/server/intintmap"
 	"github.com/df-mc/dragonfly/server/world/chunk"
@@ -131,6 +132,9 @@ func (br *BlockRegistryImpl) Blocks() []Block {
 
 func (br *BlockRegistryImpl) HashToRuntimeID(hash uint32) (rid uint32, ok bool) {
 	rid, ok = br.networkhashToRids[hash]
+	if !ok {
+		fmt.Printf("not found!!! 0x%08x\n", hash)
+	}
 	return rid, ok
 }
 
@@ -361,21 +365,21 @@ func (br *BlockRegistryImpl) Air() Block {
 }
 
 var traitLookup = map[string][]any{
-	"facing_direction": {
+	"minecraft:facing_direction": {
 		"north", "east", "south", "west", "down", "up",
 	},
-	"cardinal_direction": {
+	"minecraft:cardinal_direction": {
 		"north", "east", "south", "west",
 	},
-	"vertical_half": {
-		true, false,
+	"minecraft:vertical_half": {
+		"top", "bottom",
 	},
-	"block_face": {
+	"minecraft:block_face": {
 		"north", "east", "south", "west", "down", "up",
 	},
 }
 
-func AddCustomBlocks(reg *BlockRegistryImpl, entries []protocol.BlockEntry) {
+func AddCustomBlocks(reg *BlockRegistryImpl, entries []protocol.BlockEntry) error {
 	for _, entry := range entries {
 		ns, _ := splitNamespace(entry.Name)
 		if ns == "minecraft" {
@@ -402,16 +406,19 @@ func AddCustomBlocks(reg *BlockRegistryImpl, entries []protocol.BlockEntry) {
 				trait := trait.(map[string]any)
 				enabled_states := trait["enabled_states"].(map[string]any)
 				for k, enabled := range enabled_states {
+					if !strings.ContainsRune(k, ':') {
+						k = "minecraft:" + k
+					}
 					enabled := enabled.(uint8)
 					if enabled == 0 {
 						continue
 					}
 					v, ok := traitLookup[k]
 					if !ok {
-						panic("unresolved trait " + k)
+						return fmt.Errorf("unresolved trait %s", k)
 					}
 
-					propertyNames = append(propertyNames, "minecraft:"+k)
+					propertyNames = append(propertyNames, k)
 					propertyValues = append(propertyValues, v)
 				}
 			}
@@ -431,4 +438,6 @@ func AddCustomBlocks(reg *BlockRegistryImpl, entries []protocol.BlockEntry) {
 			})
 		}
 	}
+
+	return nil
 }
