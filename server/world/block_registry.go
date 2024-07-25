@@ -370,6 +370,9 @@ var traitLookup = map[string][]any{
 	"vertical_half": {
 		true, false,
 	},
+	"block_face": {
+		"north", "east", "south", "west", "down", "up",
+	},
 }
 
 func AddCustomBlocks(reg *BlockRegistryImpl, entries []protocol.BlockEntry) {
