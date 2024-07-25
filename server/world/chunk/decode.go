@@ -170,7 +170,19 @@ func decodeSubChunk(buf *bytes.Buffer, c *Chunk, index *byte, e Encoding, hashed
 					var ok bool
 					storage.palette.values[i2], ok = c.BlockRegistry.HashToRuntimeID(v)
 					if !ok {
-						println("rid hash not found, data sorting wrong.")
+						/* for debug
+						for x := byte(0); x < 16; x++ {
+							for y := byte(0); y < 16; y++ {
+								for z := byte(0); z < 16; z++ {
+									idx := storage.paletteIndex(x, y, z)
+									if idx == uint16(i2) {
+										println()
+									}
+								}
+							}
+						}
+						*/
+						fmt.Println("rid hash not found, data sorting wrong.")
 					}
 				}
 			}
