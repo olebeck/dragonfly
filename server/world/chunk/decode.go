@@ -3,10 +3,10 @@ package chunk
 import (
 	"bytes"
 	"fmt"
+	"slices"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
-	"golang.org/x/exp/slices"
 )
 
 // NetworkDecode decodes the network serialised data passed into a Chunk if successful. If not, the chunk
@@ -15,10 +15,9 @@ import (
 // noinspection GoUnusedExportedFunction
 func NetworkDecode(br BlockRegistry, data []byte, count int, oldBiomes bool, hashedRids bool, r cube.Range) (*Chunk, []map[string]any, error) {
 	var (
-		c         = New(br, r)
-		buf       = bytes.NewBuffer(data)
-		err       error
-		blockNBTs []map[string]any
+		c   = New(br, r)
+		buf = bytes.NewBuffer(data)
+		err error
 	)
 
 	for i := 0; i < count; i++ {
@@ -28,11 +27,28 @@ func NetworkDecode(br BlockRegistry, data []byte, count int, oldBiomes bool, has
 			return nil, nil, err
 		}
 	}
+
+	err = DecodeNetworkBiomes(c, buf, oldBiomes)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	borderBlocks, _ := buf.ReadByte()
+	buf.Next(int(borderBlocks))
+
+	blockNBTs, err := DecodeBlockNBTs(buf)
+	if err != nil {
+		return nil, nil, err
+	}
+	return c, blockNBTs, nil
+}
+
+func DecodeNetworkBiomes(c *Chunk, buf *bytes.Buffer, oldBiomes bool) error {
 	if oldBiomes {
 		// Read the old biomes.
 		biomes := make([]byte, 256)
 		if _, err := buf.Read(biomes[:]); err != nil {
-			return nil, nil, fmt.Errorf("error reading biomes: %w", err)
+			return fmt.Errorf("error reading biomes: %w", err)
 		}
 		var values []uint32
 		for _, v := range biomes {
@@ -62,14 +78,14 @@ func NetworkDecode(br BlockRegistry, data []byte, count int, oldBiomes bool, has
 		for i := 0; i < len(c.sub); i++ {
 			b, err := decodePalettedStorage(buf, NetworkEncoding, BiomePaletteEncoding, c.BlockRegistry)
 			if err != nil {
-				return nil, nil, err
+				return err
 			}
 			if b == nil {
 				// b == nil means this paletted storage had the flag pointing to the previous one. It basically means we should
 				// inherit whatever palette we decoded last.
 				if i == 0 {
 					// This should never happen and there is no way to handle this.
-					return nil, nil, fmt.Errorf("first biome storage pointed to previous one")
+					return fmt.Errorf("first biome storage pointed to previous one")
 				}
 				b = last
 			} else {
@@ -78,26 +94,26 @@ func NetworkDecode(br BlockRegistry, data []byte, count int, oldBiomes bool, has
 			c.biomes[i] = b
 		}
 	}
+	return nil
+}
 
-	borderBlocks, _ := buf.ReadByte()
-	buf.Next(int(borderBlocks))
-
+func DecodeBlockNBTs(buf *bytes.Buffer) ([]map[string]any, error) {
+	var blockNBTs []map[string]any
 	if buf.Len() > 0 {
 		dec := nbt.NewDecoderWithEncoding(buf, nbt.NetworkLittleEndian)
 		dec.AllowZero = true
 		for buf.Len() > 0 {
 			blockNBT := make(map[string]any, 0)
-			err = dec.Decode(&blockNBT)
+			err := dec.Decode(&blockNBT)
 			if err != nil {
-				return nil, nil, err
+				return nil, err
 			}
 			if len(blockNBT) > 0 {
 				blockNBTs = append(blockNBTs, blockNBT)
 			}
 		}
 	}
-
-	return c, blockNBTs, nil
+	return blockNBTs, nil
 }
 
 // DiskDecode decodes the data from a SerialisedData object into a chunk and returns it. If the data was
