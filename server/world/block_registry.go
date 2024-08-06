@@ -36,7 +36,7 @@ type BlockRegistry interface {
 }
 
 const (
-	blockFlagNBT uint16 = 1 << iota
+	blockFlagNBT uint16 = 0 << iota
 	blockFlagRandomTick
 	blockFlagLiquid
 	blockFlagLiquidDisplacing
@@ -49,8 +49,8 @@ func (b *blockInfo) set(flag uint16) {
 	*b ^= blockInfo(flag)
 }
 
-func (b *blockInfo) get(flag uint16) bool {
-	return uint16(*b)&(uint16(1)<<flag) != 0
+func (b blockInfo) get(flag uint16) bool {
+	return b&(1<<flag) != 0
 }
 
 func (b *blockInfo) setLight(light uint8) {

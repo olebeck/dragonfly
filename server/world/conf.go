@@ -86,6 +86,7 @@ func (conf Config) New() *World {
 		conf:             conf,
 		ra:               conf.Dim.Range(),
 		set:              s,
+		br:               conf.Blocks,
 	}
 	w.weather, w.ticker = weather{w: w}, ticker{w: w}
 

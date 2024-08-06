@@ -40,7 +40,7 @@ func (debugGenerator) GenerateChunk(cp world.ChunkPos, chunk *chunk.Chunk) {
 				continue
 			}
 
-			chunk.SetBlock(x, 0, z, 0, uint32(rid))
+			chunk.SetBlock(x, int16(chunk.Range()[0])+1, z, 0, uint32(rid))
 		}
 	}
 }
