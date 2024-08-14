@@ -152,54 +152,38 @@ func (s Slab) Model() world.BlockModel {
 
 // EncodeItem ...
 func (s Slab) EncodeItem() (string, int16) {
-	id, slabType, meta, _ := encodeSlabBlock(s.Block)
-	if slabType != "" {
-		return "minecraft:" + encodeLegacySlabId(slabType), meta
+	return slabName(s), 0
+}
+
+func slabName(s Slab) (name string) {
+	if block, ok := s.Block.(Copper); ok {
+		prefix := ""
+		if block.Waxed {
+			prefix += "waxed_"
+		}
+		if block.Weather.Uint8() > 0 {
+			prefix += block.Weather.String() + "_"
+		}
+		if s.Double {
+			prefix += "double_"
+		}
+		if block.Cut {
+			prefix += "cut_"
+		}
+		name = prefix + "copper_slab"
+	} else {
+		suffix := "_slab"
+		if s.Double {
+			suffix = "_double_slab"
+		}
+		name = encodeSlabBlock(s.Block) + suffix
 	}
-	return "minecraft:" + id + "_slab", meta
+	return "minecraft:" + name
 }
 
 // EncodeBlock ...
 func (s Slab) EncodeBlock() (string, map[string]any) {
-	id, slabType, _, halfFlattened := encodeSlabBlock(s.Block)
-	side := "bottom"
-	if s.Top {
-		side = "top"
-	}
-	properties := map[string]any{"minecraft:vertical_half": side}
-	if slabType != "" && !halfFlattened {
-		properties[slabType] = id
-		id = encodeLegacySlabId(slabType)
-		if s.Double {
-			id = "double_" + id
-		}
-	} else if s.Double {
-		if halfFlattened {
-			properties[slabType] = id
-			id = "double_" + encodeLegacySlabId(slabType)
-		} else {
-			if copper, ok := s.Block.(Copper); ok {
-				weather := ""
-				if copper.Weather != NotWeathered() {
-					weather = copper.Weather.String() + "_"
-				}
-				if copper.Waxed {
-					cut := ""
-					if copper.Cut {
-						cut = "cut_"
-					}
-					id = "waxed_" + weather + "double_" + cut + "copper_slab"
-					return "minecraft:" + id, properties
-				}
-				id = weather + "double_cut_copper_slab"
-				return "minecraft:" + id, properties
-			}
-			id = id + "_double_slab"
-		}
-	} else {
-		id = id + "_slab"
-	}
-	return "minecraft:" + id, properties
+	return slabName(s), map[string]any{"minecraft:vertical_half": s.verticalHalf()}
 }
 
 func (s Slab) verticalHalf() string {

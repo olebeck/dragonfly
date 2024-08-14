@@ -55,13 +55,21 @@ func (iter *ColumnIterator) Next() bool {
 	if (len(k) != 9 && len(k) != 13) || (k[8] != keyVersion && k[8] != keyVersionOld) {
 		return iter.Next()
 	}
-	iter.dim = world.Dimension(world.Overworld)
+	if iter.legacy {
+		iter.dim = world.Dimension(world.Overworld_legacy)
+	} else {
+		iter.dim = world.Dimension(world.Overworld)
+	}
 	if len(k) > 9 {
 		var ok bool
 		id := int(binary.LittleEndian.Uint32(k[8:12]))
-		if iter.dim, ok = world.DimensionByID(id); !ok {
-			iter.err = fmt.Errorf("unknown dimension id %v", id)
-			return false
+		if id == 0 && iter.legacy {
+			iter.dim = world.Dimension(world.Overworld_legacy)
+		} else {
+			if iter.dim, ok = world.DimensionByID(id); !ok {
+				iter.err = fmt.Errorf("unknown dimension id %v", id)
+				return false
+			}
 		}
 	}
 	iter.pos = world.ChunkPos{

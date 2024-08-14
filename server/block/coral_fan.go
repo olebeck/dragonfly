@@ -113,50 +113,29 @@ func (c CoralFan) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, silkTouchOnlyDrop(c))
 }
 
-func (c CoralFan) name() (name string, coralHangTypeBit bool) {
-	name = "minecraft:coral_fan"
-	if c.Hanging {
-		name += "_hang"
-		switch c.Type {
-		case TubeCoral():
-			coralHangTypeBit = false
-		case BrainCoral():
-			coralHangTypeBit = true
-		case BubbleCoral():
-			name += "2"
-			coralHangTypeBit = false
-		case FireCoral():
-			name += "2"
-			coralHangTypeBit = true
-		case HornCoral():
-			name += "3"
-			coralHangTypeBit = false
-		}
-	} else {
-		if c.Dead {
-			name += "_dead"
-		}
-	}
-	return name, coralHangTypeBit
-}
-
 // EncodeBlock ...
 func (c CoralFan) EncodeBlock() (name string, properties map[string]any) {
-	properties = map[string]any{}
-	name, hangBit := c.name()
+	name = "minecraft:"
+	if c.Dead {
+		name += "dead_"
+	}
+	name += c.Type.String() + "_"
+	name += "coral_"
 	if c.Hanging {
-		properties["coral_hang_type_bit"] = hangBit
+		name += "wall_"
+	}
+	name += "fan"
+
+	properties = map[string]any{}
+	if c.Hanging {
 		properties["coral_direction"] = int32(c.Facing)
-		properties["dead_bit"] = c.Dead
 	} else {
-		properties["coral_color"] = c.Type.Colour().String()
 		switch c.Facing {
 		case cube.East, cube.West:
 			properties["coral_fan_direction"] = int32(0)
 		case cube.North, cube.South:
 			properties["coral_fan_direction"] = int32(1)
 		}
-
 	}
 
 	return name, properties
@@ -164,17 +143,20 @@ func (c CoralFan) EncodeBlock() (name string, properties map[string]any) {
 
 // EncodeItem ...
 func (c CoralFan) EncodeItem() (name string, meta int16) {
-	name, hangBit := c.name()
+	name = "minecraft:"
+	if c.Dead {
+		name += "dead_"
+	}
+	name += c.Type.String() + "_"
+	name += "coral_"
 	if c.Hanging {
-		if hangBit {
-			meta |= 0x1
-		}
-		if c.Dead {
-			meta |= int16(0x1 << 2)
-		}
+		name += "wall_"
+	}
+	name += "fan"
+
+	if c.Hanging {
 		meta |= int16(c.Facing) << 4
 	} else {
-		meta |= int16(c.Type.Uint8())
 		switch c.Facing {
 		case cube.North, cube.South:
 			meta |= int16(1) << 8
