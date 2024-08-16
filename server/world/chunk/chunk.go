@@ -185,9 +185,6 @@ func (chunk *Chunk) HighestBlockLayer(x, z, layer uint8, noLiquid bool) int16 {
 						continue
 					}
 
-					name, _, _ := chunk.BlockRegistry.RuntimeIDToState(rid)
-					_ = name
-
 					isLiquid := chunk.BlockRegistry.LiquidBlock(rid)
 					if noLiquid && isLiquid {
 						continue
