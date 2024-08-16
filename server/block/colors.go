@@ -502,7 +502,7 @@ func (Gold) Color() color.RGBA {
 }
 
 func (Grass) Color() color.RGBA {
-	return color.RGBA{149, 202, 106, 255}
+	return color.RGBA{0x94, 0x94, 0x94, 255}
 }
 
 func (Gravel) Color() color.RGBA {
