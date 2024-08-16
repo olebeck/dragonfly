@@ -8,7 +8,6 @@ type BlockRegistry interface {
 	FilteringBlock(rid uint32) uint8
 	LightBlock(rid uint32) uint8
 	RandomTickBlock(rid uint32) bool
-	IsWater(rid uint32) bool
 	NBTBlock(rid uint32) bool
 	LiquidDisplacingBlock(rid uint32) bool
 	LiquidBlock(rid uint32) bool

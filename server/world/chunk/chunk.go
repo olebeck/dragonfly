@@ -175,7 +175,7 @@ func (chunk *Chunk) HighestBlock(x, z uint8) int16 {
 }
 
 // HighestBlockLayer returns the highest block that isnt air in a layer
-func (chunk *Chunk) HighestBlockLayer(x, z, layer uint8, noWater bool) int16 {
+func (chunk *Chunk) HighestBlockLayer(x, z, layer uint8, noLiquid bool) int16 {
 	for index := int16(len(chunk.sub) - 1); index >= 0; index-- {
 		if sub := chunk.sub[index]; !sub.Empty() {
 			if len(sub.storages) > int(layer) {
@@ -184,8 +184,12 @@ func (chunk *Chunk) HighestBlockLayer(x, z, layer uint8, noWater bool) int16 {
 					if rid == chunk.BlockRegistry.AirRuntimeID() {
 						continue
 					}
-					isWater := chunk.BlockRegistry.IsWater(rid)
-					if noWater && isWater {
+
+					name, _, _ := chunk.BlockRegistry.RuntimeIDToState(rid)
+					_ = name
+
+					isLiquid := chunk.BlockRegistry.LiquidBlock(rid)
+					if noLiquid && isLiquid {
 						continue
 					}
 					return int16(y) | chunk.SubY(index)

@@ -40,7 +40,6 @@ const (
 	blockFlagRandomTick
 	blockFlagLiquid
 	blockFlagLiquidDisplacing
-	blockFlagWater
 )
 
 type blockInfo uint16
@@ -108,10 +107,6 @@ func (br *BlockRegistryImpl) FilteringBlock(rid uint32) uint8 {
 
 func (br *BlockRegistryImpl) LightBlock(rid uint32) uint8 {
 	return br.blockInfos[rid].getLight()
-}
-
-func (br *BlockRegistryImpl) IsWater(rid uint32) bool {
-	return br.blockInfos[rid].get(blockFlagWater)
 }
 
 func (br *BlockRegistryImpl) NBTBlock(rid uint32) bool {
