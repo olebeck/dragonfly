@@ -79,6 +79,10 @@ func (blockPaletteEncoding) decode(buf *bytes.Buffer, e Encoding, br BlockRegist
 	name, _ := m["name"].(string)
 	version, _ := m["version"].(int32)
 
+	if !strings.ContainsRune(name, ':') {
+		name = "minecraft:" + name
+	}
+
 	// Now check for a state field.
 	stateI, ok := m["states"]
 	if !ok {
