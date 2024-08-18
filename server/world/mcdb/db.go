@@ -528,11 +528,11 @@ func (db *DB) storeBlockEntities(batch *leveldb.Batch, k dbKey, blockEntities ma
 // position/chunk pairs in a database.
 // An IteratorRange r may be passed to specify limits in terms of what chunks
 // should be read. r may be set to nil to read all chunks from the DB.
-func (db *DB) NewColumnIterator(r *IteratorRange, legacy bool) *ColumnIterator {
+func (db *DB) NewColumnIterator(r *IteratorRange) *ColumnIterator {
 	if r == nil {
 		r = &IteratorRange{}
 	}
-	return newColumnIterator(db, r, legacy)
+	return newColumnIterator(db, r)
 }
 
 // Close closes the provider, saving any file that might need to be saved, such as the level.dat.

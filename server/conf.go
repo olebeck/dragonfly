@@ -101,8 +101,6 @@ type Config struct {
 
 	Biomes *world.BiomeRegistry
 	Blocks world.BlockRegistry
-
-	LegacyHeight bool
 }
 
 // Logger is used to report information and errors from a dragonfly Server. Any
@@ -161,9 +159,6 @@ func (conf Config) New() *Server {
 	conf.Resources = slices.Clone(conf.Resources)
 
 	overworldDimension := world.Overworld
-	if conf.LegacyHeight {
-		overworldDimension = world.Overworld_legacy
-	}
 
 	srv := &Server{
 		conf:     conf,

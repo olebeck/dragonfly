@@ -30,16 +30,14 @@ type ColumnIterator struct {
 	pos     world.ChunkPos
 	dim     world.Dimension
 	seen    map[dbKey]struct{}
-	legacy  bool
 }
 
-func newColumnIterator(db *DB, r *IteratorRange, legacy bool) *ColumnIterator {
+func newColumnIterator(db *DB, r *IteratorRange) *ColumnIterator {
 	return &ColumnIterator{
 		db:     db,
 		dbIter: db.ldb.NewIterator(nil, nil),
 		seen:   make(map[dbKey]struct{}),
 		r:      r,
-		legacy: legacy,
 	}
 }
 
@@ -55,21 +53,13 @@ func (iter *ColumnIterator) Next() bool {
 	if (len(k) != 9 && len(k) != 13) || (k[8] != keyVersion && k[8] != keyVersionOld) {
 		return iter.Next()
 	}
-	if iter.legacy {
-		iter.dim = world.Dimension(world.Overworld_legacy)
-	} else {
-		iter.dim = world.Dimension(world.Overworld)
-	}
+	iter.dim = world.Dimension(world.Overworld)
 	if len(k) > 9 {
 		var ok bool
 		id := int(binary.LittleEndian.Uint32(k[8:12]))
-		if id == 0 && iter.legacy {
-			iter.dim = world.Dimension(world.Overworld_legacy)
-		} else {
-			if iter.dim, ok = world.DimensionByID(id); !ok {
-				iter.err = fmt.Errorf("unknown dimension id %v", id)
-				return false
-			}
+		if iter.dim, ok = world.DimensionByID(id); !ok {
+			iter.err = fmt.Errorf("unknown dimension id %v", id)
+			return false
 		}
 	}
 	iter.pos = world.ChunkPos{

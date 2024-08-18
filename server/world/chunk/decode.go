@@ -217,6 +217,13 @@ func decodeBiomes(buf *bytes.Buffer, c *Chunk, e Encoding) error {
 	var last *PalettedStorage
 	if buf.Len() != 0 {
 		for i := 0; i < len(c.sub); i++ {
+			if i == 16 && buf.Len() == 0 { // fix for 255 height worlds
+				copy(c.biomes[4:], c.biomes[:16])
+				for j := 0; j < 4; j++ {
+					c.biomes[j] = emptyStorage(0)
+				}
+				break
+			}
 			b, err := decodePalettedStorage(buf, e, BiomePaletteEncoding, c.BlockRegistry)
 			if err != nil {
 				return err

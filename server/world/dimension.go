@@ -18,16 +18,12 @@ var (
 	// End is a Dimension implementation with a dark sky. It has a building
 	// range of [0, 256).
 	End end
-
-	// Overworld_legacy is the same as Overworld except it has a building range of [0, 255].
-	Overworld_legacy = overworld{legacy: true}
 )
 
 var dimensionReg = newDimensionRegistry(map[int]Dimension{
-	0:  Overworld,
-	1:  Nether,
-	2:  End,
-	10: Overworld_legacy,
+	0: Overworld,
+	1: Nether,
+	2: End,
 })
 
 // DimensionByID looks up a Dimension for the ID passed, returning Overworld
