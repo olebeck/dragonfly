@@ -60,7 +60,6 @@ func main() {
 	conf.Generator = func(dim world.Dimension) world.Generator {
 		return debugGenerator{}
 	}
-	conf.ReadOnlyWorld = true
 
 	srv := conf.New()
 	srv.CloseOnProgramEnd()
