@@ -3,18 +3,16 @@ package world
 import (
 	"errors"
 	"math/rand"
+	"slices"
 	"sync"
+	"sync/atomic"
 	"time"
 
-	"github.com/df-mc/goleveldb/leveldb"
-
-	"slices"
-
-	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/world/chunk"
+	"github.com/df-mc/goleveldb/leveldb"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"golang.org/x/exp/maps"
@@ -35,7 +33,7 @@ type World struct {
 	o sync.Once
 
 	set     *Settings
-	handler atomic.Value[Handler]
+	handler atomic.Pointer[Handler]
 
 	weather
 	ticker
@@ -992,7 +990,7 @@ func (w *World) Handle(h Handler) {
 	if h == nil {
 		h = NopHandler{}
 	}
-	w.handler.Store(h)
+	w.handler.Store(&h)
 }
 
 // Viewers returns a list of all viewers viewing the position passed. A viewer will be assumed to be watching
@@ -1019,6 +1017,19 @@ func (w *World) PortalDestination(dim Dimension) *World {
 		return res
 	}
 	return w
+}
+
+// Save saves the World to the provider.
+func (w *World) Save() {
+	w.conf.Log.Debugf("Saving chunks in memory to disk...")
+
+	w.chunkMu.Lock()
+	toSave := maps.Clone(w.chunks)
+	w.chunkMu.Unlock()
+
+	for pos, c := range toSave {
+		w.saveChunk(pos, c, false)
+	}
 }
 
 // Close closes the world and saves all chunks currently loaded.
@@ -1048,10 +1059,10 @@ func (w *World) close() {
 	w.chunkMu.Unlock()
 
 	for pos, c := range toSave {
-		w.saveChunk(pos, c)
+		w.saveChunk(pos, c, true)
 	}
 
-	w.set.ref.Dec()
+	w.set.ref.Add(-1)
 	if !w.advance {
 		return
 	}
@@ -1153,7 +1164,7 @@ func (w *World) Handler() Handler {
 	if w == nil {
 		return NopHandler{}
 	}
-	return w.handler.Load()
+	return *w.handler.Load()
 }
 
 // chunkFromCache attempts to fetch a chunk at the chunk position passed from the cache. If not found, the
@@ -1319,7 +1330,7 @@ func (w *World) spreadLight(pos ChunkPos) {
 
 // saveChunk is called when a chunk is removed from the cache. We first compact the chunk, then we write it to
 // the provider.
-func (w *World) saveChunk(pos ChunkPos, c *Column) {
+func (w *World) saveChunk(pos ChunkPos, c *Column, closeEntities bool) {
 	c.Lock()
 	if !w.conf.ReadOnly && c.modified {
 		c.Compact()
@@ -1327,12 +1338,16 @@ func (w *World) saveChunk(pos ChunkPos, c *Column) {
 			w.conf.Log.Errorf("save chunk: %v", err)
 		}
 	}
-	ent := c.Entities
-	c.Entities = nil
-	c.Unlock()
+	if closeEntities {
+		ent := c.Entities
+		c.Entities = nil
+		c.Unlock()
 
-	for _, e := range ent {
-		_ = e.Close()
+		for _, e := range ent {
+			_ = e.Close()
+		}
+	} else {
+		c.Unlock()
 	}
 }
 
@@ -1362,7 +1377,7 @@ func (w *World) chunkCacheJanitor() {
 			w.chunkMu.Unlock()
 
 			for pos, c := range chunksToRemove {
-				w.saveChunk(pos, c)
+				w.saveChunk(pos, c, true)
 				delete(chunksToRemove, pos)
 			}
 		case <-w.closing:

@@ -33,6 +33,7 @@ type BlockRegistry interface {
 	Clone() BlockRegistry
 	Finalize()
 	BitSize() int
+	BlockHash(b Block) uint64
 }
 
 const (
@@ -200,16 +201,13 @@ func (br *BlockRegistryImpl) Finalize() {
 	br.bitSize = bits.Len64(uint64(len(br.blocks)))
 	sort.SliceStable(br.blocks, func(i, j int) bool {
 		var nameOne string
-		b1, ok := br.blocks[i].(UnknownBlock)
-		if ok {
+		if b1, ok := br.blocks[i].(UnknownBlock); ok {
 			nameOne = b1.Name
 		} else {
 			nameOne, _ = br.blocks[i].EncodeBlock()
 		}
-
 		var nameTwo string
-		b2, ok := br.blocks[j].(UnknownBlock)
-		if ok {
+		if b2, ok := br.blocks[j].(UnknownBlock); ok {
 			nameTwo = b2.Name
 		} else {
 			nameTwo, _ = br.blocks[j].EncodeBlock()
@@ -255,14 +253,13 @@ func (br *BlockRegistryImpl) Finalize() {
 		}
 		br.blockInfos[rid] = info
 
-		if b.Hash() != math.MaxUint64 {
+		if _, hash := b.Hash(); hash != math.MaxUint64 {
 			h := int64(br.BlockHash(b))
 			if other, ok := br.hashes.Get(h); ok {
 				panic(fmt.Sprintf("block %#v with hash %v already registered by %#v", b, h, br.blocks[other]))
 			}
 			br.hashes.Put(h, int64(rid))
 		}
-
 		br.networkhashToRids[networkBlockHash(name, properties)] = rid
 	}
 }
@@ -289,8 +286,13 @@ func (br *BlockRegistryImpl) StateToRuntimeID(name string, properties map[string
 	return rid, ok
 }
 
+// BlockHash returns a unique identifier of the block including the block states. This function is used internally
+// to convert a block to a single integer which can be used in map lookups. The hash produced therefore does not
+// need to match anything in the game, but it must be unique among all registered blocks.
+// The tool in `/cmd/blockhash` may be used to automatically generate block hashes of blocks in a package.
 func (br *BlockRegistryImpl) BlockHash(b Block) uint64 {
-	return b.BaseHash() | (b.Hash() << br.bitSize)
+	base, hash := b.Hash()
+	return base | (hash << uint64(br.bitSize))
 }
 
 // BlockRuntimeID attempts to return a runtime ID of a block previously registered using RegisterBlock().
@@ -299,7 +301,9 @@ func (br *BlockRegistryImpl) BlockRuntimeID(b Block) uint32 {
 	if b == nil {
 		return br.airRID
 	}
-	if h := br.BlockHash(b); h != math.MaxUint64 {
+
+	if _, hash := b.Hash(); hash != math.MaxUint64 {
+		h := br.BlockHash(b)
 		if rid, ok := br.hashes.Get(int64(h)); ok {
 			return uint32(rid)
 		}

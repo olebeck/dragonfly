@@ -17,12 +17,12 @@ type Block interface {
 	// EncodeBlock encodes the block to a string ID such as 'minecraft:grass' and properties associated
 	// with the block.
 	EncodeBlock() (string, map[string]any)
-	BaseHash() uint64
-	// Hash returns a unique identifier of the block including the block states. This function is used internally to
-	// convert a block to a single integer which can be used in map lookups. The hash produced therefore does not need
-	// to match anything in the game, but it must be unique among all registered blocks.
-	// The tool in `/cmd/blockhash` may be used to automatically generate block hashes of blocks in a package.
-	Hash() uint64
+	// Hash returns two different identifiers for the block. The first is the base hash which is unique for
+	// each type of block at runtime. For vanilla blocks, this is an auto-incrementing constant and for custom
+	// blocks, you can call block.NextHash() to get a unique identifier. The second is the hash of the block's
+	// own state and does not need to worry about colliding with other types of blocks. This is later combined
+	// with the base hash to create a unique identifier for the full block.
+	Hash() (uint64, uint64)
 	// Model returns the BlockModel of the Block.
 	Model() BlockModel
 	// Color returns an RGBA color used to represent this block on a map
@@ -173,14 +173,9 @@ func (UnknownBlock) Model() BlockModel {
 	return unknownModel{}
 }
 
-// BaseHash ...
-func (b UnknownBlock) BaseHash() uint64 {
-	return 0
-}
-
 // Hash ...
-func (b UnknownBlock) Hash() uint64 {
-	return math.MaxUint64
+func (b UnknownBlock) Hash() (uint64, uint64) {
+	return 0, math.MaxUint64
 }
 
 func (b UnknownBlock) Color() color.RGBA {
@@ -198,5 +193,5 @@ func (b UnknownBlock) EncodeNBT() map[string]any {
 }
 
 func BlockHash(b Block) uint64 {
-	return b.BaseHash() | (b.Hash() << DefaultBlockRegistry.BitSize())
+	return DefaultBlockRegistry.BlockHash(b)
 }

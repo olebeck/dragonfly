@@ -131,6 +131,7 @@ func init() {
 	registerAll(allBoneBlock())
 	registerAll(allCactus())
 	registerAll(allCake())
+	registerAll(allCampfires())
 	registerAll(allCandle())
 	registerAll(allCarpet())
 	registerAll(allCarrots())
@@ -159,6 +160,7 @@ func init() {
 	registerAll(allGlazedTerracotta())
 	registerAll(allGrindstones())
 	registerAll(allHayBales())
+	registerAll(allHoppers())
 	registerAll(allItemFrames())
 	registerAll(allKelp())
 	registerAll(allLadders())
@@ -281,6 +283,7 @@ func init() {
 	world.RegisterItem(HangingRoots{})
 	world.RegisterItem(HayBale{})
 	world.RegisterItem(Honeycomb{})
+	world.RegisterItem(Hopper{})
 	world.RegisterItem(InvisibleBedrock{})
 	world.RegisterItem(IronBars{})
 	world.RegisterItem(Iron{})
@@ -423,6 +426,7 @@ func init() {
 	for _, f := range FireTypes() {
 		world.RegisterItem(Lantern{Type: f})
 		world.RegisterItem(Torch{Type: f})
+		world.RegisterItem(Campfire{Type: f})
 	}
 	for _, f := range FlowerTypes() {
 		world.RegisterItem(Flower{Type: f})

@@ -4,7 +4,6 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/sirupsen/logrus"
 )
@@ -80,15 +79,16 @@ func (conf Config) New() *World {
 		viewers:          make(map[*Loader]Viewer),
 		chunks:           make(map[ChunkPos]*Column),
 		closing:          make(chan struct{}),
-		handler:          *atomic.NewValue[Handler](NopHandler{}),
 		r:                rand.New(conf.RandSource),
-		advance:          s.ref.Inc() == 1,
+		advance:          s.ref.Add(1) == 1,
 		conf:             conf,
 		ra:               conf.Dim.Range(),
 		set:              s,
 		br:               conf.Blocks,
 	}
 	w.weather, w.ticker = weather{w: w}, ticker{w: w}
+	var h Handler = NopHandler{}
+	w.handler.Store(&h)
 
 	go w.tickLoop()
 	go w.chunkCacheJanitor()

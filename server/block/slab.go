@@ -183,6 +183,8 @@ func slabName(s Slab) (name string) {
 
 // EncodeBlock ...
 func (s Slab) EncodeBlock() (string, map[string]any) {
+	_, _, _ = s.Block, s.Double, s.Top
+
 	return slabName(s), map[string]any{"minecraft:vertical_half": s.verticalHalf()}
 }
 
