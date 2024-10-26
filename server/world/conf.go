@@ -1,18 +1,18 @@
 package world
 
 import (
+	"log/slog"
 	"math/rand"
 	"time"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/sirupsen/logrus"
 )
 
 // Config may be used to create a new World. It holds a variety of fields that influence the World.
 type Config struct {
-	// Log is the Logger that will be used to log errors and debug messages to. If set to nil, a Logrus logger will be
-	// used.
-	Log Logger
+	// Log is the Logger that will be used to log errors and debug messages to.
+	// If set to nil, slog.Default() is set.
+	Log *slog.Logger
 	// Dim is the Dimension of the World. If set to nil, the World will use Overworld as its dimension. The dimension
 	// set here influences, among others, the sky colour, weather/time and liquid behaviour in that World.
 	Dim Dimension
@@ -44,18 +44,11 @@ type Config struct {
 	Blocks BlockRegistry
 }
 
-// Logger is a logger implementation that may be passed to the Log field of Config. World will send errors and debug
-// messages to this Logger when appropriate.
-type Logger interface {
-	Errorf(format string, a ...any)
-	Debugf(format string, a ...any)
-}
-
 // New creates a new World using the Config conf. The World returned will start ticking as soon as a viewer is added
 // to it and is otherwise ready for use.
 func (conf Config) New() *World {
 	if conf.Log == nil {
-		conf.Log = logrus.New()
+		conf.Log = slog.Default()
 	}
 	if conf.Dim == nil {
 		conf.Dim = Overworld

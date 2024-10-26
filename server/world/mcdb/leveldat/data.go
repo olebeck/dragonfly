@@ -1,11 +1,12 @@
 package leveldat
 
 import (
+	"math"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
-	"math"
-	"time"
 )
 
 // Data holds a collection of data that specify a range of Settings of the
@@ -146,6 +147,7 @@ type Data struct {
 	ShowDaysPlayed                 bool           `nbt:"showdaysplayed"`
 	TNTExplosionDropDecay          bool           `nbt:"tntexplosiondropdecay"`
 	HasUncompleteWorldFileOnDisk   bool           `nbt:"HasUncompleteWorldFileOnDisk"`
+	PlayerHasDied                  bool           `nbt:"PlayerHasDied"`
 }
 
 // FillDefault fills out d with all the default level.dat values.

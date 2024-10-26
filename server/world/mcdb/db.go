@@ -81,7 +81,7 @@ func (db *DB) LoadPlayerSpawnPosition(id uuid.UUID) (pos cube.Pos, exists bool, 
 // LoadPlayerData loads the data stored in a LevelDB database for a specific UUID.
 func (db *DB) LoadPlayerData(id uuid.UUID) (serverData map[string]interface{}, key string, exists bool, err error) {
 	data, err := db.ldb.Get([]byte("player_"+id.String()), nil)
-	if err == leveldb.ErrNotFound {
+	if errors.Is(err, leveldb.ErrNotFound) {
 		return nil, "", false, nil
 	} else if err != nil {
 		return nil, "", true, fmt.Errorf("error reading player data for uuid %v: %w", id, err)
@@ -177,7 +177,7 @@ func (db *DB) column(k dbKey) (*world.Column, error) {
 		return nil, fmt.Errorf("read version: %w", err)
 	}
 	if ver != chunkVersion {
-		db.conf.Log.Debugf("column %v (%v): unsupported chunk version %v, trying to load anyway", k.pos, k.dim, ver)
+		db.conf.Log.Debug("column: unsupported chunk version, trying to load anyway", "X", k.pos[0], "Z", k.pos[1], "dimension", fmt.Sprint(k.dim), "ver", ver)
 	}
 	cdata.Biomes, err = db.biomes(k)
 	if err != nil && !errors.Is(err, leveldb.ErrNotFound) {
@@ -262,13 +262,13 @@ func (db *DB) subChunks(k dbKey) ([][]byte, error) {
 func (db *DB) loadEntity(m map[string]any, pos world.ChunkPos) world.Entity {
 	id, ok := m["identifier"]
 	if !ok {
-		db.conf.Log.Errorf("load entities: failed loading %v: entity had data but no identifier (%v)", pos, m)
+		db.conf.Log.Error("load entities: failed loading: entity had data but no identifier", "pos", pos, "entity", m)
 		return nil
 	}
 	name, _ := id.(string)
 	t, ok := db.conf.Entities.Lookup(name)
 	if !ok {
-		db.conf.Log.Errorf("load entities: failed loading %v: entity %s was not registered (%v)", pos, name, m)
+		db.conf.Log.Error("load entities: failed loading: entity was not registered", "pos", pos, "name", name, "entity", m)
 		return nil
 	}
 	if s, ok := t.(world.SaveableEntityType); ok {
@@ -361,12 +361,12 @@ func (db *DB) blockEntities(k dbKey, c *chunk.Chunk) (map[cube.Pos]world.Block, 
 		id := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
 		b, ok := db.conf.Blocks.BlockByRuntimeID(id)
 		if !ok {
-			db.conf.Log.Errorf("no block registered with runtime id %v", id)
+			db.conf.Log.Error("no block with runtime ID", "ID", id)
 			continue
 		}
 		nbter, ok := b.(world.NBTer)
 		if !ok {
-			db.conf.Log.Errorf("block %#v has nbt but does not implement world.nbter", b)
+			db.conf.Log.Error("block with nbt does not implement world.NBTer", "block", fmt.Sprintf("%#v", b))
 			continue
 		}
 		blockEntities[pos] = nbter.DecodeNBT(m).(world.Block)
@@ -452,7 +452,7 @@ func (db *DB) storeEntities(batch *leveldb.Batch, k dbKey, entities []world.Enti
 	var previousUniqueIDs []int64
 	digpPrev, err := db.ldb.Get(digpKey, nil)
 	if err != leveldb.ErrNotFound && err != nil {
-		db.conf.Log.Errorf("store entities: load previous UniqueIDs: %w", err)
+		db.conf.Log.Error("store entities: load previousUniqueIDs", "err", err)
 	}
 	for i := 0; i < len(digpPrev); i += 8 {
 		uniqueID := int64(binary.LittleEndian.Uint64(digpPrev[i : i+8]))
@@ -470,7 +470,7 @@ func (db *DB) storeEntities(batch *leveldb.Batch, k dbKey, entities []world.Enti
 		x := t.EncodeNBT(e)
 		x["identifier"] = t.EncodeEntity()
 		if err := enc.Encode(x); err != nil {
-			db.conf.Log.Errorf("store entities: error encoding NBT: %w", err)
+			db.conf.Log.Error("store entities: error encoding NBT", "err", err)
 		} else {
 			uniqueID, ok := x["UniqueID"].(int64)
 			if !ok {
@@ -518,7 +518,7 @@ func (db *DB) storeBlockEntities(batch *leveldb.Batch, k dbKey, blockEntities ma
 		data := n.EncodeNBT()
 		data["x"], data["y"], data["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
 		if err := enc.Encode(data); err != nil {
-			db.conf.Log.Errorf("store block entities: error encoding NBT: %w", err)
+			db.conf.Log.Error("store block entities: encode NBT: " + err.Error())
 		}
 	}
 	batch.Put(k.Sum(keyBlockEntities), buf.Bytes())

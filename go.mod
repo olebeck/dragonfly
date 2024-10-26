@@ -1,6 +1,6 @@
 module github.com/df-mc/dragonfly
 
-go 1.22
+go 1.22.0
 
 toolchain go1.22.1
 
@@ -8,6 +8,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/df-mc/atomic v1.10.0
 	github.com/df-mc/goleveldb v1.1.9
+	github.com/df-mc/worldupgrader v1.0.17
 	github.com/df-mc/worldupgrader v1.0.17
 	github.com/go-gl/mathgl v1.1.0
 	github.com/google/uuid v1.6.0
@@ -26,7 +27,7 @@ require (
 require (
 	github.com/go-jose/go-jose/v3 v3.0.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/klauspost/compress v1.17.9 // indirect
+	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/muhammadmuzzammil1998/jsonc v1.0.0 // indirect
 	github.com/sandertv/go-raknet v1.14.1 // indirect
 	github.com/stretchr/testify v1.9.0 // indirect

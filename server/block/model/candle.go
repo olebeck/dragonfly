@@ -11,7 +11,7 @@ type Candle struct {
 }
 
 // BBox returns a single cube.BBox whose size depends on the count of candles.
-func (c Candle) BBox(cube.Pos, *world.World) []cube.BBox {
+func (c Candle) BBox(cube.Pos, world.BlockSource) []cube.BBox {
 	model := full.Stretch(cube.X, -7/16.0).Stretch(cube.Z, -7/16.0).ExtendTowards(cube.FaceDown, 10/16.0)
 	if c.Count == 2 {
 		model = model.Stretch(cube.X, 2/16.0).ExtendTowards(cube.FaceWest, 1/16.0)
@@ -23,6 +23,6 @@ func (c Candle) BBox(cube.Pos, *world.World) []cube.BBox {
 }
 
 // FaceSolid always returns false.
-func (c Candle) FaceSolid(cube.Pos, cube.Face, *world.World) bool {
+func (c Candle) FaceSolid(cube.Pos, cube.Face, world.BlockSource) bool {
 	return false
 }

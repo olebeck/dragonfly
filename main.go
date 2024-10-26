@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"os"
 
+	"log/slog"
+
 	"github.com/df-mc/dragonfly/server"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/pelletier/go-toml"
-	"github.com/sirupsen/logrus"
 	"github.com/thomaso-mirodin/intmath/i32"
 )
 
@@ -46,15 +47,14 @@ func (debugGenerator) GenerateChunk(cp world.ChunkPos, chunk *chunk.Chunk) {
 }
 
 func main() {
-	log := logrus.New()
-	log.Formatter = &logrus.TextFormatter{ForceColors: true}
-	log.Level = logrus.DebugLevel
-
 	chat.Global.Subscribe(chat.StdoutSubscriber{})
-
-	conf, err := readConfig(log)
+	conf, err := readConfig(slog.Default())
 	if err != nil {
-		log.Fatalln(err)
+		panic(err)
+	}
+
+	conf.Generator = func(dim world.Dimension) world.Generator {
+		return debugGenerator{}
 	}
 
 	conf.Generator = func(dim world.Dimension) world.Generator {
@@ -71,7 +71,7 @@ func main() {
 
 // readConfig reads the configuration from the config.toml file, or creates the
 // file if it does not yet exist.
-func readConfig(log server.Logger) (server.Config, error) {
+func readConfig(log *slog.Logger) (server.Config, error) {
 	c := server.DefaultConfig()
 	var zero server.Config
 	if _, err := os.Stat("config.toml"); os.IsNotExist(err) {
