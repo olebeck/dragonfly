@@ -51,20 +51,20 @@ func (Wood) FuelInfo() item.FuelInfo {
 }
 
 // UseOnBlock ...
-func (w Wood) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, wo *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, face, used = firstReplaceable(wo, pos, face, w)
+func (w Wood) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+	pos, face, used = firstReplaceable(tx, pos, face, w)
 	if !used {
 		return
 	}
 	w.Axis = face.Axis()
 
-	place(wo, pos, w, user, ctx)
+	place(tx, pos, w, user, ctx)
 	return placed(ctx)
 }
 
 // Strip ...
-func (w Wood) Strip() (world.Block, bool) {
-	return Wood{Axis: w.Axis, Wood: w.Wood, Stripped: true}, !w.Stripped
+func (w Wood) Strip() (world.Block, world.Sound, bool) {
+	return Wood{Axis: w.Axis, Wood: w.Wood, Stripped: true}, nil, !w.Stripped
 }
 
 // EncodeItem ...
@@ -86,11 +86,6 @@ func (w Wood) EncodeItem() (name string, meta int16) {
 // EncodeBlock ...
 func (w Wood) EncodeBlock() (name string, properties map[string]any) {
 	switch w.Wood {
-	case OakWood(), SpruceWood(), BirchWood(), JungleWood(), AcaciaWood(), DarkOakWood():
-		if w.Stripped {
-			return "minecraft:stripped_" + w.Wood.String() + "_wood", map[string]any{"pillar_axis": w.Axis.String()}
-		}
-		return "minecraft:" + w.Wood.String() + "_wood", map[string]any{"pillar_axis": w.Axis.String()}
 	case CrimsonWood(), WarpedWood():
 		if w.Stripped {
 			return "minecraft:stripped_" + w.Wood.String() + "_hyphae", map[string]any{"pillar_axis": w.Axis.String()}
@@ -100,7 +95,7 @@ func (w Wood) EncodeBlock() (name string, properties map[string]any) {
 		if w.Stripped {
 			return "minecraft:stripped_" + w.Wood.String() + "_wood", map[string]any{"pillar_axis": w.Axis.String()}
 		}
-		return "minecraft:" + w.Wood.String() + "_wood", map[string]any{"pillar_axis": w.Axis.String(), "stripped_bit": uint8(0)}
+		return "minecraft:" + w.Wood.String() + "_wood", map[string]any{"pillar_axis": w.Axis.String()}
 	}
 }
 

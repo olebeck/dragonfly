@@ -40,7 +40,7 @@ type CustomBlockBuildable interface {
 	CustomBlock
 	// Name is the name displayed to clients using the block.
 	Name() string
-	// Geometries is the geometries for the block that define the shape of the block. If false is returned, no custom
+	// Geometry is the geometries for the block that define the shape of the block. If false is returned, no custom
 	// geometry will be applied. Permutation-specific geometry can be defined by returning a map of permutations to
 	// geometry.
 	Geometry() []byte
@@ -70,7 +70,13 @@ type Liquid interface {
 	LiquidType() string
 	// Harden checks if the block should harden when looking at the surrounding blocks and sets the position
 	// to the hardened block when adequate. If the block was hardened, the method returns true.
-	Harden(pos cube.Pos, w *World, flownIntoBy *cube.Pos) bool
+	Harden(pos cube.Pos, tx *Tx, flownIntoBy *cube.Pos) bool
+}
+
+// RegisterBlock registers the Block passed. The EncodeBlock method will be used to encode and decode the
+// block passed. RegisterBlock panics if the block properties returned were not valid, existing properties.
+func RegisterBlock(b Block) {
+	DefaultBlockRegistry.RegisterBlock(b)
 }
 
 // RandomTicker represents a block that executes an action when it is ticked randomly. Every 20th of a second,
@@ -78,7 +84,7 @@ type Liquid interface {
 type RandomTicker interface {
 	// RandomTick handles a random tick of the block at the position passed. Additionally, a rand.Rand
 	// instance is passed which may be used to generate values randomly without locking.
-	RandomTick(pos cube.Pos, w *World, r *rand.Rand)
+	RandomTick(pos cube.Pos, tx *Tx, r *rand.Rand)
 }
 
 // ScheduledTicker represents a block that executes an action when it has a block update scheduled, such as
@@ -87,14 +93,14 @@ type ScheduledTicker interface {
 	// ScheduledTick handles a scheduled tick initiated by an event in one of the neighbouring blocks, such as
 	// when a block is placed or broken. Additionally, a rand.Rand instance is passed which may be used to
 	// generate values randomly without locking.
-	ScheduledTick(pos cube.Pos, w *World, r *rand.Rand)
+	ScheduledTick(pos cube.Pos, tx *Tx, r *rand.Rand)
 }
 
 // TickerBlock is an implementation of NBTer with an additional Tick method that is called on every world
 // tick for loaded blocks that implement this interface.
 type TickerBlock interface {
 	NBTer
-	Tick(currentTick int64, pos cube.Pos, w *World)
+	Tick(currentTick int64, pos cube.Pos, tx *Tx)
 }
 
 // NeighbourUpdateTicker represents a block that is updated when a block adjacent to it is updated, either
@@ -102,16 +108,16 @@ type TickerBlock interface {
 type NeighbourUpdateTicker interface {
 	// NeighbourUpdateTick handles a neighbouring block being updated. The position of that block and the
 	// position of this block is passed.
-	NeighbourUpdateTick(pos, changedNeighbour cube.Pos, w *World)
+	NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *Tx)
 }
 
 // NBTer represents either an item or a block which may decode NBT data and encode to NBT data. Typically,
 // this is done to store additional data.
 type NBTer interface {
-	// DecodeNBT returns the (new) item, block or entity, depending on which of those the NBTer was, with the NBT data
+	// DecodeNBT returns the (new) item, block or Entity, depending on which of those the NBTer was, with the NBT data
 	// decoded into it.
 	DecodeNBT(data map[string]any) any
-	// EncodeNBT encodes the entity into a map which can then be encoded as NBT to be written.
+	// EncodeNBT encodes the Entity into a map which can then be encoded as NBT to be written.
 	EncodeNBT() map[string]any
 }
 
@@ -123,7 +129,7 @@ type LiquidDisplacer interface {
 	// SideClosed checks if a position on the side of the block placed in the world at a specific position is
 	// closed. When this returns true (for example, when the side is below the position and the block is a
 	// slab), liquid inside the displacer won't flow from pos into side.
-	SideClosed(pos, side cube.Pos, w *World) bool
+	SideClosed(pos, side cube.Pos, tx *Tx) bool
 }
 
 // lightEmitter is identical to a block.LightEmitter.

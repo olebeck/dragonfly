@@ -26,25 +26,25 @@ func (s SnowLayer) BreakInfo() BreakInfo {
 }
 
 // UseOnBlock ...
-func (s SnowLayer) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	if existing, ok := w.Block(pos).(SnowLayer); ok {
+func (s SnowLayer) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+	if existing, ok := tx.Block(pos).(SnowLayer); ok {
 		if existing.Height >= 7 {
 			return false
 		}
 		existing.Height++
-		place(w, pos, existing, user, ctx)
+		place(tx, pos, existing, user, ctx)
 		return placed(ctx)
 	}
 
-	pos, _, used := firstReplaceable(w, pos, face, s)
+	pos, _, used := firstReplaceable(tx, pos, face, s)
 	if !used {
 		return false
 	}
 
-	below := w.Block(pos.Side(cube.FaceDown))
+	below := tx.Block(pos.Side(cube.FaceDown))
 	_, leaves := below.(Leaves)
 
-	if !leaves && !below.Model().FaceSolid(pos, face, w) {
+	if !leaves && !below.Model().FaceSolid(pos, face, tx) {
 		return false
 	}
 
@@ -52,46 +52,46 @@ func (s SnowLayer) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 		s.Covered = true
 	}
 
-	place(w, pos, s, user, ctx)
+	place(tx, pos, s, user, ctx)
 	return placed(ctx)
 }
 
-func (SnowLayer) canSurvive(pos cube.Pos, w *world.World) bool {
-	below := w.Block(pos.Side(cube.FaceDown))
+func (SnowLayer) canSurvive(pos cube.Pos, tx *world.Tx) bool {
+	below := tx.Block(pos.Side(cube.FaceDown))
 	_, leaves := below.(Leaves)
-	if !leaves && !below.Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, w) {
+	if !leaves && !below.Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, tx) {
 		return false
 	}
 	return true
 }
 
 // NeighbourUpdateTick ...
-func (s SnowLayer) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if !s.canSurvive(pos, w) {
-		w.SetBlock(pos, nil, nil)
-		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: s})
+func (s SnowLayer) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	if !s.canSurvive(pos, tx) {
+		tx.SetBlock(pos, nil, nil)
+		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: s})
 		return
 	}
 }
 
-func (s SnowLayer) melt(pos cube.Pos, w *world.World) {
+func (s SnowLayer) melt(pos cube.Pos, tx *world.Tx) {
 	if s.Height == 0 {
-		w.SetBlock(pos, nil, nil)
+		tx.SetBlock(pos, nil, nil)
 		return
 	}
 	s.Height -= 1
-	w.SetBlock(pos, s, nil)
+	tx.SetBlock(pos, s, nil)
 }
 
 // RandomTick ...
-func (s SnowLayer) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
+func (s SnowLayer) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	pos = pos.Side(cube.FaceUp)
-	if w.Light(pos) > 12 {
-		s.melt(pos, w)
+	if tx.Light(pos) > 12 {
+		s.melt(pos, tx)
 		return
 	}
-	if w.Biome(pos).Temperature() >= 1 {
-		s.melt(pos, w)
+	if tx.Biome(pos).Temperature() >= 1 {
+		s.melt(pos, tx)
 	}
 }
 

@@ -27,19 +27,19 @@ func (r RootedDirt) BreakInfo() BreakInfo {
 }
 
 // Till ...
-func (r RootedDirt) Till(w *world.World, pos cube.Pos) (world.Block, bool) {
-	w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: r})
-	dropItem(w, item.NewStack(HangingRoots{}, 1), pos.Vec3Centre())
+func (r RootedDirt) Till(tx *world.Tx, pos cube.Pos) (world.Block, bool) {
+	tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: r})
+	dropItem(tx, item.NewStack(HangingRoots{}, 1), pos.Vec3Centre())
 	return Dirt{}, true
 }
 
 // BoneMeal ...
-func (r RootedDirt) BoneMeal(pos cube.Pos, w *world.World) (success bool) {
+func (r RootedDirt) BoneMeal(pos cube.Pos, tx *world.Tx) (success bool) {
 	pos2 := pos.Side(cube.FaceDown)
-	if _, ok := w.Block(pos2).(Air); !ok {
+	if _, ok := tx.Block(pos2).(Air); !ok {
 		return false
 	}
-	w.SetBlock(pos2, HangingRoots{}, nil)
+	tx.SetBlock(pos2, HangingRoots{}, nil)
 	return true
 }
 

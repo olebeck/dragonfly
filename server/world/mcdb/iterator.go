@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/df-mc/goleveldb/leveldb/iterator"
 )
 
@@ -26,7 +27,7 @@ type ColumnIterator struct {
 
 	err error
 
-	current *world.Column
+	current *chunk.Column
 	pos     world.ChunkPos
 	dim     world.Dimension
 	seen    map[dbKey]struct{}
@@ -80,7 +81,7 @@ func (iter *ColumnIterator) Next() bool {
 }
 
 // Column returns the value of the current position/column pair, or nil if none.
-func (iter *ColumnIterator) Column() *world.Column {
+func (iter *ColumnIterator) Column() *chunk.Column {
 	iter.current, iter.err = iter.db.LoadColumn(iter.pos, iter.dim)
 	if iter.err != nil {
 		iter.err = fmt.Errorf("load chunk %v: %w", iter.pos, iter.err)

@@ -18,21 +18,21 @@ type Mushroom struct {
 }
 
 // Grow grows this mushroom into a huge mushroom
-func (m Mushroom) Grow(pos cube.Pos, w *world.World) (success bool) {
+func (m Mushroom) Grow(pos cube.Pos, tx *world.Tx) (success bool) {
 	feature := world.GetFeature("minecraft:huge_" + m.Type.String() + "_mushroom")
 	if feature != nil {
-		return feature.Place(pos, w)
+		return feature.Place(pos, tx)
 	}
 	return false
 }
 
 // canSpread checks if theres not more than 5 mushrooms around it
-func (m Mushroom) canSpread(pos cube.Pos, w *world.World) bool {
+func (m Mushroom) canSpread(pos cube.Pos, tx *world.Tx) bool {
 	count := 0
 	for x := -4; x <= 4; x++ {
 		for y := -1; y <= 1; y++ {
 			for z := -4; z <= 4; z++ {
-				b := w.Block(pos.Add(cube.Pos{x, y, z}))
+				b := tx.Block(pos.Add(cube.Pos{x, y, z}))
 				if other, ok := b.(Mushroom); ok {
 					if other.Type == m.Type {
 						count++
@@ -47,14 +47,14 @@ func (m Mushroom) canSpread(pos cube.Pos, w *world.World) bool {
 	return count < 5
 }
 
-func (m Mushroom) canSurvive(pos cube.Pos, w *world.World) bool {
+func (m Mushroom) canSurvive(pos cube.Pos, tx *world.Tx) bool {
 	below := pos.Side(cube.FaceDown)
 	// must be on solid block
-	if !w.Block(below).Model().FaceSolid(below, cube.FaceUp, w) {
+	if !tx.Block(below).Model().FaceSolid(below, cube.FaceUp, tx) {
 		return false
 	}
 	// cant be to bright
-	if w.Light(below) >= 13 {
+	if tx.Light(below) >= 13 {
 		return false
 	}
 	// cant be directly in the sky ??? not true ???
@@ -67,45 +67,45 @@ func (m Mushroom) canSurvive(pos cube.Pos, w *world.World) bool {
 }
 
 // RandomTick ...
-func (m Mushroom) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
+func (m Mushroom) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	if rand.Intn(25) == 0 {
-		if m.canSpread(pos, w) {
+		if m.canSpread(pos, tx) {
 			pos2 := pos.Add(cube.Pos{rand.Intn(3) - 1, rand.Intn(2) - rand.Intn(2), rand.Intn(3) - 1})
 			m2 := Mushroom{Type: m.Type}
-			if m2.canSurvive(pos2, w) {
-				w.SetBlock(pos2, m2, nil)
+			if m2.canSurvive(pos2, tx) {
+				tx.SetBlock(pos2, m2, nil)
 			}
 		}
 	}
 }
 
 // BoneMeal ...
-func (m Mushroom) BoneMeal(pos cube.Pos, w *world.World) (success bool) {
+func (m Mushroom) BoneMeal(pos cube.Pos, tx *world.Tx) (success bool) {
 	if rand.Float64() < 0.4 {
-		m.Grow(pos, w)
+		m.Grow(pos, tx)
 	}
 	return true
 }
 
 // UseOnBlock ...
-func (m Mushroom) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, _, used := firstReplaceable(w, pos, face, m)
+func (m Mushroom) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+	pos, _, used := firstReplaceable(tx, pos, face, m)
 	if !used {
 		return false
 	}
 
-	if !m.canSurvive(pos, w) {
+	if !m.canSurvive(pos, tx) {
 		return false
 	}
 
-	place(w, pos, m, user, ctx)
+	place(tx, pos, m, user, ctx)
 	return placed(ctx)
 }
 
 // NeighbourUpdateTick ...
-func (m Mushroom) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if !m.canSurvive(pos, w) {
-		w.SetBlock(pos, nil, nil)
+func (m Mushroom) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	if !m.canSurvive(pos, tx) {
+		tx.SetBlock(pos, nil, nil)
 	}
 }
 

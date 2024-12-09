@@ -18,9 +18,9 @@ type Seagrass struct {
 }
 
 // canSurvive ...
-func (s Seagrass) canSurvive(pos cube.Pos, w *world.World, ignorePartner bool) bool {
-	below := w.Block(pos.Side(cube.FaceDown))
-	above := w.Block(pos.Side(cube.FaceUp))
+func (s Seagrass) canSurvive(pos cube.Pos, tx *world.Tx, ignorePartner bool) bool {
+	below := tx.Block(pos.Side(cube.FaceDown))
+	above := tx.Block(pos.Side(cube.FaceUp))
 
 	if !ignorePartner {
 		if s.Type == TopSeagrass() {
@@ -44,7 +44,7 @@ func (s Seagrass) canSurvive(pos cube.Pos, w *world.World, ignorePartner bool) b
 		}
 	}
 
-	if liquid, ok := w.Liquid(pos); ok {
+	if liquid, ok := tx.Liquid(pos); ok {
 		_, is_water := liquid.(Water)
 		if !is_water {
 			return false
@@ -54,7 +54,7 @@ func (s Seagrass) canSurvive(pos cube.Pos, w *world.World, ignorePartner bool) b
 	}
 
 	if s.Type != TopSeagrass() {
-		if !below.Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, w) {
+		if !below.Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, tx) {
 			return false
 		}
 	}
@@ -62,40 +62,40 @@ func (s Seagrass) canSurvive(pos cube.Pos, w *world.World, ignorePartner bool) b
 }
 
 // BoneMeal ...
-func (s Seagrass) BoneMeal(pos cube.Pos, w *world.World) bool {
+func (s Seagrass) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	if s.Type != DefaultSeagrass() {
 		return false
 	}
 
 	above := pos.Side(cube.FaceUp)
 	s2 := Seagrass{Type: TopSeagrass()}
-	if s2.canSurvive(above, w, true) {
+	if s2.canSurvive(above, tx, true) {
 		s.Type = BottomSeagrass()
-		w.SetBlock(pos, s, nil)
-		w.SetBlock(above, s2, nil)
+		tx.SetBlock(pos, s, nil)
+		tx.SetBlock(above, s2, nil)
 		return true
 	}
 	return false
 }
 
 // UseOnBlock ...
-func (s Seagrass) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, _, used := firstReplaceable(w, pos, face, s)
+func (s Seagrass) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+	pos, _, used := firstReplaceable(tx, pos, face, s)
 	if !used {
 		return false
 	}
-	if !s.canSurvive(pos, w, true) {
+	if !s.canSurvive(pos, tx, true) {
 		return false
 	}
 
-	place(w, pos, s, user, ctx)
+	place(tx, pos, s, user, ctx)
 	return placed(ctx)
 }
 
 // NeighbourUpdateTick ...
-func (s Seagrass) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if !s.canSurvive(pos, w, false) {
-		w.SetBlock(pos, nil, nil)
+func (s Seagrass) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	if !s.canSurvive(pos, tx, false) {
+		tx.SetBlock(pos, nil, nil)
 		if s.Type != DefaultSeagrass() {
 			var second cube.Pos
 			if s.Type == TopSeagrass() {
@@ -103,8 +103,8 @@ func (s Seagrass) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 			} else if s.Type == BottomSeagrass() {
 				second = pos.Side(cube.FaceUp)
 			}
-			if _, ok := w.Block(second).(Seagrass); ok {
-				w.SetBlock(second, nil, nil)
+			if _, ok := tx.Block(second).(Seagrass); ok {
+				tx.SetBlock(second, nil, nil)
 			}
 		}
 	}

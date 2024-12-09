@@ -16,19 +16,19 @@ type Hoe struct {
 }
 
 // UseOnBlock will turn a dirt or grass block into a farmland if the necessary properties are met.
-func (h Hoe) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
-	if b, ok := w.Block(pos).(tillable); ok {
-		if res, ok := b.Till(w, pos); ok {
+func (h Hoe) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, _ User, ctx *UseContext) bool {
+	if b, ok := tx.Block(pos).(tillable); ok {
+		if res, ok := b.Till(tx, pos); ok {
 			if face == cube.FaceDown {
 				// Tilled land isn't created when the bottom face is clicked.
 				return false
 			}
-			if w.Block(pos.Side(cube.FaceUp)) != air() {
+			if tx.Block(pos.Side(cube.FaceUp)) != air() {
 				// Tilled land can only be created if air is above the grass block.
 				return false
 			}
-			w.SetBlock(pos, res, nil)
-			w.PlaySound(pos.Vec3(), sound.ItemUseOn{Block: res})
+			tx.SetBlock(pos, res, nil)
+			tx.PlaySound(pos.Vec3(), sound.ItemUseOn{Block: res})
 			ctx.DamageItem(1)
 			return true
 		}
@@ -40,7 +40,7 @@ func (h Hoe) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wor
 type tillable interface {
 	// Till returns a block that results from tilling it. If tilling it does not have a result, the bool returned
 	// is false.
-	Till(w *world.World, pos cube.Pos) (world.Block, bool)
+	Till(tx *world.Tx, pos cube.Pos) (world.Block, bool)
 }
 
 // MaxCount ...

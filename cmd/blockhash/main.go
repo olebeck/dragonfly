@@ -29,7 +29,7 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	f, err := os.OpenFile(*out, os.O_CREATE|os.O_TRUNC|os.O_WRONLY|os.O_APPEND, 0o644)
+	f, err := os.OpenFile(*out, os.O_CREATE|os.O_TRUNC|os.O_WRONLY|os.O_APPEND, 0644)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -247,9 +247,10 @@ func (b *hashBuilder) ftype(structName, s string, expr ast.Expr, directives map[
 	case "WoodType", "FlowerType", "DoubleFlowerType", "Colour", "MushroomType", "SeagrassType":
 		// Assuming these were all based on metadata, it should be safe to assume a bit size of 4 for this.
 		return "uint64(" + s + ".Uint8())", 4
-	case "CoralType", "WeatheringType":
+	case "CoralType", "SkullType":
 		return "uint64(" + s + ".Uint8())", 3
-	case "AnvilType", "SandstoneType", "PrismarineType", "StoneBricksType", "NetherBricksType", "FroglightType", "WallConnectionType", "BlackstoneType", "DeepslateType", "TallGrassType":
+	case "AnvilType", "SandstoneType", "PrismarineType", "StoneBricksType", "NetherBricksType", "FroglightType",
+		"WallConnectionType", "BlackstoneType", "DeepslateType", "TallGrassType", "CopperType", "OxidationType":
 		return "uint64(" + s + ".Uint8())", 2
 	case "OreType", "FireType", "DoubleTallGrassType":
 		return "uint64(" + s + ".Uint8())", 1

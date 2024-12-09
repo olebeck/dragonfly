@@ -31,8 +31,8 @@ func (c Candle) Model() world.BlockModel {
 }
 
 // UseOnBlock ...
-func (c Candle) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	if existing, ok := w.Block(pos).(Candle); ok {
+func (c Candle) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+	if existing, ok := tx.Block(pos).(Candle); ok {
 		if existing.AdditionalCount >= 3 {
 			return false
 		}
@@ -44,24 +44,24 @@ func (c Candle) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 		}
 
 		existing.AdditionalCount++
-		place(w, pos, existing, user, ctx)
+		place(tx, pos, existing, user, ctx)
 		return placed(ctx)
 	}
 
-	pos, _, used := firstReplaceable(w, pos, face, c)
+	pos, _, used := firstReplaceable(tx, pos, face, c)
 	if !used {
 		return false
 	}
 
-	place(w, pos, c, user, ctx)
+	place(tx, pos, c, user, ctx)
 	return placed(ctx)
 }
 
 // Ignite ...
-func (c Candle) Ignite(pos cube.Pos, w *world.World) bool {
+func (c Candle) Ignite(pos cube.Pos, tx *world.Tx) bool {
 	if !c.Lit {
 		c.Lit = true
-		w.SetBlock(pos, c, nil)
+		tx.SetBlock(pos, c, nil)
 		return true
 	}
 	return false

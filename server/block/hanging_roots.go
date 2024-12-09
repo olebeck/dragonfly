@@ -23,31 +23,31 @@ func (h HangingRoots) BreakInfo() BreakInfo {
 	})
 }
 
-func (h HangingRoots) canSurvive(pos cube.Pos, w *world.World) bool {
+func (h HangingRoots) canSurvive(pos cube.Pos, tx *world.Tx) bool {
 	above := pos.Side(cube.FaceUp)
-	return w.Block(above).Model().FaceSolid(above, cube.FaceDown, w)
+	return tx.Block(above).Model().FaceSolid(above, cube.FaceDown, tx)
 }
 
 // NeighbourUpdateTick ...
-func (h HangingRoots) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if !h.canSurvive(pos, w) {
-		w.SetBlock(pos, nil, nil)
-		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: h})
-		dropItem(w, item.NewStack(h, 1), pos.Vec3Centre())
+func (h HangingRoots) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	if !h.canSurvive(pos, tx) {
+		tx.SetBlock(pos, nil, nil)
+		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: h})
+		dropItem(tx, item.NewStack(h, 1), pos.Vec3Centre())
 	}
 }
 
 // UseOnBlock ...
-func (h HangingRoots) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, _, used := firstReplaceable(w, pos, face, h)
+func (h HangingRoots) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+	pos, _, used := firstReplaceable(tx, pos, face, h)
 	if !used {
 		return false
 	}
-	if !h.canSurvive(pos, w) {
+	if !h.canSurvive(pos, tx) {
 		return false
 	}
 
-	place(w, pos, h, user, ctx)
+	place(tx, pos, h, user, ctx)
 	return placed(ctx)
 }
 

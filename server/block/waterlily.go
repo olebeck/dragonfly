@@ -44,24 +44,24 @@ func (Waterlily) HasLiquidDrops() bool {
 }
 
 // NeighbourUpdateTick ...
-func (c Waterlily) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	under := w.Block(pos.Side(cube.FaceDown))
+func (c Waterlily) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	under := tx.Block(pos.Side(cube.FaceDown))
 	if water, ok := under.(Water); !ok || water.LiquidDepth() < 8 {
-		w.SetBlock(pos, nil, nil)
-		dropItem(w, item.NewStack(c, 1), pos.Vec3Centre())
+		tx.SetBlock(pos, nil, nil)
+		dropItem(tx, item.NewStack(c, 1), pos.Vec3Centre())
 	}
 }
 
 // UseOnBlock handles only placing waterlilies on water
-func (c Waterlily) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, _, used = firstReplaceable(w, pos, face, c)
+func (c Waterlily) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+	pos, _, used = firstReplaceable(tx, pos, face, c)
 	if !used {
 		return
 	}
 
-	if water, ok := w.Block(pos).(Water); !ok || water.LiquidDepth() < 8 {
+	if water, ok := tx.Block(pos).(Water); !ok || water.LiquidDepth() < 8 {
 		return
 	}
-	place(w, pos.Side(cube.FaceUp), c, user, ctx)
+	place(tx, pos.Side(cube.FaceUp), c, user, ctx)
 	return placed(ctx)
 }

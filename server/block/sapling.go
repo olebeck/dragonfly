@@ -20,7 +20,7 @@ type Sapling struct {
 }
 
 // findSaplings finds the same sapling type in a 2x2 area, returns the lowest xz coordinates.
-func (s Sapling) findSaplings(pos cube.Pos, w *world.World) (*cube.Pos, bool) {
+func (s Sapling) findSaplings(pos cube.Pos, tx *world.Tx) (*cube.Pos, bool) {
 	validPositions := [][]cube.Pos{
 		{pos, pos.Add(cube.Pos{1, 0, 0}), pos.Add(cube.Pos{0, 0, 1}), pos.Add(cube.Pos{1, 0, 1})},
 		{pos, pos.Add(cube.Pos{-1, 0, 0}), pos.Add(cube.Pos{0, 0, -1}), pos.Add(cube.Pos{-1, 0, -1})},
@@ -30,7 +30,7 @@ func (s Sapling) findSaplings(pos cube.Pos, w *world.World) (*cube.Pos, bool) {
 	for _, v := range validPositions {
 		correct := true
 		for _, p := range v {
-			if sapling, ok := w.Block(p).(Sapling); ok {
+			if sapling, ok := tx.Block(p).(Sapling); ok {
 				if sapling.Wood != s.Wood {
 					correct = false
 				}
@@ -58,9 +58,9 @@ func (s Sapling) findSaplings(pos cube.Pos, w *world.World) (*cube.Pos, bool) {
 }
 
 // Grow grows this sapling into a tree
-func (s Sapling) Grow(pos cube.Pos, w *world.World) (success bool) {
+func (s Sapling) Grow(pos cube.Pos, tx *world.Tx) (success bool) {
 	var tree world.Feature
-	pos2, correct := s.findSaplings(pos, w)
+	pos2, correct := s.findSaplings(pos, tx)
 	if correct { // if a large version of this tree exists grow that
 		tree = world.GetFeature("minecraft:large_" + s.Wood.String() + "_tree")
 		if tree != nil {
@@ -73,38 +73,38 @@ func (s Sapling) Grow(pos cube.Pos, w *world.World) (success bool) {
 	}
 
 	// check that this tree type exists and can be placed
-	if tree != nil && tree.CanPlace(pos, w) {
-		tree.Place(pos, w)
+	if tree != nil && tree.CanPlace(pos, tx) {
+		tree.Place(pos, tx)
 		return true
 	}
 	return false
 }
 
 // RandomTick ...
-func (s Sapling) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
-	if rand.Intn(16) == 1 && w.Light(pos) < 9 {
+func (s Sapling) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
+	if rand.Intn(16) == 1 && tx.Light(pos) < 9 {
 		return
 	}
-	s.Grow(pos, w)
+	s.Grow(pos, tx)
 }
 
 // BoneMeal ...
-func (s Sapling) BoneMeal(pos cube.Pos, w *world.World) (success bool) {
-	s.Grow(pos, w)
+func (s Sapling) BoneMeal(pos cube.Pos, tx *world.Tx) (success bool) {
+	s.Grow(pos, tx)
 	return true
 }
 
 // UseOnBlock ...
-func (s Sapling) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, _, used := firstReplaceable(w, pos, face, s)
+func (s Sapling) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+	pos, _, used := firstReplaceable(tx, pos, face, s)
 	if !used {
 		return false
 	}
-	if !supportsVegetation(s, w.Block(pos.Side(cube.FaceDown))) {
+	if !supportsVegetation(s, tx.Block(pos.Side(cube.FaceDown))) {
 		return false
 	}
 
-	place(w, pos, s, user, ctx)
+	place(tx, pos, s, user, ctx)
 	return placed(ctx)
 }
 
@@ -143,7 +143,7 @@ func (s Sapling) EncodeBlock() (name string, properties map[string]any) {
 
 func allSapling() (saplings []world.Block) {
 	for _, w := range WoodTypes() {
-		if w == CrimsonWood() || w == WarpedWood() || w == Mangrove() || w == Cherry() {
+		if w == CrimsonWood() || w == WarpedWood() || w == MangroveWood() || w == CherryWood() {
 			continue
 		}
 		saplings = append(saplings, Sapling{Wood: w})

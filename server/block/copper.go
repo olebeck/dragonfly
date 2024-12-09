@@ -4,91 +4,113 @@ import (
 	"math/rand"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/sound"
+	"github.com/go-gl/mathgl/mgl64"
 )
 
-// Copper is a block that can be waxed and can weather.
+// Copper is a solid block commonly found in deserts and beaches underneath sand.
 type Copper struct {
 	solid
-	// Waxed is if this copper block has been waxed and wont weather.
+	bassDrum
+
+	// Type is the type of copper of the block.
+	Type CopperType
+	// Oxidation is the level of oxidation of the copper block.
+	Oxidation OxidationType
+	// Waxed bool is whether the copper block has been waxed with honeycomb.
 	Waxed bool
-	// Cut is if this copper block is the cut variant.
-	Cut bool
-	// Weather is the current weathering state.
-	Weather WeatheringType
+}
+
+func (c Copper) Strip() (world.Block, world.Sound, bool) {
+	if c.Waxed {
+		c.Waxed = false
+		return c, sound.WaxRemoved{}, true
+	} else if ot, ok := c.Oxidation.Decrease(); ok {
+		c.Oxidation = ot
+		return c, sound.CopperScraped{}, true
+	}
+	return c, nil, false
 }
 
 // BreakInfo ...
 func (c Copper) BreakInfo() BreakInfo {
-	return newBreakInfo(3, pickaxeHarvestable, pickaxeEffective, oneOf(c))
+	return newBreakInfo(3, func(t item.Tool) bool {
+		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierStone.HarvestLevel
+	}, pickaxeEffective, oneOf(c)).withBlastResistance(30)
 }
 
-func (c Copper) name(isBlock bool) (name string) {
-	if c.Waxed {
-		name += "waxed_"
-	}
+// Wax waxes the copper block to stop it from oxidising further.
+func (c Copper) Wax(cube.Pos, mgl64.Vec3) (world.Block, bool) {
+	before := c.Waxed
+	c.Waxed = true
+	return c, !before
+}
 
-	if c.Weather != NotWeathered() {
-		name += c.Weather.String() + "_"
-	}
+func (c Copper) CanOxidate() bool {
+	return !c.Waxed
+}
 
-	if c.Cut {
-		name += "cut_"
-	}
-	name += "copper"
+func (c Copper) OxidationLevel() OxidationType {
+	return c.Oxidation
+}
 
-	if !c.Cut && c.Weather == NotWeathered() && !c.Waxed && isBlock {
-		name += "_block"
-	}
-	return name
+func (c Copper) WithOxidationLevel(o OxidationType) Oxidisable {
+	c.Oxidation = o
+	return c
+}
+
+func (c Copper) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
+	attemptOxidation(pos, tx, r, c)
 }
 
 // EncodeItem ...
 func (c Copper) EncodeItem() (name string, meta int16) {
-	return "minecraft:" + c.name(true), 0
+	if c.Type == NormalCopper() && c.Oxidation == UnoxidisedOxidation() && !c.Waxed {
+		return "minecraft:copper_block", 0
+	}
+	name = "copper"
+	if c.Type != NormalCopper() {
+		name = c.Type.String() + "_" + name
+	}
+	if c.Oxidation != UnoxidisedOxidation() {
+		name = c.Oxidation.String() + "_" + name
+	}
+	if c.Waxed {
+		name = "waxed_" + name
+	}
+	return "minecraft:" + name, 0
 }
 
 // EncodeBlock ...
-func (c Copper) EncodeBlock() (name string, data map[string]any) {
-	// to stop blockhash ignoring these:
-	// Waxed
-	// Cut
-	// Weather
-	return "minecraft:" + c.name(true), nil
-}
-
-// RandomTick ...
-func (c Copper) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
-	// TODO: weathering
-}
-
-// Strip using an axe on it scrapes the wax off from the copper block
-func (c Copper) Strip() (world.Block, bool) {
-	if !c.Waxed {
-		return nil, false
+func (c Copper) EncodeBlock() (string, map[string]any) {
+	if c.Type == NormalCopper() && c.Oxidation == UnoxidisedOxidation() && !c.Waxed {
+		return "minecraft:copper_block", nil
 	}
-	c.Waxed = false
-	return c, true
-}
-
-// Wax using honeycomb on the copper block
-func (c Copper) Wax() (world.Block, bool) {
-	if !c.Waxed {
-		c.Waxed = true
-		return c, true
+	name := "copper"
+	if c.Type != NormalCopper() {
+		name = c.Type.String() + "_" + name
 	}
-	return nil, false
+	if c.Oxidation != UnoxidisedOxidation() {
+		name = c.Oxidation.String() + "_" + name
+	}
+	if c.Waxed {
+		name = "waxed_" + name
+	}
+	return "minecraft:" + name, nil
 }
 
+// allCopper returns a list of all copper block variants.
 func allCopper() (c []world.Block) {
-	f := func(cut, waxed bool) {
-		for _, w := range WeatheringTypes() {
-			c = append(c, Copper{Waxed: waxed, Cut: cut, Weather: w})
+	f := func(waxed bool) {
+		for _, t := range CopperTypes() {
+			for _, o := range OxidationTypes() {
+				c = append(c, Copper{Type: t, Oxidation: o, Waxed: waxed})
+			}
 		}
 	}
-	f(true, true)
-	f(true, false)
-	f(false, true)
-	f(false, false)
+	f(true)
+	f(false)
 	return
 }

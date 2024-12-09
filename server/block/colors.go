@@ -282,31 +282,15 @@ func (CopperOre) Color() color.RGBA {
 }
 
 func (c Copper) Color() color.RGBA {
-	switch c.Weather {
-	case NotWeathered():
-		if c.Cut {
-			return color.RGBA{178, 98, 71, 255}
-		} else {
-			return color.RGBA{200, 116, 86, 255}
-		}
-	case Exposed():
-		if c.Cut {
-			return color.RGBA{148, 118, 97, 255}
-		} else {
-			return color.RGBA{186, 130, 119, 255}
-		}
-	case Weathered():
-		if c.Cut {
-			return color.RGBA{108, 169, 119, 255}
-		} else {
-			return color.RGBA{106, 141, 100, 255}
-		}
-	case Oxidized():
-		if c.Cut {
-			return color.RGBA{81, 161, 129, 255}
-		} else {
-			return color.RGBA{89, 178, 146, 255}
-		}
+	switch c.Oxidation {
+	case UnoxidisedOxidation():
+		return color.RGBA{178, 98, 71, 255}
+	case ExposedOxidation():
+		return color.RGBA{148, 118, 97, 255}
+	case WeatheredOxidation():
+		return color.RGBA{108, 169, 119, 255}
+	case OxidisedOxidation():
+		return color.RGBA{81, 161, 129, 255}
 	}
 	return color.RGBA{255, 0, 255, 255}
 }
@@ -563,9 +547,9 @@ func (l Leaves) Color() color.RGBA {
 		return color.RGBA{172, 32, 32, 255}
 	case WarpedWood():
 		return color.RGBA{69, 107, 88, 255}
-	case Mangrove():
+	case MangroveWood():
 		return color.RGBA{45, 65, 30, 255}
-	case Cherry():
+	case CherryWood():
 		return color.RGBA{0xd6, 0xa2, 0xba, 0xff}
 	}
 	return color.RGBA{255, 0, 255, 255}
@@ -667,9 +651,9 @@ func (p Planks) Color() color.RGBA {
 		return color.RGBA{126, 58, 86, 255}
 	case WarpedWood():
 		return color.RGBA{40, 95, 82, 255}
-	case Mangrove():
+	case MangroveWood():
 		return color.RGBA{117, 49, 52, 255}
-	case Cherry():
+	case CherryWood():
 		return color.RGBA{0xe3, 0xb4, 0xae, 0xff}
 	}
 	return color.RGBA{255, 0, 255, 255}
@@ -783,9 +767,9 @@ func (s Sapling) Color() color.RGBA {
 		return color.RGBA{80, 24, 16, 255}
 	case WarpedWood():
 		return color.RGBA{22, 155, 133, 255}
-	case Mangrove():
+	case MangroveWood():
 		return color.RGBA{84, 195, 87, 255}
-	case Cherry():
+	case CherryWood():
 		return color.RGBA{0x83, 0x61, 0x73, 0xff}
 	}
 	return color.RGBA{255, 0, 255, 255}

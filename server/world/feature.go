@@ -11,9 +11,9 @@ type Feature interface {
 	// Name is the name this feature can be looked up as in the registry.
 	Name() string
 	// CanPlace checks if the feature can be built at this location.
-	CanPlace(pos cube.Pos, w *World) bool
+	CanPlace(pos cube.Pos, tx *Tx) bool
 	// Place tries to place the feature at the position, returns false if it fails.
-	Place(pos cube.Pos, w *World) bool
+	Place(pos cube.Pos, tx *Tx) bool
 }
 
 var features = make(map[string]Feature)

@@ -47,6 +47,7 @@ func (debugGenerator) GenerateChunk(cp world.ChunkPos, chunk *chunk.Chunk) {
 }
 
 func main() {
+	slog.SetLogLoggerLevel(slog.LevelDebug)
 	chat.Global.Subscribe(chat.StdoutSubscriber{})
 	conf, err := readConfig(slog.Default())
 	if err != nil {
@@ -57,15 +58,12 @@ func main() {
 		return debugGenerator{}
 	}
 
-	conf.Generator = func(dim world.Dimension) world.Generator {
-		return debugGenerator{}
-	}
-
 	srv := conf.New()
 	srv.CloseOnProgramEnd()
 
 	srv.Listen()
-	for srv.Accept(nil) {
+	for p := range srv.Accept() {
+		_ = p
 	}
 }
 
@@ -79,7 +77,7 @@ func readConfig(log *slog.Logger) (server.Config, error) {
 		if err != nil {
 			return zero, fmt.Errorf("encode default config: %v", err)
 		}
-		if err := os.WriteFile("config.toml", data, 0o644); err != nil {
+		if err := os.WriteFile("config.toml", data, 0644); err != nil {
 			return zero, fmt.Errorf("create default config: %v", err)
 		}
 		return c.Config(log)

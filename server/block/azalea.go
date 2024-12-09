@@ -20,23 +20,23 @@ type Azalea struct {
 }
 
 // BoneMeal ...
-func (a Azalea) BoneMeal(pos cube.Pos, w *world.World) (success bool) {
+func (a Azalea) BoneMeal(pos cube.Pos, tx *world.Tx) (success bool) {
 	if rand.Float64() < 0.45 {
-		if _, ok := w.Block(pos.Side(cube.FaceDown)).(Moss); ok {
+		if _, ok := tx.Block(pos.Side(cube.FaceDown)).(Moss); ok {
 			for i := 0; i < 8; i++ {
 				p := pos.Add(cube.Pos{rand.Intn(7) - 3, rand.Intn(3) - 1, rand.Intn(7) - 3})
-				if _, ok := w.Block(p).(Air); !ok {
+				if _, ok := tx.Block(p).(Air); !ok {
 					continue
 				}
-				if _, ok := w.Block(p.Side(cube.FaceDown)).(Moss); !ok {
+				if _, ok := tx.Block(p.Side(cube.FaceDown)).(Moss); !ok {
 					continue
 				}
-				w.SetBlock(p, Azalea{}, nil)
+				tx.SetBlock(p, Azalea{}, nil)
 			}
 		} else {
 			tree := world.GetFeature("minecraft:azalea_tree")
-			if tree.CanPlace(pos, w) {
-				return tree.Place(pos, w)
+			if tree.CanPlace(pos, tx) {
+				return tree.Place(pos, tx)
 			}
 		}
 	}
@@ -44,26 +44,26 @@ func (a Azalea) BoneMeal(pos cube.Pos, w *world.World) (success bool) {
 }
 
 // NeighbourUpdateTick ...
-func (a Azalea) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if !supportsVegetation(a, w.Block(pos.Side(cube.FaceDown))) {
-		w.SetBlock(pos, nil, nil)
-		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: a})
-		dropItem(w, item.NewStack(a, 1), pos.Vec3Centre())
+func (a Azalea) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	if !supportsVegetation(a, tx.Block(pos.Side(cube.FaceDown))) {
+		tx.SetBlock(pos, nil, nil)
+		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: a})
+		dropItem(tx, item.NewStack(a, 1), pos.Vec3Centre())
 	}
 }
 
 // UseOnBlock ...
-func (a Azalea) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, _, used := firstReplaceable(w, pos, face, a)
+func (a Azalea) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+	pos, _, used := firstReplaceable(tx, pos, face, a)
 	if !used {
 		return false
 	}
-	down := w.Block(pos.Side(cube.FaceDown))
+	down := tx.Block(pos.Side(cube.FaceDown))
 	if !supportsVegetation(a, down) {
 		return false
 	}
 
-	place(w, pos, a, user, ctx)
+	place(tx, pos, a, user, ctx)
 	return placed(ctx)
 }
 

@@ -23,6 +23,7 @@ var DefaultBlockRegistry BlockRegistry = &BlockRegistryImpl{
 type BlockRegistry interface {
 	chunk.BlockRegistry
 	BlockByRuntimeID(rid uint32) (Block, bool)
+	BlockByRuntimeIDOrAir(rid uint32) Block
 	BlockRuntimeID(block Block) (rid uint32)
 	RegisterBlock(block Block)
 	RegisterBlockState(blockState BlockState)
@@ -310,6 +311,11 @@ func (br *BlockRegistryImpl) BlockRuntimeID(b Block) uint32 {
 		panic(fmt.Sprintf("cannot find block by non-0 hash of block %#v", b))
 	}
 	return br.slowBlockRuntimeID(b)
+}
+
+func (br *BlockRegistryImpl) BlockByRuntimeIDOrAir(rid uint32) Block {
+	bl, _ := br.BlockByRuntimeID(rid)
+	return bl
 }
 
 // slowBlockRuntimeID finds the runtime ID of a Block by hashing the properties produced by calling the

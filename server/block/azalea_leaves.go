@@ -25,34 +25,34 @@ type AzaleaLeaves struct {
 }
 
 // UseOnBlock makes leaves persistent when they are placed so that they don't decay.
-func (l AzaleaLeaves) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, _, used = firstReplaceable(w, pos, face, l)
+func (l AzaleaLeaves) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+	pos, _, used = firstReplaceable(tx, pos, face, l)
 	if !used {
 		return
 	}
 	l.Persistent = true
 
-	place(w, pos, l, user, ctx)
+	place(tx, pos, l, user, ctx)
 	return placed(ctx)
 }
 
 // RandomTick ...
-func (l AzaleaLeaves) RandomTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
+func (l AzaleaLeaves) RandomTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	if !l.Persistent && l.ShouldUpdate {
-		if findLog(pos, w, &[]cube.Pos{}, 0) {
+		if findLog(pos, tx, &[]cube.Pos{}, 0) {
 			l.ShouldUpdate = false
-			w.SetBlock(pos, l, nil)
+			tx.SetBlock(pos, l, nil)
 		} else {
-			w.SetBlock(pos, nil, nil)
+			tx.SetBlock(pos, nil, nil)
 		}
 	}
 }
 
 // NeighbourUpdateTick ...
-func (l AzaleaLeaves) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
+func (l AzaleaLeaves) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !l.Persistent && !l.ShouldUpdate {
 		l.ShouldUpdate = true
-		w.SetBlock(pos, l, nil)
+		tx.SetBlock(pos, l, nil)
 	}
 }
 
