@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"net"
+	"slices"
 	"time"
 	_ "unsafe" // Imported for compiler directives.
 
@@ -29,9 +30,9 @@ import (
 // StartShowingEntity is made.
 func (s *Session) StopShowingEntity(e world.Entity) {
 	s.entityMutex.Lock()
-	_, ok := s.hiddenEntities[e.H()]
+	_, ok := s.hiddenEntities[e.H().UUID()]
 	if !ok {
-		s.hiddenEntities[e.H()] = struct{}{}
+		s.hiddenEntities[e.H().UUID()] = struct{}{}
 	}
 	s.entityMutex.Unlock()
 
@@ -43,9 +44,9 @@ func (s *Session) StopShowingEntity(e world.Entity) {
 // StartShowingEntity starts showing a world.Entity to the Session that was previously hidden using StopShowingEntity.
 func (s *Session) StartShowingEntity(e world.Entity) {
 	s.entityMutex.Lock()
-	_, ok := s.hiddenEntities[e.H()]
+	_, ok := s.hiddenEntities[e.H().UUID()]
 	if ok {
-		delete(s.hiddenEntities, e.H())
+		delete(s.hiddenEntities, e.H().UUID())
 	}
 	s.entityMutex.Unlock()
 
@@ -204,7 +205,7 @@ func (s *Session) sendArmourTrimData() {
 func (s *Session) sendInv(inv *inventory.Inventory, windowID uint32) {
 	pk := &packet.InventoryContent{
 		WindowID: windowID,
-		Content:  make([]protocol.ItemInstance, 0, s.inv.Size()),
+		Content:  make([]protocol.ItemInstance, 0, inv.Size()),
 	}
 	for _, i := range inv.Slots() {
 		pk.Content = append(pk.Content, s.instanceFromItem(i))
@@ -493,11 +494,12 @@ func (s *Session) SendAbilities(c Controllable) {
 		CommandPermissions: packet.CommandPermissionLevelNormal,
 		Layers: []protocol.AbilityLayer{
 			{
-				Type:      protocol.AbilityLayerTypeBase,
-				Abilities: protocol.AbilityCount - 1,
-				Values:    abilities,
-				FlySpeed:  float32(c.FlightSpeed()),
-				WalkSpeed: float32(c.Speed()),
+				Type:             protocol.AbilityLayerTypeBase,
+				Abilities:        protocol.AbilityCount - 1,
+				Values:           abilities,
+				FlySpeed:         float32(c.FlightSpeed()),
+				VerticalFlySpeed: float32(c.VerticalFlightSpeed()),
+				WalkSpeed:        protocol.AbilityBaseWalkSpeed,
 			},
 		},
 	}})
@@ -726,6 +728,14 @@ func (s *Session) SendExperience(level int, progress float64) {
 	})
 }
 
+// SendChargeItemComplete sends a packet to indicate that the item charging process has been completed.
+func (s *Session) SendChargeItemComplete() {
+	s.writePacket(&packet.ActorEvent{
+		EntityRuntimeID: selfEntityRuntimeID,
+		EventType:       packet.ActorEventFinishedChargingItem,
+	})
+}
+
 // stackFromItem converts an item.Stack to its network ItemStack representation.
 func (s *Session) stackFromItem(it item.Stack) protocol.ItemStack {
 	if it.Empty() {
@@ -824,16 +834,32 @@ func stacksToIngredientItems(inputs []recipe.Item) []protocol.ItemDescriptorCoun
 	return items
 }
 
-// creativeItems returns all creative inventory items as protocol item stacks.
-func (s *Session) creativeItems() []protocol.CreativeItem {
-	it := make([]protocol.CreativeItem, 0, len(creative.Items()))
-	for index, i := range creative.Items() {
-		it = append(it, protocol.CreativeItem{
-			CreativeItemNetworkID: uint32(index) + 1,
-			Item:                  deleteDamage(s.stackFromItem(i)),
+// creativeContent returns all creative groups, and creative inventory items as protocol item stacks.
+func (s *Session) creativeContent() ([]protocol.CreativeGroup, []protocol.CreativeItem) {
+	groups := make([]protocol.CreativeGroup, 0, len(creative.Groups()))
+	for _, group := range creative.Groups() {
+		groups = append(groups, protocol.CreativeGroup{
+			Category: int32(group.Category.Uint8()),
+			Name:     group.Name,
+			Icon:     deleteDamage(s.stackFromItem(group.Icon)),
 		})
 	}
-	return it
+
+	it := make([]protocol.CreativeItem, 0, len(creative.Items()))
+	for index, i := range creative.Items() {
+		group := slices.IndexFunc(creative.Groups(), func(group creative.Group) bool {
+			return group.Name == i.Group
+		})
+		if group < 0 {
+			continue
+		}
+		it = append(it, protocol.CreativeItem{
+			CreativeItemNetworkID: uint32(index) + 1,
+			Item:                  deleteDamage(s.stackFromItem(i.Stack)),
+			GroupIndex:            uint32(group),
+		})
+	}
+	return groups, it
 }
 
 // deleteDamage strips the damage from a protocol item.
@@ -894,7 +920,7 @@ func gameTypeFromMode(mode world.GameMode) int32 {
 		return packet.GameTypeCreative
 	}
 	if !mode.Visible() && !mode.HasCollision() {
-		return packet.GameTypeSpectator
+		return packet.GameTypeSurvivalSpectator
 	}
 	return packet.GameTypeSurvival
 }

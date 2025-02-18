@@ -45,11 +45,6 @@ func (i inputItem) Item() (Item, bool) {
 	if !ok {
 		return nil, false
 	}
-	if b, ok := world.DefaultBlockRegistry.BlockByName(i.State.Name, i.State.Properties); ok {
-		if it, ok = b.(world.Item); !ok {
-			return nil, false
-		}
-	}
 	st := item.NewStack(it, int(i.Count))
 	if i.Meta == math.MaxInt16 {
 		st = st.WithValue("variants", true)
@@ -97,11 +92,6 @@ func (o outputItem) Stack() (item.Stack, bool) {
 	it, ok := world.ItemByName(o.Name, int16(o.Meta))
 	if !ok {
 		return item.Stack{}, false
-	}
-	if b, ok := world.DefaultBlockRegistry.BlockByName(o.State.Name, o.State.Properties); ok {
-		if it, ok = b.(world.Item); !ok {
-			return item.Stack{}, false
-		}
 	}
 	if n, ok := it.(world.NBTer); ok {
 		it = n.DecodeNBT(o.NBTData).(world.Item)

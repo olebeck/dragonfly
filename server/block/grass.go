@@ -1,7 +1,7 @@
 package block
 
 import (
-	"math/rand"
+	"math/rand/v2"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
@@ -38,7 +38,7 @@ func init() {
 // SoilFor ...
 func (g Grass) SoilFor(block world.Block) bool {
 	switch block.(type) {
-	case ShortGrass, Fern, DoubleTallGrass, Flower, DoubleFlower, NetherSprouts, SugarCane, Azalea, Sapling:
+	case ShortGrass, Fern, DoubleTallGrass, Flower, DoubleFlower, NetherSprouts, PinkPetals, SugarCane, DeadBush, Azalea, Sapling:
 		return true
 	}
 	return false
@@ -81,12 +81,12 @@ func (g Grass) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 // BoneMeal ...
 func (g Grass) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	for i := 0; i < 14; i++ {
-		c := pos.Add(cube.Pos{rand.Intn(6) - 3, 0, rand.Intn(6) - 3})
+		c := pos.Add(cube.Pos{rand.IntN(6) - 3, 0, rand.IntN(6) - 3})
 		above := c.Side(cube.FaceUp)
 		_, air := tx.Block(above).(Air)
 		_, grass := tx.Block(c).(Grass)
 		if air && grass {
-			tx.SetBlock(above, plantSelection[rand.Intn(len(plantSelection))], nil)
+			tx.SetBlock(above, plantSelection[rand.IntN(len(plantSelection))], nil)
 		}
 	}
 

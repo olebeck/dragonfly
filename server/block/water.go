@@ -7,14 +7,13 @@ import (
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
-	"math/rand"
+	"math/rand/v2"
 	"time"
 )
 
 // Water is a natural fluid that generates abundantly in the world.
 type Water struct {
 	empty
-	replaceable
 
 	// Still makes the water appear as if it is not flowing.
 	Still bool
@@ -24,6 +23,16 @@ type Water struct {
 	// Falling specifies if the water is falling. Falling water will always appear as a source block, but its
 	// behaviour differs when it starts spreading.
 	Falling bool
+}
+
+// ReplaceableBy ...
+func (w Water) ReplaceableBy(b world.Block) bool {
+	if _, ok := b.(LiquidRemovable); ok {
+		_, displacer := b.(world.LiquidDisplacer)
+		_, liquid := b.(world.Liquid)
+		return displacer || liquid
+	}
+	return true
 }
 
 // EntityInside ...
@@ -113,13 +122,13 @@ func (w Water) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 }
 
 // NeighbourUpdateTick ...
-func (Water) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+func (w Water) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if tx.World().Dimension().WaterEvaporates() {
 		// Particles are spawned client-side.
 		tx.SetLiquid(pos, nil)
 		return
 	}
-	tx.ScheduleBlockUpdate(pos, time.Second/4)
+	tx.ScheduleBlockUpdate(pos, w, time.Second/4)
 }
 
 // LiquidType ...

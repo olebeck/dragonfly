@@ -68,7 +68,7 @@ func EncodeSubChunk(c *Chunk, e Encoding, ind int) []byte {
 	s := c.sub[ind]
 	_, _ = buf.Write([]byte{SubChunkVersion, byte(len(s.storages)), uint8(ind + (c.r[0] >> 4))})
 	for _, storage := range s.storages {
-		encodePalettedStorage(buf, storage, nil, e, BlockPaletteEncoding, c.BlockRegistry)
+		encodePalettedStorage(buf, storage, nil, e, BlockPaletteEncoding{Blocks: c.BlockRegistry})
 	}
 	sub := make([]byte, buf.Len())
 	_, _ = buf.Read(sub)
@@ -85,7 +85,7 @@ func EncodeBiomes(c *Chunk, e Encoding) []byte {
 	}()
 
 	for _, b := range c.biomes {
-		encodePalettedStorage(buf, b, nil, e, BiomePaletteEncoding, c.BlockRegistry)
+		encodePalettedStorage(buf, b, nil, e, BiomePaletteEncoding)
 	}
 	biomes := make([]byte, buf.Len())
 	_, _ = buf.Read(biomes)
@@ -94,7 +94,7 @@ func EncodeBiomes(c *Chunk, e Encoding) []byte {
 
 // encodePalettedStorage encodes a PalettedStorage into a bytes.Buffer. The Encoding passed is used to write the Palette
 // of the PalettedStorage.
-func encodePalettedStorage(buf *bytes.Buffer, storage, previous *PalettedStorage, e Encoding, pe paletteEncoding, br BlockRegistry) {
+func encodePalettedStorage(buf *bytes.Buffer, storage, previous *PalettedStorage, e Encoding, pe paletteEncoding) {
 	if storage.Equal(previous) {
 		_, _ = buf.Write([]byte{0x7f<<1 | e.network()})
 		return
@@ -108,5 +108,5 @@ func encodePalettedStorage(buf *bytes.Buffer, storage, previous *PalettedStorage
 	}
 	_, _ = buf.Write(b)
 
-	e.encodePalette(buf, storage.palette, pe, br)
+	e.encodePalette(buf, storage.palette, pe)
 }

@@ -81,7 +81,11 @@ func (h *ItemStackRequestHandler) handleSmithing(a *protocol.CraftRecipeStackReq
 		if trim.Material, ok = material.Item().(item.ArmourTrimMaterial); !ok {
 			return fmt.Errorf("material item is not an armour trim material")
 		}
-		return h.createResults(s, tx, duplicateStack(input.WithArmourTrim(trim), input.Item()))
+		trimmable, ok := input.Item().(item.Trimmable)
+		if !ok {
+			return fmt.Errorf("input item is not trimmable")
+		}
+		return h.createResults(s, tx, input.WithItem(trimmable.WithTrim(trim)))
 	}
-	return h.createResults(s, tx, duplicateStack(input, craft.Output()[0].Item()))
+	return h.createResults(s, tx, input.WithItem(craft.Output()[0].Item()))
 }

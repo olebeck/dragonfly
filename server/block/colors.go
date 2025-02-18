@@ -735,6 +735,14 @@ func (RootedDirt) Color() color.RGBA {
 	return color.RGBA{121, 87, 64, 255}
 }
 
+func (Resin) Color() color.RGBA {
+	return color.RGBA{121, 87, 64, 255}
+}
+
+func (ResinBricks) Color() color.RGBA {
+	return color.RGBA{121, 87, 64, 255}
+}
+
 func (s Sand) Color() color.RGBA {
 	if s.Red {
 		return color.RGBA{191, 103, 33, 255}
@@ -916,7 +924,7 @@ func (Water) Color() color.RGBA {
 	return color.RGBA{113, 133, 253, 255}
 }
 
-func (w Waterlily) Color() color.RGBA {
+func (LilyPad) Color() color.RGBA {
 	return color.RGBA{104, 104, 104, 255}
 }
 

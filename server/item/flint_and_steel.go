@@ -1,7 +1,7 @@
 package item
 
 import (
-	"math/rand"
+	"math/rand/v2"
 	"time"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -39,8 +39,10 @@ func (f FlintAndSteel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx
 		return true
 	} else if s := pos.Side(face); tx.Block(s) == air() {
 		tx.PlaySound(s.Vec3Centre(), sound.Ignite{})
-		tx.SetBlock(s, fire(), nil)
-		tx.ScheduleBlockUpdate(s, time.Duration(30+rand.Intn(10))*time.Second/20)
+
+		flame := fire()
+		tx.SetBlock(s, flame, nil)
+		tx.ScheduleBlockUpdate(s, flame, time.Duration(30+rand.IntN(10))*time.Second/20)
 		return true
 	}
 	return false

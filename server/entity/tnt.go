@@ -2,7 +2,7 @@ package entity
 
 import (
 	"math"
-	"math/rand"
+	"math/rand/v2"
 	"time"
 
 	"github.com/df-mc/dragonfly/server/block"
@@ -31,8 +31,7 @@ var tntConf = PassiveBehaviourConfig{
 
 // explodeTNT creates an explosion at the position of e.
 func explodeTNT(e *Ent, tx *world.Tx) {
-	var config block.ExplosionConfig
-	config.Explode(tx, e.Position())
+	block.ExplosionConfig{ItemDropChance: 1}.Explode(tx, e.Position())
 }
 
 // TNTType is a world.EntityType implementation for TNT.

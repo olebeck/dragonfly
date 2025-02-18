@@ -1,13 +1,12 @@
 package block
 
 import (
-	"math/rand"
-
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"math/rand/v2"
 )
 
 // Vines are climbable non-solid vegetation blocks that grow on walls.
@@ -15,6 +14,7 @@ type Vines struct {
 	replaceable
 	transparent
 	empty
+	sourceWaterDisplacer
 
 	// NorthDirection is true if the vines are attached towards north.
 	NorthDirection bool
@@ -26,6 +26,21 @@ type Vines struct {
 	WestDirection bool
 }
 
+// CompostChance ...
+func (Vines) CompostChance() float64 {
+	return 0.5
+}
+
+// SideClosed ...
+func (Vines) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
+	return false
+}
+
+// HasLiquidDrops ...
+func (Vines) HasLiquidDrops() bool {
+	return false
+}
+
 // FlammabilityInfo ...
 func (Vines) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(15, 100, true)
@@ -33,25 +48,20 @@ func (Vines) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (v Vines) BreakInfo() BreakInfo {
-	return newBreakInfo(0.2, alwaysHarvestable, func(t item.Tool) bool {
-		return t.ToolType() == item.TypeShears || t.ToolType() == item.TypeAxe
-	}, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
-		if t.ToolType() == item.TypeShears || hasSilkTouch(enchantments) {
-			return []item.Stack{item.NewStack(v, 1)}
-		}
-		return nil
-	})
+	return newBreakInfo(0.2, func(t item.Tool) bool {
+		return t.ToolType() == item.TypeShears
+	}, axeEffective, oneOf(v))
 }
 
 // EntityInside ...
-func (Vines) EntityInside(_ cube.Pos, _ *world.World, e world.Entity) {
+func (Vines) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
 	if fallEntity, ok := e.(fallDistanceEntity); ok {
 		fallEntity.ResetFallDistance()
 	}
 }
 
-// SetAttachment sets an attachment on the given cube.Direction.
-func (v Vines) SetAttachment(direction cube.Direction, attached bool) Vines {
+// WithAttachment returns a Vines block with an attachment on the given cube.Direction.
+func (v Vines) WithAttachment(direction cube.Direction, attached bool) Vines {
 	switch direction {
 	case cube.North:
 		v.NorthDirection = attached
@@ -103,8 +113,12 @@ func (v Vines) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.
 	if !used {
 		return false
 	}
+	if _, ok := tx.Block(pos).(Vines); ok {
+		// Do not overwrite existing vine block.
+		return false
+	}
 	//noinspection GoAssignmentToReceiver
-	v = v.SetAttachment(face.Direction().Opposite(), true)
+	v = v.WithAttachment(face.Direction().Opposite(), true)
 
 	place(tx, pos, v, user, ctx)
 	return placed(ctx)
@@ -114,10 +128,10 @@ func (v Vines) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.
 func (v Vines) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	above, updated := tx.Block(pos.Side(cube.FaceUp)), false
 	for _, d := range v.Attachments() {
-		if _, ok := tx.Block(pos.Side(d.Face())).Model().(model.Solid); !ok {
-			if o, ok := above.(Vines); !ok || ok && !o.Attachment(d) {
+		if !v.canSpreadTo(tx, pos.Side(d.Face())) {
+			if o, ok := above.(Vines); !ok || !o.Attachment(d) {
 				//noinspection GoAssignmentToReceiver
-				v = v.SetAttachment(d, false)
+				v = v.WithAttachment(d, false)
 				updated = true
 			}
 		}
@@ -125,8 +139,8 @@ func (v Vines) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !updated {
 		return
 	}
-	if _, ok := above.Model().(model.Solid); !ok && len(v.Attachments()) == 0 {
-		tx.SetBlock(pos, nil, nil)
+	if len(v.Attachments()) == 0 {
+		breakBlock(v, pos, tx)
 		return
 	}
 	tx.SetBlock(pos, v, nil)
@@ -139,50 +153,19 @@ func (v Vines) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 		return
 	}
 
-	face := cube.Face(r.Intn(len(cube.Faces())))
+	// Choose a random direction to spread.
+	face := cube.Face(r.IntN(len(cube.Faces())))
 	selectedPos := pos.Side(face)
-	if face == cube.FaceUp || face == cube.FaceDown {
-		if selectedPos.OutOfBounds(tx.Range()) {
-			// Vines can't spread outside world bounds.
+
+	// If a horizontal direction was chosen and the vine block is not already
+	// attached in that direction, attempt to spread in that direction.
+	if face.Axis() != cube.Y && !v.Attachment(face.Direction()) {
+		if !v.canSpread(tx, pos) {
+			// No further attempt to spread vertically will be made.
 			return
 		}
-
-		_, air := tx.Block(selectedPos).(Air)
-		newVines, vines := tx.Block(selectedPos).(Vines)
-		if face == cube.FaceUp {
-			if !air {
-				// Vines can't spread upwards unless there is air.
-				return
-			}
-
-			for _, f := range cube.HorizontalFaces() {
-				if r.Intn(2) == 0 && v.acceptableNeighbour(tx, selectedPos, f.Opposite()) {
-					newVines = newVines.SetAttachment(f.Direction(), true)
-				}
-			}
-		} else if air {
-			for _, f := range cube.HorizontalFaces() {
-				if r.Intn(2) == 0 && v.Attachment(f.Direction()) {
-					newVines = newVines.SetAttachment(f.Direction(), true)
-				}
-			}
-		} else if vines {
-			var changed bool
-			for _, f := range cube.HorizontalFaces() {
-				if r.Intn(2) == 0 && v.Attachment(f.Direction()) {
-					newVines, changed = newVines.SetAttachment(f.Direction(), true), true
-				}
-			}
-			if changed {
-				tx.SetBlock(selectedPos, newVines, nil)
-			}
-			return
-		}
-
-		if len(newVines.Attachments()) > 0 {
-			tx.SetBlock(selectedPos, newVines, nil)
-		}
-	} else if !v.Attachment(face.Direction()) && v.canSpread(tx, pos) {
+		// Attempt to create a new vine block if there is a neighbouring air block
+		// in the chosen direction.
 		if _, ok := tx.Block(selectedPos).(Air); ok {
 			rightRotatedFace := face.RotateRight()
 			leftRotatedFace := face.RotateLeft()
@@ -193,18 +176,88 @@ func (v Vines) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 			rightSelectedPos := selectedPos.Side(rightRotatedFace)
 			leftSelectedPos := selectedPos.Side(leftRotatedFace)
 
-			if attachedOnRight && v.acceptableNeighbour(tx, rightSelectedPos.Side(rightRotatedFace), rightRotatedFace) {
-				tx.SetBlock(selectedPos, (Vines{}).SetAttachment(rightRotatedFace.Direction(), true), nil)
-			} else if attachedOnLeft && v.acceptableNeighbour(tx, leftSelectedPos.Side(leftRotatedFace), leftRotatedFace) {
-				tx.SetBlock(selectedPos, (Vines{}).SetAttachment(leftRotatedFace.Direction(), true), nil)
-			} else if _, ok = tx.Block(rightSelectedPos).(Air); ok && attachedOnRight && v.acceptableNeighbour(tx, rightSelectedPos, face) {
-				tx.SetBlock(rightSelectedPos, (Vines{}).SetAttachment(face.Opposite().Direction(), true), nil)
-			} else if _, ok = tx.Block(leftSelectedPos).(Air); ok && attachedOnLeft && v.acceptableNeighbour(tx, leftSelectedPos, face) {
-				tx.SetBlock(leftSelectedPos, (Vines{}).SetAttachment(face.Opposite().Direction(), true), nil)
+			// Four attempts to create a new vine block will be made, in the
+			// following order:
+			// 1) If the current vine block is attached in the direction towards
+			//    the right ("clockwise") of the chosen direction, and a solid
+			//    block can support a vine on that direction in the selected
+			//    position, create a new vine block attached on that clockwise
+			//    direction at the selected position.
+			// 2) If the clockwise direction fails, try again with the left
+			//    ("counter-clockwise") direction.
+			// 3) If the current vine block is attached in the direction towards
+			//    the right of the chosen direction, the current vine block is
+			//    also backed by a solid block in that same direction, and the
+			//    block neighbouring the selected position in that direction is
+			//    air, spread into that air block onto the face opposite of the
+			//    chosen direction. The vine jumps from one face of a block onto
+			//    another as a result.
+			// 4) If the clockwise direction fails, try again with the left
+			//    direction.
+			if attachedOnRight && v.canSpreadTo(tx, rightSelectedPos) {
+				tx.SetBlock(selectedPos, (Vines{}).WithAttachment(rightRotatedFace.Direction(), true), nil)
+			} else if attachedOnLeft && v.canSpreadTo(tx, leftSelectedPos) {
+				tx.SetBlock(selectedPos, (Vines{}).WithAttachment(leftRotatedFace.Direction(), true), nil)
+			} else if _, ok = tx.Block(rightSelectedPos).(Air); ok && attachedOnRight && v.canSpreadTo(tx, pos.Side(rightRotatedFace)) {
+				tx.SetBlock(rightSelectedPos, (Vines{}).WithAttachment(face.Opposite().Direction(), true), nil)
+			} else if _, ok = tx.Block(leftSelectedPos).(Air); ok && attachedOnLeft && v.canSpreadTo(tx, pos.Side(leftRotatedFace)) {
+				tx.SetBlock(leftSelectedPos, (Vines{}).WithAttachment(face.Opposite().Direction(), true), nil)
 			}
-		} else if _, ok = tx.Block(selectedPos).Model().(model.Solid); ok {
-			tx.SetBlock(pos, v.SetAttachment(face.Direction(), true), nil)
+		} else if v.canSpreadTo(tx, selectedPos) {
+			// If the neighbouring block is solid, update the vine to be attached in that direction.
+			tx.SetBlock(pos, v.WithAttachment(face.Direction(), true), nil)
 		}
+		return
+	}
+
+	// If the chosen direction is Up and the position above is within the height
+	// limit, attempt to spread upwards.
+	if face == cube.FaceUp && selectedPos.OutOfBounds(tx.Range()) {
+		// Vines can only spread upwards into an air block.
+		if _, ok := tx.Block(selectedPos).(Air); ok {
+			if !v.canSpread(tx, pos) {
+				// No further attempt to spread down will be made.
+				return
+			}
+			newVines := Vines{}
+			for _, f := range cube.HorizontalFaces() {
+				// For each direction the current vine block is attached on,
+				// there is a 50% chance for the new above vine block to
+				// attach onto the direction, if there is also a solid block
+				// in that direction to support the vine.
+				if r.IntN(2) == 0 && v.Attachment(f.Direction()) && v.canSpreadTo(tx, selectedPos.Side(f)) {
+					newVines = newVines.WithAttachment(f.Direction(), true)
+				}
+			}
+			if len(newVines.Attachments()) > 0 {
+				tx.SetBlock(selectedPos, newVines, nil)
+			}
+			return
+		}
+	}
+
+	// If an attempt to spread horizontally or upwards has failed but not exited
+	// early, attempt to spread downwards.
+	selectedPos = pos.Side(cube.FaceDown)
+	if selectedPos.OutOfBounds(tx.Range()) {
+		return
+	}
+	newVines, vines := tx.Block(selectedPos).(Vines)
+	if _, ok := tx.Block(selectedPos).(Air); !ok && !vines {
+		// The block under the current vine block must be air or a vine block.
+		return
+	}
+	var changed bool
+	for _, f := range cube.HorizontalFaces() {
+		// For each direction the current vine block is attached on, there is a
+		// 50% chance for the below vine block to attach onto the direction if
+		// it is not already attached in that direction.
+		if r.IntN(2) == 0 && v.Attachment(f.Direction()) && !newVines.Attachment(f.Direction()) {
+			newVines, changed = newVines.WithAttachment(f.Direction(), true), true
+		}
+	}
+	if changed {
+		tx.SetBlock(selectedPos, newVines, nil)
 	}
 }
 
@@ -224,31 +277,16 @@ func (v Vines) EncodeBlock() (string, map[string]any) {
 	return "minecraft:vine", map[string]any{"vine_direction_bits": int32(bits)}
 }
 
-// acceptableNeighbour returns true if the block at the given position is an acceptable neighbour.
-func (v Vines) acceptableNeighbour(tx *world.Tx, pos cube.Pos, face cube.Face) bool {
-	above := tx.Block(pos.Side(cube.FaceUp))
-	_, air := above.(Air)
-	_, vines := above.(Vines)
-	return v.canSpreadTo(tx.Block(pos.Side(face.Opposite()))) && (air || vines || v.canSpreadTo(above))
-}
-
-// canSpreadTo returns true if the vines can spread to the given position.
-func (Vines) canSpreadTo(b world.Block) bool {
-	// TODO: Account for pistons, cauldrons, and shulker boxes.
-	switch b.(type) {
-	case Glass, StainedGlass:
-		return false
-	case Beacon:
-		return false
-	case WoodTrapdoor:
-		return false
-	}
-
-	_, ok := b.Model().(model.Solid)
+// canSpreadTo returns true if the vines can spread onto the block at the
+// given position. Vines may only spread onto fully solid blocks.
+func (Vines) canSpreadTo(tx *world.Tx, pos cube.Pos) bool {
+	_, ok := tx.Block(pos).Model().(model.Solid)
 	return ok
 }
 
-// canSpread returns true if the vines can spread from the given position.
+// canSpread returns true if the vines can spread from the given position. Vines
+// may only spread horizontally or upwards if there are fewer than 4 vines within
+// a 9x9x3 area centered around the Vines.
 func (v Vines) canSpread(tx *world.Tx, pos cube.Pos) bool {
 	var count int
 	for x := -4; x <= 4; x++ {
@@ -256,6 +294,7 @@ func (v Vines) canSpread(tx *world.Tx, pos cube.Pos) bool {
 			for y := -1; y <= 1; y++ {
 				if _, ok := tx.Block(pos.Add(cube.Pos{x, y, z})).(Vines); ok {
 					count++
+					// The center vine is counted, for a max of 4+1=5.
 					if count >= 5 {
 						return false
 					}

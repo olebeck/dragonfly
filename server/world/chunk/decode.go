@@ -76,7 +76,7 @@ func DecodeNetworkBiomes(c *Chunk, buf *bytes.Buffer, oldBiomes bool) error {
 	} else {
 		var last *PalettedStorage
 		for i := 0; i < len(c.sub); i++ {
-			b, err := decodePalettedStorage(buf, NetworkEncoding, BiomePaletteEncoding, c.BlockRegistry)
+			b, err := decodePalettedStorage(buf, NetworkEncoding, BiomePaletteEncoding)
 			if err != nil {
 				return err
 			}
@@ -151,7 +151,7 @@ func decodeSubChunk(buf *bytes.Buffer, c *Chunk, index *byte, e Encoding, hashed
 		return nil, fmt.Errorf("unknown sub chunk version %v: can't decode", ver)
 	case 1:
 		// Version 1 only has one layer for each sub chunk, but uses the format with palettes.
-		storage, err := decodePalettedStorage(buf, e, BlockPaletteEncoding, c.BlockRegistry)
+		storage, err := decodePalettedStorage(buf, e, BlockPaletteEncoding{Blocks: c.BlockRegistry})
 		if err != nil {
 			return nil, err
 		}
@@ -174,7 +174,7 @@ func decodeSubChunk(buf *bytes.Buffer, c *Chunk, index *byte, e Encoding, hashed
 		sub.storages = make([]*PalettedStorage, storageCount)
 
 		for i := byte(0); i < storageCount; i++ {
-			storage, err := decodePalettedStorage(buf, e, BlockPaletteEncoding, c.BlockRegistry)
+			storage, err := decodePalettedStorage(buf, e, BlockPaletteEncoding{Blocks: c.BlockRegistry})
 			if err != nil {
 				return nil, err
 			}
@@ -224,7 +224,7 @@ func decodeBiomes(buf *bytes.Buffer, c *Chunk, e Encoding) error {
 				}
 				break
 			}
-			b, err := decodePalettedStorage(buf, e, BiomePaletteEncoding, c.BlockRegistry)
+			b, err := decodePalettedStorage(buf, e, BiomePaletteEncoding)
 			if err != nil {
 				return err
 			}
@@ -249,12 +249,14 @@ func decodeBiomes(buf *bytes.Buffer, c *Chunk, e Encoding) error {
 
 // decodePalettedStorage decodes a PalettedStorage from a bytes.Buffer. The Encoding passed is used to read either a
 // network or disk block storage.
-func decodePalettedStorage(buf *bytes.Buffer, e Encoding, pe paletteEncoding, br BlockRegistry) (*PalettedStorage, error) {
+func decodePalettedStorage(buf *bytes.Buffer, e Encoding, pe paletteEncoding) (*PalettedStorage, error) {
 	blockSize, err := buf.ReadByte()
 	if err != nil {
 		return nil, fmt.Errorf("error reading block size: %w", err)
 	}
-	if e == NetworkEncoding && pe == BlockPaletteEncoding && blockSize&1 != 1 {
+	_, isNetwork := e.(networkEncoding)
+	_, isBlocks := pe.(BlockPaletteEncoding)
+	if isNetwork && isBlocks && blockSize&1 != 1 {
 		e = NetworkPersistentEncoding
 	}
 
@@ -280,6 +282,6 @@ func decodePalettedStorage(buf *bytes.Buffer, e Encoding, pe paletteEncoding, br
 		// Explicitly don't use the binary package to greatly improve performance of reading the uint32s.
 		uint32s[i] = uint32(data[i*4]) | uint32(data[i*4+1])<<8 | uint32(data[i*4+2])<<16 | uint32(data[i*4+3])<<24
 	}
-	p, err := e.decodePalette(buf, paletteSize(blockSize), pe, br)
+	p, err := e.decodePalette(buf, paletteSize(blockSize), pe)
 	return newPalettedStorage(uint32s, p), err
 }

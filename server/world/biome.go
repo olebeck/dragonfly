@@ -72,3 +72,7 @@ func ocean() Biome {
 	o, _ := DefaultBiomes.BiomeByID(0)
 	return o
 }
+
+func RegisterBiome(b Biome) {
+	DefaultBiomes.Register(b)
+}

@@ -1,7 +1,7 @@
 package entity
 
 import (
-	"math/rand"
+	"math/rand/v2"
 	"time"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -27,7 +27,7 @@ func NewLightningWithDamage(opts world.EntitySpawnOpts, dmg float64, blockFire b
 		EntityFireDuration: entityFireDuration,
 		BlockFire:          blockFire,
 		state:              2,
-		lifetime:           rand.Intn(4) + 1,
+		lifetime:           rand.IntN(4) + 1,
 	}).tick
 	return opts.New(LightningType, conf)
 }
@@ -50,7 +50,7 @@ func (s *lightningState) tick(e *Ent, tx *world.Tx) {
 	if s.state--; s.state < 0 {
 		if s.lifetime == 0 {
 			_ = e.Close()
-		} else if s.state < -rand.Intn(10) {
+		} else if s.state < -rand.IntN(10) {
 			s.lifetime--
 			s.state = 1
 
@@ -87,7 +87,7 @@ func (s *lightningState) dealDamage(e *Ent, tx *world.Tx) {
 func (s *lightningState) spreadFire(tx *world.Tx, pos cube.Pos) {
 	s.fire().Start(tx, pos)
 	for i := 0; i < 4; i++ {
-		pos.Add(cube.Pos{rand.Intn(3) - 1, rand.Intn(3) - 1, rand.Intn(3) - 1})
+		pos.Add(cube.Pos{rand.IntN(3) - 1, rand.IntN(3) - 1, rand.IntN(3) - 1})
 		s.fire().Start(tx, pos)
 	}
 }

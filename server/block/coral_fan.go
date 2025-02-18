@@ -1,7 +1,7 @@
 package block
 
 import (
-	"math/rand"
+	"math/rand/v2"
 	"time"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -87,7 +87,7 @@ func (c CoralFan) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if c.Dead {
 		return
 	}
-	tx.ScheduleBlockUpdate(pos, time.Second*5/2)
+	tx.ScheduleBlockUpdate(pos, c, time.Second*5/2)
 }
 
 // ScheduledTick ...

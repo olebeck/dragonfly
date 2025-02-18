@@ -3,7 +3,7 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
-	"math/rand"
+	"math/rand/v2"
 	"time"
 )
 
@@ -23,15 +23,11 @@ func (c CoralBlock) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if c.Dead {
 		return
 	}
-	tx.ScheduleBlockUpdate(pos, time.Second*5/2)
+	tx.ScheduleBlockUpdate(pos, c, time.Second*5/2)
 }
 
 // ScheduledTick ...
 func (c CoralBlock) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
-	if c.Dead {
-		return
-	}
-
 	adjacentWater := false
 	pos.Neighbours(func(neighbour cube.Pos) {
 		if liquid, ok := tx.Liquid(neighbour); ok {
