@@ -272,6 +272,9 @@ func (br *BlockRegistryImpl) AirRuntimeID() uint32 {
 }
 
 func (br *BlockRegistryImpl) RuntimeIDToState(runtimeID uint32) (name string, properties map[string]any, found bool) {
+	if !br.finalized {
+		panic("BlockRegistry.RuntimeIDToState called on non finalized BlockRegistry")
+	}
 	if runtimeID >= uint32(len(br.blocks)) {
 		return "", nil, false
 	}
@@ -280,6 +283,9 @@ func (br *BlockRegistryImpl) RuntimeIDToState(runtimeID uint32) (name string, pr
 }
 
 func (br *BlockRegistryImpl) StateToRuntimeID(name string, properties map[string]any) (runtimeID uint32, found bool) {
+	if !br.finalized {
+		panic("BlockRegistry.StateToRuntimeID called on non finalized BlockRegistry")
+	}
 	if rid, ok := br.stateRuntimeIDs[stateHash{name: name, properties: hashProperties(properties)}]; ok {
 		return rid, true
 	}
@@ -299,6 +305,9 @@ func (br *BlockRegistryImpl) BlockHash(b Block) uint64 {
 // BlockRuntimeID attempts to return a runtime ID of a block previously registered using RegisterBlock().
 // If the runtime ID cannot be found because the Block wasn't registered, BlockRuntimeID will panic.
 func (br *BlockRegistryImpl) BlockRuntimeID(b Block) uint32 {
+	if !br.finalized {
+		panic("BlockRegistry.BlockRuntimeID called on non finalized BlockRegistry")
+	}
 	if b == nil {
 		return br.airRID
 	}
@@ -333,6 +342,9 @@ func (br *BlockRegistryImpl) slowBlockRuntimeID(b Block) uint32 {
 // BlockByRuntimeID attempts to return a Block by its runtime ID. If not found, the bool returned is
 // false. If found, the block is non-nil and the bool true.
 func (br *BlockRegistryImpl) BlockByRuntimeID(rid uint32) (Block, bool) {
+	if !br.finalized {
+		panic("BlockRegistry.BlockByRuntimeID called on non finalized BlockRegistry")
+	}
 	if rid >= uint32(len(br.blocks)) {
 		return br.Air(), false
 	}
@@ -342,6 +354,9 @@ func (br *BlockRegistryImpl) BlockByRuntimeID(rid uint32) (Block, bool) {
 // BlockByNetworkID attempts to return a Block by its static network ID. If not found, the bool returned is
 // false. If found, the block is non-nil and the bool true.
 func (br *BlockRegistryImpl) BlockByNetworkID(rid uint32) (Block, bool) {
+	if !br.finalized {
+		panic("BlockRegistry.BlockByNetworkID called on non finalized BlockRegistry")
+	}
 	if rid >= uint32(len(br.blocks)) {
 		return br.Air(), false
 	}
@@ -351,6 +366,9 @@ func (br *BlockRegistryImpl) BlockByNetworkID(rid uint32) (Block, bool) {
 // BlockByName attempts to return a Block by its name and properties. If not found, the bool returned is
 // false.
 func (br *BlockRegistryImpl) BlockByName(name string, properties map[string]any) (Block, bool) {
+	if !br.finalized {
+		panic("BlockRegistry.BlockByName called on non finalized BlockRegistry")
+	}
 	rid, ok := br.stateRuntimeIDs[stateHash{name: name, properties: hashProperties(properties)}]
 	if !ok {
 		return nil, false
