@@ -402,7 +402,7 @@ var traitLookup = map[string][]any{
 	},
 }
 
-func AddCustomBlocks(reg *BlockRegistryImpl, entries []protocol.BlockEntry) error {
+func AddCustomBlocks(reg BlockRegistry, entries []protocol.BlockEntry) error {
 	for _, entry := range entries {
 		ns, _ := splitNamespace(entry.Name)
 		if ns == "minecraft" {
