@@ -83,6 +83,15 @@ func (s *Session) SendRespawn(pos mgl64.Vec3, c Controllable) {
 	})
 }
 
+// sendBiomes sends all the vanilla biomes to the session.
+func (s *Session) sendBiomes() {
+	definitions, stringList := world.BiomeDefinitions()
+	s.writePacket(&packet.BiomeDefinitionList{
+		BiomeDefinitions: definitions,
+		StringList:       stringList,
+	})
+}
+
 // sendRecipes sends the current crafting recipes to the session.
 func (s *Session) sendRecipes() {
 	recipes := make([]protocol.Recipe, 0, len(recipe.Recipes()))

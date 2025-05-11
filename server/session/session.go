@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"io"
 	"log/slog"
 	"net"
@@ -180,6 +181,7 @@ func (conf Config) New(conn Conn) *Session {
 	s.currentLines.Store(&scoreboardLines)
 
 	s.registerHandlers()
+	s.sendBiomes()
 	groups, items := s.creativeContent()
 	s.writePacket(&packet.CreativeContent{Groups: groups, Items: items})
 	s.sendRecipes()
@@ -509,7 +511,6 @@ func (s *Session) registerHandlers() {
 		packet.IDSetPlayerInventoryOptions: nil,
 		packet.IDSubChunkRequest:           &SubChunkRequestHandler{},
 		packet.IDText:                      &TextHandler{},
-		packet.IDTickSync:                  nil,
 		packet.IDServerBoundLoadingScreen:  &ServerBoundLoadingScreenHandler{},
 		packet.IDServerBoundDiagnostics:    &ServerBoundDiagnosticsHandler{},
 	}
