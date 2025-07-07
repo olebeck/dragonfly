@@ -2,7 +2,7 @@ module github.com/df-mc/dragonfly
 
 go 1.24
 
-toolchain go1.24.2
+toolchain go1.24.4
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0
@@ -12,7 +12,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/pelletier/go-toml v1.9.5
 	github.com/rogpeppe/go-internal v1.14.1
-	github.com/sandertv/gophertunnel v1.46.0
+	github.com/sandertv/gophertunnel v1.48.0
 	github.com/segmentio/fasthash v1.0.3
 	github.com/thomaso-mirodin/intmath v0.0.0-20160323211736-5dc6d854e46e
 	github.com/zaataylor/cartesian v0.0.0-20221028053253-3b3244d82727

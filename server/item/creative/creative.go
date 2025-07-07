@@ -89,9 +89,12 @@ type creativeItemEntry struct {
 	GroupIndex      int32          `nbt:"group_index,omitempty"`
 }
 
-// init initialises the creative items, registering all creative items that have also been registered as
+// registerCreativeItems initialises the creative items, registering all creative items that have also been registered as
 // normal items and are present in vanilla.
-func init() {
+// noinspection GoUnusedFunction
+//
+//lint:ignore U1000 Function is used through compiler directives.
+func registerCreativeItems() {
 	var m struct {
 		Groups []creativeGroupEntry `nbt:"groups"`
 		Items  []creativeItemEntry  `nbt:"items"`

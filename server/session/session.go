@@ -5,6 +5,9 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/df-mc/dragonfly/server/player/debug"
+	"github.com/df-mc/dragonfly/server/player/hud"
+
 	"io"
 	"log/slog"
 	"net"
@@ -35,10 +38,11 @@ type Session struct {
 	conf           Config
 	once, connOnce sync.Once
 
-	ent      *world.EntityHandle
-	conn     Conn
-	handlers map[uint32]packetHandler
-	packets  chan packet.Packet
+	ent             *world.EntityHandle
+	conn            Conn
+	handlers        map[uint32]packetHandler
+	outgoingPackets chan packet.Packet
+	incomingPackets chan packet.Packet
 
 	currentScoreboard atomic.Pointer[string]
 	currentLines      atomic.Pointer[[]string]
@@ -86,7 +90,17 @@ type Session struct {
 	openChunkTransactions []map[uint64]struct{}
 	invOpened             bool
 
+	hudMu      sync.RWMutex
+	hudUpdates map[hud.Element]bool
+	hiddenHud  map[hud.Element]struct{}
+
+	debugShapesMu     sync.RWMutex
+	debugShapes       map[int]debug.Shape
+	debugShapesAdd    chan debug.Shape
+	debugShapesRemove chan int
+
 	closeBackground chan struct{}
+	closeRead       chan struct{}
 
 	br world.BlockRegistry
 }
@@ -158,8 +172,10 @@ func (conf Config) New(conn Conn) *Session {
 	*s = Session{
 		openChunkTransactions:  make([]map[uint64]struct{}, 0, 8),
 		closeBackground:        make(chan struct{}),
+		closeRead:              make(chan struct{}),
 		handlers:               map[uint32]packetHandler{},
-		packets:                make(chan packet.Packet, 256),
+		outgoingPackets:        make(chan packet.Packet, 256),
+		incomingPackets:        make(chan packet.Packet, 256),
 		entityRuntimeIDs:       map[*world.EntityHandle]uint64{},
 		entities:               map[uint64]*world.EntityHandle{},
 		hiddenEntities:         map[uuid.UUID]struct{}{},
@@ -171,6 +187,11 @@ func (conf Config) New(conn Conn) *Session {
 		heldSlot:               new(uint32),
 		recipes:                make(map[uint32]recipe.Recipe),
 		conf:                   conf,
+		hudUpdates:             make(map[hud.Element]bool),
+		hiddenHud:              make(map[hud.Element]struct{}),
+		debugShapes:            make(map[int]debug.Shape),
+		debugShapesAdd:         make(chan debug.Shape, 256),
+		debugShapesRemove:      make(chan int, 256),
 	}
 	s.openedWindow.Store(inventory.New(1, nil))
 	s.openedPos.Store(&cube.Pos{})
@@ -192,8 +213,41 @@ func (conf Config) New(conn Conn) *Session {
 			select {
 			case <-s.closeBackground:
 				return
-			case pk := <-s.packets:
+			case pk := <-s.outgoingPackets:
 				_ = conn.WritePacket(pk)
+			case first := <-s.incomingPackets:
+				var err error
+				s.ent.ExecWorld(func(tx *world.Tx, e world.Entity) {
+					err = s.handlePacket(first, tx, e.(Controllable))
+					if err != nil {
+						return
+					}
+
+					total := len(s.incomingPackets)
+				receive:
+					for i := 0; i < total; i++ {
+						select {
+						case <-s.closeBackground:
+							break receive
+						case pk := <-s.incomingPackets:
+							err = s.handlePacket(pk, tx, e.(Controllable))
+							if err != nil {
+								break receive
+							}
+						default:
+							break receive
+						}
+					}
+				})
+
+				if err != nil {
+					s.conf.Log.Debug("process packet: " + err.Error())
+					select {
+					case <-s.closeRead:
+					default:
+						close(s.closeRead)
+					}
+				}
 			}
 		}
 	}()
@@ -335,12 +389,11 @@ func (s *Session) handlePackets() {
 		if err != nil {
 			return
 		}
-		s.ent.ExecWorld(func(tx *world.Tx, e world.Entity) {
-			err = s.handlePacket(pk, tx, e.(Controllable))
-		})
-		if err != nil {
-			s.conf.Log.Debug("process packet: " + err.Error())
+
+		select {
+		case <-s.closeRead:
 			return
+		case s.incomingPackets <- pk:
 		}
 	}
 }
@@ -522,7 +575,7 @@ func (s *Session) writePacket(pk packet.Packet) {
 		return
 	}
 	select {
-	case s.packets <- pk:
+	case s.outgoingPackets <- pk:
 	case <-s.closeBackground:
 	}
 }
