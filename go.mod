@@ -12,7 +12,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/pelletier/go-toml v1.9.5
 	github.com/rogpeppe/go-internal v1.14.1
-	github.com/sandertv/gophertunnel v1.48.1
+	github.com/sandertv/gophertunnel v1.49.0
 	github.com/segmentio/fasthash v1.0.3
 	github.com/thomaso-mirodin/intmath v0.0.0-20160323211736-5dc6d854e46e
 	github.com/zaataylor/cartesian v0.0.0-20221028053253-3b3244d82727
