@@ -3,7 +3,6 @@ package chunk
 import (
 	"bytes"
 	"fmt"
-	"slices"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
@@ -12,11 +11,19 @@ import (
 // NetworkDecode decodes the network serialised data passed into a Chunk if successful. If not, the chunk
 // returned is nil and the error non-nil.
 // The sub chunk count passed must be that found in the LevelChunk packet.
+// NetworkDecode creates a new buffer and calls NetworkDecodeBuffer.
 // noinspection GoUnusedExportedFunction
-func NetworkDecode(br BlockRegistry, data []byte, count int, oldBiomes bool, hashedRids bool, r cube.Range) (*Chunk, []map[string]any, error) {
+func NetworkDecode(br BlockRegistry, data []byte, count int, r cube.Range, hashedRids bool) (*Chunk, []map[string]any, error) {
+	return NetworkDecodeBuffer(br, bytes.NewBuffer(data), count, r, hashedRids)
+}
+
+// NetworkDecodeBuffer decodes the network serialised data from buf passed into a Chunk if successful. If not, the chunk
+// returned is nil and the error non-nil.
+// The sub chunk count passed must be that found in the LevelChunk packet.
+// noinspection GoUnusedExportedFunction
+func NetworkDecodeBuffer(br BlockRegistry, buf *bytes.Buffer, count int, r cube.Range, hashedRids bool) (*Chunk, []map[string]any, error) {
 	var (
 		c   = New(br, r)
-		buf = bytes.NewBuffer(data)
 		err error
 	)
 
@@ -28,7 +35,7 @@ func NetworkDecode(br BlockRegistry, data []byte, count int, oldBiomes bool, has
 		}
 	}
 
-	err = DecodeNetworkBiomes(c, buf, oldBiomes)
+	err = DecodeNetworkBiomes(c, buf)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -43,56 +50,25 @@ func NetworkDecode(br BlockRegistry, data []byte, count int, oldBiomes bool, has
 	return c, blockNBTs, nil
 }
 
-func DecodeNetworkBiomes(c *Chunk, buf *bytes.Buffer, oldBiomes bool) error {
-	if oldBiomes {
-		// Read the old biomes.
-		biomes := make([]byte, 256)
-		if _, err := buf.Read(biomes[:]); err != nil {
-			return fmt.Errorf("error reading biomes: %w", err)
+func DecodeNetworkBiomes(c *Chunk, buf *bytes.Buffer) error {
+	var last *PalettedStorage
+	for i := 0; i < len(c.sub); i++ {
+		b, err := decodePalettedStorage(buf, NetworkEncoding, BiomePaletteEncoding)
+		if err != nil {
+			return err
 		}
-		var values []uint32
-		for _, v := range biomes {
-			if !slices.Contains(values, uint32(v)) {
-				values = append(values, uint32(v))
+		if b == nil {
+			// b == nil means this paletted storage had the flag pointing to the previous one. It basically means we should
+			// inherit whatever palette we decoded last.
+			if i == 0 {
+				// This should never happen and there is no way to handle this.
+				return fmt.Errorf("first biome storage pointed to previous one")
 			}
+			b = last
+		} else {
+			last = b
 		}
-
-		size := paletteSizeFor(len(values))
-		biome := newPalettedStorage(make([]uint32, size.uint32s()), newPalette(size, values))
-
-		// Make our 2D biomes 3D.
-		for x := 0; x < 16; x++ {
-			for z := 0; z < 16; z++ {
-				id := biomes[(x&15)|(z&15)<<4]
-				for y := 0; y < 16; y++ {
-					biome.Set(uint8(x), uint8(y), uint8(z), uint32(id))
-				}
-			}
-		}
-
-		for i := range c.biomes {
-			c.biomes[i] = biome
-		}
-	} else {
-		var last *PalettedStorage
-		for i := 0; i < len(c.sub); i++ {
-			b, err := decodePalettedStorage(buf, NetworkEncoding, BiomePaletteEncoding)
-			if err != nil {
-				return err
-			}
-			if b == nil {
-				// b == nil means this paletted storage had the flag pointing to the previous one. It basically means we should
-				// inherit whatever palette we decoded last.
-				if i == 0 {
-					// This should never happen and there is no way to handle this.
-					return fmt.Errorf("first biome storage pointed to previous one")
-				}
-				b = last
-			} else {
-				last = b
-			}
-			c.biomes[i] = b
-		}
+		c.biomes[i] = b
 	}
 	return nil
 }

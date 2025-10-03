@@ -9,8 +9,6 @@ import (
 
 	"github.com/df-mc/dragonfly/server/entity/effect"
 
-	"github.com/df-mc/dragonfly/server/entity/effect"
-
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
@@ -978,6 +976,11 @@ func (s *Session) ViewEntityAction(e world.Entity, a world.EntityAction) {
 			ActionType:      packet.AnimateActionCriticalHit,
 			EntityRuntimeID: s.entityRuntimeID(e),
 		})
+	case entity.EnchantedHitAction:
+		s.writePacket(&packet.Animate{
+			ActionType:      packet.AnimateActionMagicCriticalHit,
+			EntityRuntimeID: s.entityRuntimeID(e),
+		})
 	case entity.DeathAction:
 		s.writePacket(&packet.ActorEvent{
 			EntityRuntimeID: s.entityRuntimeID(e),
@@ -1204,10 +1207,14 @@ func (s *Session) ViewBlockAction(pos cube.Pos, a world.BlockAction) {
 
 // ViewEmote ...
 func (s *Session) ViewEmote(player world.Entity, emote uuid.UUID) {
+	flags := byte(packet.EmoteFlagServerSide)
+	if s.emoteChatMuted {
+		flags |= packet.EmoteFlagMuteChat
+	}
 	s.writePacket(&packet.Emote{
 		EntityRuntimeID: s.entityRuntimeID(player),
 		EmoteID:         emote.String(),
-		Flags:           packet.EmoteFlagServerSide,
+		Flags:           flags,
 	})
 }
 

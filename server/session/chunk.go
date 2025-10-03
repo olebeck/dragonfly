@@ -87,10 +87,12 @@ func (s *Session) subChunkEntry(offset protocol.SubChunkOffset, ind int16, col *
 	sub := col.Chunk.Sub()[ind]
 	if sub.Empty() {
 		return protocol.SubChunkEntry{
-			Result:        protocol.SubChunkResultSuccessAllAir,
-			HeightMapType: subMapType,
-			HeightMapData: subMap,
-			Offset:        offset,
+			Result:              protocol.SubChunkResultSuccessAllAir,
+			HeightMapType:       subMapType,
+			HeightMapData:       subMap,
+			RenderHeightMapType: subMapType,
+			RenderHeightMapData: subMap,
+			Offset:              offset,
 		}
 	}
 
@@ -107,11 +109,13 @@ func (s *Session) subChunkEntry(offset protocol.SubChunkOffset, ind int16, col *
 	}
 
 	entry := protocol.SubChunkEntry{
-		Result:        protocol.SubChunkResultSuccess,
-		RawPayload:    append(serialisedSubChunk, blockEntityBuf.Bytes()...),
-		HeightMapType: subMapType,
-		HeightMapData: subMap,
-		Offset:        offset,
+		Result:              protocol.SubChunkResultSuccess,
+		RawPayload:          append(serialisedSubChunk, blockEntityBuf.Bytes()...),
+		HeightMapType:       subMapType,
+		HeightMapData:       subMap,
+		RenderHeightMapType: subMapType,
+		RenderHeightMapData: subMap,
+		Offset:              offset,
 	}
 	if s.conn.ClientCacheEnabled() {
 		if hash := xxhash.Sum64(serialisedSubChunk); s.trackBlob(hash, serialisedSubChunk) {

@@ -33,7 +33,6 @@ const (
 	hashCandle
 	hashCarpet
 	hashCarrot
-	hashChain
 	hashChest
 	hashChiseledQuartz
 	hashClay
@@ -99,6 +98,7 @@ const (
 	hashInvisibleBedrock
 	hashIron
 	hashIronBars
+	hashIronChain
 	hashIronOre
 	hashItemFrame
 	hashJukebox
@@ -322,10 +322,6 @@ func (c Carpet) Hash() (uint64, uint64) {
 
 func (c Carrot) Hash() (uint64, uint64) {
 	return hashCarrot, uint64(c.Growth)
-}
-
-func (c Chain) Hash() (uint64, uint64) {
-	return hashChain, uint64(c.Axis)
 }
 
 func (c Chest) Hash() (uint64, uint64) {
@@ -586,6 +582,10 @@ func (Iron) Hash() (uint64, uint64) {
 
 func (IronBars) Hash() (uint64, uint64) {
 	return hashIronBars, 0
+}
+
+func (c IronChain) Hash() (uint64, uint64) {
+	return hashIronChain, uint64(c.Axis)
 }
 
 func (i IronOre) Hash() (uint64, uint64) {

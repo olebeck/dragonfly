@@ -173,7 +173,7 @@ func (Carrot) Color() color.RGBA {
 	return color.RGBA{43, 112, 40, 255}
 }
 
-func (Chain) Color() color.RGBA {
+func (IronChain) Color() color.RGBA {
 	return color.RGBA{37, 44, 61, 255}
 }
 
