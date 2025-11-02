@@ -12,6 +12,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
+	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
@@ -468,6 +469,8 @@ func tierToSoundEvent(tier item.ArmourTier) uint32 {
 	switch tier.(type) {
 	case item.ArmourTierLeather:
 		return packet.SoundEventEquipLeather
+	case item.ArmourTierCopper:
+		return packet.SoundEventEquipCopper
 	case item.ArmourTierGold:
 		return packet.SoundEventEquipGold
 	case item.ArmourTierChain:
@@ -975,11 +978,13 @@ func (s *Session) ViewEntityAction(e world.Entity, a world.EntityAction) {
 		s.writePacket(&packet.Animate{
 			ActionType:      packet.AnimateActionCriticalHit,
 			EntityRuntimeID: s.entityRuntimeID(e),
+			Data:            55,
 		})
 	case entity.EnchantedHitAction:
 		s.writePacket(&packet.Animate{
 			ActionType:      packet.AnimateActionMagicCriticalHit,
 			EntityRuntimeID: s.entityRuntimeID(e),
+			Data:            15,
 		})
 	case entity.DeathAction:
 		s.writePacket(&packet.ActorEvent{
