@@ -175,15 +175,16 @@ func (br *BlockRegistryImpl) RegisterBlock(b Block) {
 	}
 }
 
-// RegisterBlockState registers a blockStates to the states slice. The function panics if the properties the
-// blockState hold are invalid or if the blockState was already registered.
+// RegisterBlockState registers a block state in the registry.
+// Duplicate states are ignored so malformed custom block entries from a remote server
+// do not crash the proxy during login.
 func (br *BlockRegistryImpl) RegisterBlockState(s BlockState) {
 	if br.finalized {
 		panic("BlockRegistry.RegisterBlockState called on finalized BlockRegistry")
 	}
 	h := stateHash{name: s.Name, properties: hashProperties(s.Properties)}
 	if _, ok := br.stateRuntimeIDs[h]; ok {
-		panic(fmt.Sprintf("cannot register the same state twice (%+v)", s))
+		return
 	}
 	if _, ok := br.blockProperties[s.Name]; !ok {
 		br.blockProperties[s.Name] = s.Properties
@@ -229,7 +230,7 @@ func (br *BlockRegistryImpl) Finalize() {
 			br.airRID = rid
 		}
 		if _, ok := br.stateRuntimeIDs[h]; ok {
-			panic(fmt.Sprintf("cannot register the same state twice (%s %+v)", name, properties))
+			continue
 		}
 		br.stateRuntimeIDs[h] = rid
 
