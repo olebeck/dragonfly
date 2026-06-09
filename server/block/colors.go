@@ -353,8 +353,28 @@ func (Deepslate) Color() color.RGBA {
 	return color.RGBA{81, 81, 81, 255}
 }
 
+func (InfestedDeepslate) Color() color.RGBA {
+	return Deepslate{}.Color()
+}
+
+func (InfestedStone) Color() color.RGBA {
+	return Stone{}.Color()
+}
+
+func (InfestedCobblestone) Color() color.RGBA {
+	return Cobblestone{}.Color()
+}
+
+func (InfestedStoneBricks) Color() color.RGBA {
+	return StoneBricks{}.Color()
+}
+
+func (f Flower) Color() color.RGBA {
+	return color.RGBA{89, 117, 24, 255} // TODO
+}
+
 func (d DiamondOre) Color() color.RGBA {
-	if d.Type.String() == "deepslate" {
+	if d.Type == DeepslateOre() {
 		return color.RGBA{61, 64, 67, 255}
 	} else {
 		return color.RGBA{127, 143, 143, 255}
@@ -567,6 +587,10 @@ func (Loom) Color() color.RGBA {
 	return color.RGBA{202, 166, 157, 255}
 }
 
+func (Magma) Color() color.RGBA {
+	return color.RGBA{222, 138, 27, 255}
+}
+
 func (Melon) Color() color.RGBA {
 	return color.RGBA{82, 129, 28, 255}
 }
@@ -729,6 +753,14 @@ func (RawIron) Color() color.RGBA {
 
 func (ReinforcedDeepslate) Color() color.RGBA {
 	return color.RGBA{56, 55, 55, 255}
+}
+
+func (RedstoneBlock) Color() color.RGBA {
+	return color.RGBA{222, 40, 27, 255}
+}
+
+func (RedstoneOre) Color() color.RGBA {
+	return color.RGBA{222, 40, 27, 255}
 }
 
 func (RootedDirt) Color() color.RGBA {

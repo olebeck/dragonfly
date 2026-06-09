@@ -71,12 +71,114 @@ type Liquid interface {
 	// Harden checks if the block should harden when looking at the surrounding blocks and sets the position
 	// to the hardened block when adequate. If the block was hardened, the method returns true.
 	Harden(pos cube.Pos, tx *Tx, flownIntoBy *cube.Pos) bool
+	// LiquidRemoveBlock is called when the liquid flows into and removes the block passed.
+	LiquidRemoveBlock(pos cube.Pos, tx *Tx, removed Block)
 }
 
-// RegisterBlock registers the Block passed. The EncodeBlock method will be used to encode and decode the
-// block passed. RegisterBlock panics if the block properties returned were not valid, existing properties.
+// Conductor represents a block that can conduct a redstone signal.
+type Conductor interface {
+	Block
+	// RedstoneSource returns true if the conductor is a signal source.
+	RedstoneSource() bool
+
+	// WeakPower returns the weak power level emitted by this conductor toward a neighbouring receiver.
+	// The face argument is relative to the receiving block, not this conductor.
+	// Weak power can pass through a solid block to power redstone components on the other side, but
+	// cannot power solid blocks themselves or travel further.
+	// The accountForDust parameter indicates whether redstone dust should be considered when
+	// calculating power levels.
+	WeakPower(pos cube.Pos, face cube.Face, tx *Tx, accountForDust bool) int
+
+	// StrongPower returns the strong power level emitted by this conductor toward a neighbouring
+	// receiver. The face argument uses the same convention as WeakPower.
+	// Strong power can be transmitted through solid blocks. When a solid block receives strong power
+	// through one of its faces, it can provide weak power to adjacent redstone components on all other
+	// faces. Strong power can also directly power any redstone component.
+	// The accountForDust parameter indicates whether redstone dust should be considered when
+	// calculating power levels.
+	StrongPower(pos cube.Pos, face cube.Face, tx *Tx, accountForDust bool) int
+}
+
+// WeakBlockPowerer represents a conductor whose weak power may weakly power an adjacent conductive block. Weakly
+// powered blocks may activate mechanisms and repeaters, but do not power adjacent redstone dust. For example,
+// dust pointing into a stone block opens a door on the stone's far side, but a second stretch of dust there stays
+// dark.
+type WeakBlockPowerer interface {
+	Conductor
+	// WeaklyPowersBlocks returns true if this conductor's WeakPower can make an adjacent conductive block weakly powered.
+	WeaklyPowersBlocks() bool
+}
+
+// RedstonePowerRelayer represents a block with custom behaviour for whether
+// neighbouring redstone power may be relayed through it by Tx.RedstonePower.
+type RedstonePowerRelayer interface {
+	Block
+	// RelaysRedstonePowerThrough reports whether this non-conductor block may
+	// relay neighbouring redstone power through itself to receivers on its other sides.
+	RelaysRedstonePowerThrough() bool
+}
+
+// RedstoneUpdater represents a block that reacts to nearby redstone power changes.
+type RedstoneUpdater interface {
+	Block
+	// RedstoneUpdate is called when a change in redstone signal is computed.
+	RedstoneUpdate(pos cube.Pos, tx *Tx)
+}
+
+// RegisterBlock registers the Block passed in the DefaultBlockRegistry.
+//
+// This function exists for backwards compatibility and works well for the common "single server per process" setup,
+// where all worlds share the global default registry.
+//
+// If you run multiple servers/registries in a single process, prefer creating a registry using NewBlockRegistry() and
+// registering blocks on that instance (e.g. conf.Blocks.RegisterBlock(...)) before calling Finalize().
 func RegisterBlock(b Block) {
 	DefaultBlockRegistry.RegisterBlock(b)
+}
+
+// BlockHash returns a unique identifier of the block including the block states using the DefaultBlockRegistry.
+// This function is used internally to convert a block to a single integer which can be used in map lookups. The hash
+// produced therefore does not need to match anything in the game, but it must be unique among all registered blocks.
+// The tool in `/cmd/blockhash` may be used to automatically generate block hashes of blocks in a package.
+//
+// If you use a non-default registry (NewBlockRegistry), use your registry instance's BlockHash(...) instead so the
+// hash is consistent with that registry.
+func BlockHash(b Block) uint64 {
+	return DefaultBlockRegistry.BlockHash(b)
+}
+
+// BlockRuntimeID attempts to return a runtime ID of a block previously registered using RegisterBlock() on the
+// DefaultBlockRegistry.
+// If the runtime ID cannot be found because the Block wasn't registered, BlockRuntimeID will panic.
+// If you use a non-default registry (NewBlockRegistry), use your registry instance's BlockRuntimeID(...) instead.
+func BlockRuntimeID(b Block) uint32 {
+	return DefaultBlockRegistry.BlockRuntimeID(b)
+}
+
+// BlockByRuntimeID attempts to return a Block by its runtime ID using the DefaultBlockRegistry. If not found, the bool
+// returned is false. If found, the block is non-nil and the bool true.
+// If you use a non-default registry (NewBlockRegistry), use your registry instance's BlockByRuntimeID(...) instead.
+func BlockByRuntimeID(rid uint32) (Block, bool) {
+	return DefaultBlockRegistry.BlockByRuntimeID(rid)
+}
+
+// BlockByName attempts to return a Block by its name and properties using the DefaultBlockRegistry. If not found, the
+// bool returned is false.
+// If you use a non-default registry (NewBlockRegistry), use your registry instance's BlockByName(...) instead.
+func BlockByName(name string, properties map[string]any) (Block, bool) {
+	return DefaultBlockRegistry.BlockByName(name, properties)
+}
+
+// Blocks returns a slice of all blocks registered in the DefaultBlockRegistry.
+// If you use a non-default registry (NewBlockRegistry), use your registry instance's Blocks() instead.
+func Blocks() []Block {
+	return DefaultBlockRegistry.Blocks()
+}
+
+// CustomBlocks returns a map of all custom blocks registered with their names as keys in the DefaultBlockRegistry.
+// If you use a non-default registry (NewBlockRegistry), use your registry instance's CustomBlocks() instead.
+func CustomBlocks() map[string]CustomBlock {
+	return DefaultBlockRegistry.CustomBlocks()
 }
 
 // RandomTicker represents a block that executes an action when it is ticked randomly. Every 20th of a second,
@@ -196,8 +298,4 @@ func (b UnknownBlock) DecodeNBT(data map[string]any) any {
 // EncodeNBT encodes the entity into a map which can then be encoded as NBT to be written.
 func (b UnknownBlock) EncodeNBT() map[string]any {
 	return b.Properties
-}
-
-func BlockHash(b Block) uint64 {
-	return DefaultBlockRegistry.BlockHash(b)
 }

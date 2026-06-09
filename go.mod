@@ -1,18 +1,16 @@
 module github.com/df-mc/dragonfly
 
-go 1.24.0
-
-toolchain go1.24.4
+go 1.26.0
 
 require (
+	github.com/brentp/intintmap v0.0.0-20251106190759-56907b1f8479
 	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/df-mc/goleveldb v1.1.9
 	github.com/df-mc/worldupgrader v1.0.20
 	github.com/go-gl/mathgl v1.2.0
 	github.com/google/uuid v1.6.0
 	github.com/pelletier/go-toml v1.9.5
-	github.com/rogpeppe/go-internal v1.14.1
-	github.com/sandertv/gophertunnel v1.55.0
+	github.com/sandertv/gophertunnel v1.56.2
 	github.com/segmentio/fasthash v1.0.3
 	github.com/thomaso-mirodin/intmath v0.0.0-20160323211736-5dc6d854e46e
 	github.com/zaataylor/cartesian v0.0.0-20221028053253-3b3244d82727

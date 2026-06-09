@@ -1,9 +1,11 @@
 package chunk
 
+import "slices"
+
 // SubChunk is a cube of blocks located in a chunk. It has a size of 16x16x16 blocks and forms part of a stack
 // that forms a Chunk.
 type SubChunk struct {
-	br         BlockRegistry
+	air        uint32
 	storages   []*PalettedStorage
 	blockLight []uint8
 	skyLight   []uint8
@@ -11,7 +13,7 @@ type SubChunk struct {
 
 // Equals returns if the sub chunk passed is equal to the current one.
 func (sub *SubChunk) Equals(s *SubChunk) bool {
-	if s.br.AirRuntimeID() != sub.br.AirRuntimeID() || len(s.storages) != len(sub.storages) {
+	if s.air != sub.air || len(s.storages) != len(sub.storages) {
 		return false
 	}
 
@@ -24,15 +26,43 @@ func (sub *SubChunk) Equals(s *SubChunk) bool {
 	return true
 }
 
-// NewSubChunk creates a new sub chunk. All sub chunks should be created through this function
-func NewSubChunk(br BlockRegistry) *SubChunk {
-	return &SubChunk{br: br}
+// NewSubChunk creates a new sub chunk. All sub chunks should be created through this function.
+func NewSubChunk(air uint32) *SubChunk {
+	return &SubChunk{air: air}
+}
+
+// Clone returns an independent copy of the SubChunk.
+func (sub *SubChunk) Clone() *SubChunk {
+	clone := &SubChunk{
+		air:        sub.air,
+		storages:   make([]*PalettedStorage, len(sub.storages)),
+		blockLight: cloneLight(sub.blockLight),
+		skyLight:   cloneLight(sub.skyLight),
+	}
+	for i, storage := range sub.storages {
+		clone.storages[i] = storage.Clone()
+	}
+	return clone
+}
+
+func cloneLight(light []uint8) []uint8 {
+	if len(light) == 0 {
+		return slices.Clone(light)
+	}
+	switch &light[0] {
+	case noLightPtr:
+		return noLight
+	case fullLightPtr:
+		return fullLight
+	default:
+		return slices.Clone(light)
+	}
 }
 
 // Empty checks if the SubChunk is considered empty. This is the case if the SubChunk has 0 block storages or if it has
 // a single one that is completely filled with air.
 func (sub *SubChunk) Empty() bool {
-	return len(sub.storages) == 0 || (len(sub.storages) == 1 && len(sub.storages[0].palette.values) == 1 && sub.storages[0].palette.values[0] == sub.br.AirRuntimeID())
+	return len(sub.storages) == 0 || (len(sub.storages) == 1 && len(sub.storages[0].palette.values) == 1 && sub.storages[0].palette.values[0] == sub.air)
 }
 
 // Layer returns a certain block storage/layer from a sub chunk. If no storage at the layer exists, the layer
@@ -41,7 +71,7 @@ func (sub *SubChunk) Layer(layer uint8) *PalettedStorage {
 	for uint8(len(sub.storages)) <= layer {
 		// Keep appending to storages until the requested layer is achieved. Makes working with new layers
 		// much easier.
-		sub.storages = append(sub.storages, emptyStorage(sub.br.AirRuntimeID()))
+		sub.storages = append(sub.storages, emptyStorage(sub.air))
 	}
 	return sub.storages[layer]
 }
@@ -55,7 +85,7 @@ func (sub *SubChunk) Layers() []*PalettedStorage {
 // range of 0-15.
 func (sub *SubChunk) Block(x, y, z byte, layer uint8) uint32 {
 	if uint8(len(sub.storages)) <= layer {
-		return sub.br.AirRuntimeID()
+		return sub.air
 	}
 	return sub.storages[layer].At(x, y, z)
 }
@@ -109,7 +139,7 @@ func (sub *SubChunk) compact() {
 	newStorages := make([]*PalettedStorage, 0, len(sub.storages))
 	for _, storage := range sub.storages {
 		storage.compact()
-		if len(storage.palette.values) == 1 && storage.palette.values[0] == sub.br.AirRuntimeID() {
+		if len(storage.palette.values) == 1 && storage.palette.values[0] == sub.air {
 			// If the palette has only air in it, it means the storage is empty, so we can ignore it.
 			continue
 		}

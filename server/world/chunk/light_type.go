@@ -7,8 +7,6 @@ var (
 	BlockLight blockLight
 )
 
-var ()
-
 type (
 	// light is a type that can be used to set and retrieve light of a specific type in a sub chunk.
 	light interface {

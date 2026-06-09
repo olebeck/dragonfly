@@ -16,6 +16,7 @@ import (
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/world/chunk"
+	"github.com/df-mc/dragonfly/server/world/redstone"
 	"github.com/df-mc/goleveldb/leveldb"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
@@ -66,6 +67,8 @@ type World struct {
 	scheduledUpdates *scheduledTickQueue
 	neighbourUpdates []neighbourUpdate
 
+	redstone redstone.State
+
 	viewerMu sync.Mutex
 	viewers  map[*Loader]Viewer
 }
@@ -106,6 +109,11 @@ func (w *World) Dimension() Dimension {
 // equivalent to calling World.Dimension().Range().
 func (w *World) Range() cube.Range {
 	return w.ra
+}
+
+// BlockRegistry returns the BlockRegistry used by the World.
+func (w *World) BlockRegistry() BlockRegistry {
+	return w.conf.Blocks
 }
 
 // ExecFunc is a function that performs a synchronised transaction on a World.
@@ -718,12 +726,29 @@ func (w *World) removeEntity(e Entity, tx *Tx) *EntityHandle {
 	c := w.chunk(pos)
 	c.Entities, c.modified = sliceutil.DeleteVal(c.Entities, handle), true
 
+	w.removeEntityFromViewLayers(e)
 	for _, v := range c.viewers {
 		v.HideEntity(e)
 	}
 	delete(w.entities, handle)
 	handle.unsetAndLockWorld()
 	return handle
+}
+
+// removeEntityFromViewLayers removes stale overrides for despawned entities. Entities that own a ViewLayer,
+// such as players, are skipped because they may be removed temporarily when respawning or changing worlds.
+func (w *World) removeEntityFromViewLayers(e Entity) {
+	if _, ok := e.(viewLayerViewer); ok {
+		return
+	}
+	viewers, _ := w.allViewers()
+	for _, viewer := range viewers {
+		v, ok := viewer.(viewLayerViewer)
+		if !ok || v.ViewLayer() == nil {
+			continue
+		}
+		v.ViewLayer().remove(e)
+	}
 }
 
 // entitiesWithin returns an iterator that yields all entities contained within
@@ -739,11 +764,12 @@ func (w *World) entitiesWithin(tx *Tx, box cube.BBox) iter.Seq[Entity] {
 					// The chunk wasn't loaded, so there are no entities here.
 					continue
 				}
-				for _, handle := range c.Entities {
+				for _, handle := range slices.Clone(c.Entities) {
 					if !box.Vec3Within(handle.data.Pos) {
 						continue
 					}
-					if !yield(handle.mustEntity(tx)) {
+					ent, ok := handle.Entity(tx)
+					if ok && !yield(ent) {
 						return
 					}
 				}
@@ -927,7 +953,7 @@ func (w *World) scheduleBlockUpdate(pos cube.Pos, b Block, delay time.Duration) 
 	if pos.OutOfBounds(w.Range()) {
 		return
 	}
-	w.scheduledUpdates.schedule(pos, b, delay)
+	w.scheduledUpdates.schedule(w.conf.Blocks, pos, b, delay)
 }
 
 // doBlockUpdatesAround schedules block updates directly around and on the
@@ -1346,7 +1372,12 @@ func (w *World) columnFrom(c *chunk.Column, _ ChunkPos) *Column {
 	scheduled, savedTick := make([]scheduledTick, 0, len(c.ScheduledBlocks)), c.Tick
 	for _, t := range c.ScheduledBlocks {
 		bl := w.conf.Blocks.BlockByRuntimeIDOrAir(t.Block)
-		scheduled = append(scheduled, scheduledTick{pos: t.Pos, b: bl, bhash: BlockHash(bl), t: w.scheduledUpdates.currentTick + (t.Tick - savedTick)})
+		scheduled = append(scheduled, scheduledTick{
+			pos:   t.Pos,
+			b:     bl,
+			bhash: w.conf.Blocks.BlockHash(bl),
+			t:     w.scheduledUpdates.currentTick + (t.Tick - savedTick),
+		})
 	}
 	w.scheduledUpdates.add(scheduled)
 	return col

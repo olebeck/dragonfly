@@ -4,7 +4,10 @@ import (
 	"bytes"
 	_ "embed"
 	"fmt"
-	"sort"
+	"image/color"
+	"maps"
+	"math"
+	"slices"
 	"strings"
 	"unsafe"
 
@@ -37,15 +40,50 @@ type BlockState struct {
 	Version    int32          `nbt:"version"`
 }
 
+// unknownBlock represents a block that has not yet been implemented. It is used for registering block
+// states that haven't yet been added.
+type unknownBlock struct {
+	BlockState
+	data map[string]any
+}
+
+// EncodeBlock ...
+func (b unknownBlock) EncodeBlock() (string, map[string]any) {
+	return b.Name, b.Properties
+}
+
+// Model ...
+func (unknownBlock) Model() BlockModel {
+	return unknownModel{}
+}
+
+// Hash ...
+func (b unknownBlock) Hash() (uint64, uint64) {
+	return 0, math.MaxUint64
+}
+
+// EncodeNBT ...
+func (b unknownBlock) EncodeNBT() map[string]any {
+	return maps.Clone(b.data)
+}
+
+// DecodeNBT ...
+func (b unknownBlock) DecodeNBT(data map[string]any) any {
+	b.data = maps.Clone(data)
+	return b
+}
+
+func (b unknownBlock) Color() color.RGBA {
+	return color.RGBA{}
+}
+
 // stateHash is a struct that may be used as a map key for block states. It contains the name of the block state
 // and an encoded version of the properties.
 type stateHash struct {
 	name, properties string
 }
 
-// hashProperties produces a hash for the block properties held by the blockState.
-var hashPropertiesBuilder strings.Builder
-
+// hashProperties produces a hash for the block properties held by the BlockState.
 func hashProperties(properties map[string]any) string {
 	if properties == nil {
 		return ""
@@ -54,10 +92,9 @@ func hashProperties(properties map[string]any) string {
 	for k := range properties {
 		keys = append(keys, k)
 	}
-	sort.Strings(keys)
+	slices.Sort(keys)
 
-	hashPropertiesBuilder.Reset()
-	var b = hashPropertiesBuilder
+	var b strings.Builder
 	for _, k := range keys {
 		switch v := properties[k].(type) {
 		case bool:

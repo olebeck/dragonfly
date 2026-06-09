@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/rogpeppe/go-internal/dirhash"
 	"github.com/sandertv/gophertunnel/minecraft/resource"
+	"golang.org/x/mod/sumdb/dirhash"
 )
 
 //go:embed pack_icon.png

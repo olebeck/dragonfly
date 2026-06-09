@@ -2,16 +2,20 @@ package world
 
 import (
 	"encoding/binary"
-	"hash/fnv"
+	"fmt"
 	"sort"
-	"strings"
+
+	"github.com/segmentio/fasthash/fnv1a"
 )
 
-var bufNetworkhash []byte = make([]byte, 0xff)
-
-func networkBlockHash(name string, properties map[string]any) uint32 {
+// networkBlockHash produces the canonical "network block hash" for a (name, properties) block state.
+// This hash is used for mapping network palette entries back to runtime IDs.
+//
+// The scratch slice is used to reduce allocations. The returned slice should be passed back in on subsequent calls to
+// reuse the same backing array.
+func networkBlockHash(name string, properties map[string]any, scratch []byte) (uint32, []byte) {
 	if name == "minecraft:unknown" {
-		return 0xfffffffe // -2
+		return 0xfffffffe, scratch // -2
 	}
 
 	keys := make([]string, 0, len(properties))
@@ -20,8 +24,7 @@ func networkBlockHash(name string, properties map[string]any) uint32 {
 	}
 	sort.Strings(keys)
 
-	bufNetworkhash = bufNetworkhash[:0]
-	var data = bufNetworkhash
+	data := scratch[:0]
 	writeString := func(str string) {
 		data = binary.LittleEndian.AppendUint16(data, uint16(len(str)))
 		data = append(data, []byte(str)...)
@@ -80,18 +83,11 @@ func networkBlockHash(name string, properties map[string]any) uint32 {
 			writeString(k)
 			data = binary.LittleEndian.AppendUint32(data, uint32(v))
 		default:
-			panic("unhandled nbt type")
+			panic(fmt.Sprintf("unhandled nbt type: %T", v))
 		}
 	}
 	data = append(data, 0) // end
 	data = append(data, 0) // end
 
-	h := fnv.New32a()
-	h.Write(data)
-	return h.Sum32()
-}
-
-func splitNamespace(identifier string) (ns, name string) {
-	ns_name := strings.Split(identifier, ":")
-	return ns_name[0], ns_name[len(ns_name)-1]
+	return fnv1a.HashBytes32(data), data
 }

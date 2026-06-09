@@ -10,10 +10,12 @@ import (
 // and stores other information such as biomes.
 // It is not safe to call methods on Chunk simultaneously from multiple goroutines.
 type Chunk struct {
-	// BlockRegistry is the block registry used for this chunk
-	BlockRegistry BlockRegistry
 	// r holds the (vertical) range of the Chunk. It includes both the minimum and maximum coordinates.
 	r cube.Range
+	// br is the block registry used for this chunk.
+	br BlockRegistry
+	// air is the runtime ID of air.
+	air uint32
 	// recalculateHeightMap is true if the chunk's height map should be recalculated on the next call to the HeightMap
 	// function.
 	recalculateHeightMap bool
@@ -32,16 +34,18 @@ type Chunk struct {
 }
 
 // New initialises a new chunk and returns it, so that it may be used.
+// The BlockRegistry passed must be finalized and must correspond to the runtime IDs used in the chunk's storages.
 func New(br BlockRegistry, r cube.Range) *Chunk {
 	n := (r.Height() >> 4) + 1
 	sub, biomes := make([]*SubChunk, n), make([]*PalettedStorage, n)
+	air := br.AirRuntimeID()
 	for i := 0; i < n; i++ {
-		sub[i] = NewSubChunk(br)
+		sub[i] = NewSubChunk(air)
 		biomes[i] = emptyStorage(0)
 	}
 	return &Chunk{
-		BlockRegistry:              br,
 		r:                          r,
+		br:                         br,
 		sub:                        sub,
 		biomes:                     biomes,
 		recalculateHeightMap:       true,
@@ -51,13 +55,33 @@ func New(br BlockRegistry, r cube.Range) *Chunk {
 	}
 }
 
+// Clone returns an independent copy of the Chunk.
+func (chunk *Chunk) Clone() *Chunk {
+	clone := &Chunk{
+		r:                    chunk.r,
+		br:                   chunk.br,
+		air:                  chunk.air,
+		recalculateHeightMap: chunk.recalculateHeightMap,
+		heightMap:            slices.Clone(chunk.heightMap),
+		sub:                  make([]*SubChunk, len(chunk.sub)),
+		biomes:               make([]*PalettedStorage, len(chunk.biomes)),
+	}
+	for i, sub := range chunk.sub {
+		clone.sub[i] = sub.Clone()
+	}
+	for i, biomes := range chunk.biomes {
+		clone.biomes[i] = biomes.Clone()
+	}
+	return clone
+}
+
 // Equals returns if the chunk passed is equal to the current one
 func (chunk *Chunk) Equals(c *Chunk) bool {
 	if !chunk.recalculateHeightMap && !c.recalculateHeightMap && !slices.Equal(c.heightMap, chunk.heightMap) {
 		return false
 	}
 
-	if c.r != chunk.r || c.BlockRegistry.AirRuntimeID() != chunk.BlockRegistry.AirRuntimeID() || len(c.sub) != len(chunk.sub) {
+	if c.r != chunk.r || c.air != chunk.air || len(c.sub) != len(chunk.sub) {
 		return false
 	}
 
@@ -85,7 +109,7 @@ func (chunk *Chunk) Sub() []*SubChunk {
 func (chunk *Chunk) Block(x uint8, y int16, z uint8, layer uint8) uint32 {
 	sub := chunk.SubChunk(y)
 	if sub.Empty() || uint8(len(sub.storages)) <= layer {
-		return chunk.BlockRegistry.AirRuntimeID()
+		return chunk.air
 	}
 	return sub.storages[layer].At(x, uint8(y), z)
 }
@@ -94,7 +118,7 @@ func (chunk *Chunk) Block(x uint8, y int16, z uint8, layer uint8) uint32 {
 // SubChunk exists at the given y, a new SubChunk is created and the block is set.
 func (chunk *Chunk) SetBlock(x uint8, y int16, z uint8, layer uint8, block uint32) {
 	sub := chunk.sub[chunk.SubIndex(y)]
-	if uint8(len(sub.storages)) <= layer && block == chunk.BlockRegistry.AirRuntimeID() {
+	if uint8(len(sub.storages)) <= layer && block == chunk.air {
 		// Air was set at n layer, but there were less than n layers, so there already was air there.
 		// Don't do anything with this, just return.
 		return
@@ -159,7 +183,7 @@ func (chunk *Chunk) highestLightBlocker(x, z uint8, addOne bool) int16 {
 	for index := int16(len(chunk.sub) - 1); index >= 0; index-- {
 		if sub := chunk.sub[index]; !sub.Empty() {
 			for y := 15; y >= 0; y-- {
-				if chunk.BlockRegistry.FilteringBlock(sub.storages[0].At(x, uint8(y), z)) == 15 {
+				if chunk.br.FilteringBlock(sub.storages[0].At(x, uint8(y), z)) == 15 {
 					return int16(y) | chunk.SubY(index) + plus
 				}
 			}
@@ -181,12 +205,10 @@ func (chunk *Chunk) HighestBlockLayer(x, z, layer uint8, noLiquid bool) int16 {
 			if len(sub.storages) > int(layer) {
 				for y := 15; y >= 0; y-- {
 					rid := sub.storages[layer].At(x, uint8(y), z)
-					if rid == chunk.BlockRegistry.AirRuntimeID() {
+					if rid == chunk.air {
 						continue
 					}
-
-					isLiquid := chunk.BlockRegistry.LiquidBlock(rid)
-					if noLiquid && isLiquid {
+					if noLiquid && chunk.br.LiquidBlock(rid) {
 						continue
 					}
 					return int16(y) | chunk.SubY(index)

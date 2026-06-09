@@ -12,6 +12,8 @@ import (
 // returned is nil and the error non-nil.
 // The sub chunk count passed must be that found in the LevelChunk packet.
 // NetworkDecode creates a new buffer and calls NetworkDecodeBuffer.
+//
+// The BlockRegistry passed must be finalized and must correspond to the runtime IDs used in the chunk data.
 // noinspection GoUnusedExportedFunction
 func NetworkDecode(br BlockRegistry, data []byte, count int, r cube.Range, hashedRids bool) (*Chunk, []map[string]any, error) {
 	return NetworkDecodeBuffer(br, bytes.NewBuffer(data), count, r, hashedRids)
@@ -92,8 +94,10 @@ func DecodeBlockNBTs(buf *bytes.Buffer) ([]map[string]any, error) {
 	return blockNBTs, nil
 }
 
-// DiskDecode decodes the data from a SerialisedData object into a chunk and returns it. If the data was
-// invalid, an error is returned.
+// DiskDecode decodes the data from a SerialisedData object into a chunk and returns it. If the data was invalid,
+// an error is returned.
+//
+// The BlockRegistry passed must be finalized and must correspond to the runtime IDs used in the chunk data.
 func DiskDecode(br BlockRegistry, data SerialisedData, r cube.Range) (*Chunk, error) {
 	c := New(br, r)
 
@@ -121,13 +125,13 @@ func decodeSubChunk(buf *bytes.Buffer, c *Chunk, index *byte, e Encoding, hashed
 	if err != nil {
 		return nil, fmt.Errorf("error reading version: %w", err)
 	}
-	sub := NewSubChunk(c.BlockRegistry)
+	sub := NewSubChunk(c.air)
 	switch ver {
 	default:
 		return nil, fmt.Errorf("unknown sub chunk version %v: can't decode", ver)
 	case 1:
 		// Version 1 only has one layer for each sub chunk, but uses the format with palettes.
-		storage, err := decodePalettedStorage(buf, e, BlockPaletteEncoding{Blocks: c.BlockRegistry})
+		storage, err := decodePalettedStorage(buf, e, BlockPaletteEncoding{Blocks: c.br})
 		if err != nil {
 			return nil, err
 		}
@@ -150,42 +154,28 @@ func decodeSubChunk(buf *bytes.Buffer, c *Chunk, index *byte, e Encoding, hashed
 		sub.storages = make([]*PalettedStorage, storageCount)
 
 		for i := byte(0); i < storageCount; i++ {
-			storage, err := decodePalettedStorage(buf, e, BlockPaletteEncoding{Blocks: c.BlockRegistry})
+			sub.storages[i], err = decodePalettedStorage(buf, e, BlockPaletteEncoding{Blocks: c.br})
 			if err != nil {
 				return nil, err
 			}
 
 			if hashedRids {
+				storage := sub.storages[i]
 				for i2, v := range storage.palette.values {
 					var ok bool
-					storage.palette.values[i2], ok = c.BlockRegistry.HashToRuntimeID(v)
+					storage.palette.values[i2], ok = c.br.HashToRuntimeID(v)
 					if !ok {
-						/* for debug
-						for x := byte(0); x < 16; x++ {
-							for y := byte(0); y < 16; y++ {
-								for z := byte(0); z < 16; z++ {
-									idx := storage.paletteIndex(x, y, z)
-									if idx == uint16(i2) {
-										println()
-									}
-								}
-							}
-						}
-						*/
 						fmt.Println("rid hash not found, data sorting wrong.")
 					}
 				}
 			}
-
-			sub.storages[i] = storage
-
 		}
 	}
 	return sub, nil
 }
 
 func DecodeSubChunk(buf *bytes.Buffer, br BlockRegistry, r cube.Range, index *byte, e Encoding, hashedRids bool) (*SubChunk, error) {
-	return decodeSubChunk(buf, &Chunk{BlockRegistry: br, r: r}, index, e, hashedRids)
+	return decodeSubChunk(buf, &Chunk{br: br, r: r}, index, e, hashedRids)
 }
 
 // decodeBiomes reads the paletted storages holding biomes from buf and stores it into the Chunk passed.

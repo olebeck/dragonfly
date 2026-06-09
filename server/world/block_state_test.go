@@ -6,12 +6,12 @@ import (
 )
 
 func TestNetworkHash(t *testing.T) {
-	hash := networkBlockHash("minecraft:bamboo_hanging_sign", map[string]any{
+	hash, _ := networkBlockHash("minecraft:bamboo_hanging_sign", map[string]any{
 		"facing_direction":      int32(3),
 		"ground_sign_direction": int32(9),
 		"attached_bit":          byte(1),
 		"hanging":               byte(0),
-	})
+	}, nil)
 
 	fmt.Printf("%08x\n", hash)
 

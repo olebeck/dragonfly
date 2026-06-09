@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/df-mc/dragonfly/server/entity/effect"
-
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
@@ -76,7 +74,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 	s.entityMutex.Unlock()
 
 	yaw, pitch := e.Rotation().Elem()
-	metadata := s.parseEntityMetadata(e)
+	metadata := s.entityMetadata(e)
 
 	id := e.H().Type().EncodeEntity()
 	switch v := e.(type) {
@@ -123,7 +121,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 			s.writePacket(&packet.AddItemActor{
 				EntityUniqueID:  int64(runtimeID),
 				EntityRuntimeID: runtimeID,
-				Item:            s.instanceFromItem(v.Behaviour().(*entity.ItemBehaviour).Item()),
+				Item:            instanceFromItem(s.br, v.Behaviour().(*entity.ItemBehaviour).Item()),
 				Position:        vec64To32(v.Position()),
 				Velocity:        vec64To32(v.Velocity()),
 				EntityMetadata:  metadata,
@@ -289,12 +287,12 @@ func (s *Session) ViewEntityItems(e world.Entity) {
 	// Show the main hand item.
 	s.writePacket(&packet.MobEquipment{
 		EntityRuntimeID: runtimeID,
-		NewItem:         s.instanceFromItem(mainHand),
+		NewItem:         instanceFromItem(s.br, mainHand),
 	})
 	// Show the off-hand item.
 	s.writePacket(&packet.MobEquipment{
 		EntityRuntimeID: runtimeID,
-		NewItem:         s.instanceFromItem(offHand),
+		NewItem:         instanceFromItem(s.br, offHand),
 		WindowID:        protocol.WindowIDOffHand,
 	})
 }
@@ -318,10 +316,10 @@ func (s *Session) ViewEntityArmour(e world.Entity) {
 	// Show the entity's armour
 	s.writePacket(&packet.MobArmourEquipment{
 		EntityRuntimeID: runtimeID,
-		Helmet:          s.instanceFromItem(inv.Helmet()),
-		Chestplate:      s.instanceFromItem(inv.Chestplate()),
-		Leggings:        s.instanceFromItem(inv.Leggings()),
-		Boots:           s.instanceFromItem(inv.Boots()),
+		Helmet:          instanceFromItem(s.br, inv.Helmet()),
+		Chestplate:      instanceFromItem(s.br, inv.Chestplate()),
+		Leggings:        instanceFromItem(s.br, inv.Leggings()),
+		Boots:           instanceFromItem(s.br, inv.Boots()),
 	})
 }
 
@@ -386,6 +384,7 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventParticleCropGrowth,
 			Position:  vec64To32(pos),
+			EventData: int32(boolByte(pa.Area)),
 		})
 	case particle.BlockForceField:
 		s.writePacket(&packet.LevelEvent{
@@ -843,6 +842,10 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		pk.SoundType = packet.SoundEventComposterFillLayer
 	case sound.ComposterReady:
 		pk.SoundType = packet.SoundEventComposterReady
+	case sound.PowerOn:
+		pk.SoundType = packet.SoundEventPowerOn
+	case sound.PowerOff:
+		pk.SoundType = packet.SoundEventPowerOff
 	case sound.LecternBookPlace:
 		pk.SoundType = packet.SoundEventLecternBookPlace
 	case sound.Totem:
@@ -1070,8 +1073,51 @@ func (s *Session) ViewEntityAction(e world.Entity, a world.EntityAction) {
 func (s *Session) ViewEntityState(e world.Entity) {
 	s.writePacket(&packet.SetActorData{
 		EntityRuntimeID: s.entityRuntimeID(e),
-		EntityMetadata:  s.parseEntityMetadata(e),
+		EntityMetadata:  s.entityMetadata(e),
 	})
+}
+
+// entityMetadata returns the metadata of an entity as viewed by the session, including any overrides
+// applied through its ViewLayer.
+func (s *Session) entityMetadata(e world.Entity) protocol.EntityMetadata {
+	metadata := s.parseEntityMetadata(e)
+	if s.viewLayer == nil {
+		return metadata
+	}
+	if nt, ok := s.viewLayer.NameTag(e); ok {
+		metadata[protocol.EntityDataKeyName] = nt
+		if nt != "" {
+			metadata[protocol.EntityDataKeyAlwaysShowNameTag] = uint8(1)
+			if !metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName) {
+				metadata.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
+			}
+			if !metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName) {
+				metadata.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName)
+			}
+		} else {
+			metadata[protocol.EntityDataKeyAlwaysShowNameTag] = uint8(0)
+			if metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName) {
+				metadata.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
+			}
+			if metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName) {
+				metadata.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName)
+			}
+		}
+	}
+	if st, ok := s.viewLayer.ScoreTag(e); ok {
+		metadata[protocol.EntityDataKeyScore] = st
+	}
+	if visibility := s.viewLayer.Visibility(e); visibility.EnforceVisibility() {
+		invisibleFlag := metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagInvisible)
+		shouldForceVisible := visibility == world.EnforceVisible() && invisibleFlag
+		shouldForceInvisible := visibility == world.EnforceInvisible() && !invisibleFlag
+		if shouldForceVisible {
+			metadata.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagInvisible)
+		} else if shouldForceInvisible {
+			metadata.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagInvisible)
+		}
+	}
+	return metadata
 }
 
 // ViewEntityAnimation ...
@@ -1193,7 +1239,7 @@ func (s *Session) ViewSlotChange(slot int, newItem item.Stack) {
 	s.writePacket(&packet.InventorySlot{
 		WindowID: s.openedWindowID.Load(),
 		Slot:     uint32(slot),
-		NewItem:  s.instanceFromItem(newItem),
+		NewItem:  instanceFromItem(s.br, newItem),
 	})
 }
 
@@ -1256,8 +1302,7 @@ func (s *Session) ViewEmote(player world.Entity, emote uuid.UUID) {
 
 // ViewSkin ...
 func (s *Session) ViewSkin(e world.Entity) {
-	switch v := e.(type) {
-	case Controllable:
+	if v, ok := e.(Controllable); ok {
 		s.writePacket(&packet.PlayerSkin{
 			UUID: v.UUID(),
 			Skin: skinToProtocol(v.Skin()),

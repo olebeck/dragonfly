@@ -375,7 +375,7 @@ func (srv *Server) startListening() {
 // at startup.
 func (srv *Server) makeBlockEntries() {
 	custom := slices.Collect(maps.Values(srv.conf.Blocks.CustomBlocks()))
-	srv.customBlocks = make([]protocol.BlockEntry, 0, len(custom))
+	srv.customBlocks = make([]protocol.BlockEntry, len(custom))
 
 	for _, b := range custom {
 		name, _ := b.EncodeBlock()
@@ -532,7 +532,7 @@ func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, conf player.Con
 		JoinMessage:    srv.conf.JoinMessage,
 		QuitMessage:    srv.conf.QuitMessage,
 		HandleStop:     srv.handleSessionClose,
-		BlockRegistry:  srv.conf.Blocks,
+		BlockRegistry:  w.BlockRegistry(),
 	}.New(conn)
 
 	conf.Name = conn.IdentityData().DisplayName
@@ -564,16 +564,18 @@ func (srv *Server) createWorld(dim world.Dimension, nether, end **world.World) *
 		SaveInterval:        srv.conf.SaveInterval,
 		ChunkUnloadInterval: srv.conf.ChunkUnloadInterval,
 		Entities:            srv.conf.Entities,
+		Blocks:              srv.conf.Blocks,
 		PortalDestination: func(dim world.Dimension) *world.World {
-			if dim == world.Nether {
+			switch dim {
+			case world.Nether:
 				return *nether
-			} else if dim == world.End {
+			case world.End:
 				return *end
+			default:
+				return nil
 			}
-			return nil
 		},
 		Biomes: srv.conf.Biomes,
-		Blocks: srv.conf.Blocks,
 	}
 	w := conf.New()
 	logger.Info("Opened dimension.", "name", w.Name())

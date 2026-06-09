@@ -37,12 +37,7 @@ var (
 	NetworkPersistentEncoding networkPersistentEncoding
 	// BiomePaletteEncoding is the paletteEncoding used for encoding a palette of biomes.
 	BiomePaletteEncoding biomePaletteEncoding
-	// BlockPaletteEncoding is the paletteEncoding used for encoding a palette of block states encoded as NBT.
-	//BlockPaletteEncoding blockPaletteEncoding
 )
-
-// BlockPaletteEncoding as type instead of global, because it takes a BlockRegistry
-type BlockPaletteEncoding = blockPaletteEncoding
 
 // biomePaletteEncoding implements the encoding of biome palettes to disk.
 type biomePaletteEncoding struct{}
@@ -50,21 +45,21 @@ type biomePaletteEncoding struct{}
 func (biomePaletteEncoding) encode(buf *bytes.Buffer, v uint32) {
 	_ = binary.Write(buf, binary.LittleEndian, v)
 }
-
 func (biomePaletteEncoding) decode(buf *bytes.Buffer, e Encoding) (uint32, error) {
 	var v uint32
 	return v, binary.Read(buf, binary.LittleEndian, &v)
 }
 
-// blockPaletteEncoding implements the encoding of block palettes to disk.
-type blockPaletteEncoding struct {
+// BlockPaletteEncoding implements the encoding of block palettes to disk. It requires a BlockRegistry for converting
+// between runtime IDs and block states.
+type BlockPaletteEncoding struct {
 	Blocks BlockRegistry
 }
 
-func (bpe blockPaletteEncoding) encode(buf *bytes.Buffer, v uint32) {
+func (bpe BlockPaletteEncoding) encode(buf *bytes.Buffer, v uint32) {
 	_ = nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian).Encode(bpe.EncodeBlockState(v))
 }
-func (bpe blockPaletteEncoding) decode(buf *bytes.Buffer, e Encoding) (uint32, error) {
+func (bpe BlockPaletteEncoding) decode(buf *bytes.Buffer, e Encoding) (uint32, error) {
 	var m map[string]any
 
 	var encoding nbt.Encoding = nbt.LittleEndian
@@ -78,14 +73,14 @@ func (bpe blockPaletteEncoding) decode(buf *bytes.Buffer, e Encoding) (uint32, e
 	return bpe.DecodeBlockState(m)
 }
 
-func (bpe blockPaletteEncoding) EncodeBlockState(v uint32) blockEntry {
+func (bpe BlockPaletteEncoding) EncodeBlockState(v uint32) blockEntry {
 	// Get the block state registered with the runtime IDs we have in the palette of the block storage
 	// as we need the name and data value to store.
 	name, props, _ := bpe.Blocks.RuntimeIDToState(v)
 	return blockEntry{Name: name, State: props, Version: CurrentBlockVersion}
 }
 
-func (bpe blockPaletteEncoding) DecodeBlockState(m map[string]any) (uint32, error) {
+func (bpe BlockPaletteEncoding) DecodeBlockState(m map[string]any) (uint32, error) {
 	// Decode the name and version of the block entry.
 	name, _ := m["name"].(string)
 	version, _ := m["version"].(int32)
@@ -207,7 +202,7 @@ type networkPersistentEncoding struct{}
 
 func (networkPersistentEncoding) network() byte { return 1 }
 func (npe networkPersistentEncoding) encodePalette(buf *bytes.Buffer, p *Palette, pe paletteEncoding) {
-	br := pe.(blockPaletteEncoding).Blocks
+	br := pe.(BlockPaletteEncoding).Blocks
 	if p.size != 0 {
 		_ = protocol.WriteVarint32(buf, int32(p.Len()))
 	}
@@ -219,7 +214,7 @@ func (npe networkPersistentEncoding) encodePalette(buf *bytes.Buffer, p *Palette
 	}
 }
 func (npe networkPersistentEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, pe paletteEncoding) (*Palette, error) {
-	br := pe.(blockPaletteEncoding).Blocks
+	br := pe.(BlockPaletteEncoding).Blocks
 	var paletteCount int32 = 1
 	if blockSize != 0 {
 		err := protocol.Varint32(buf, &paletteCount)

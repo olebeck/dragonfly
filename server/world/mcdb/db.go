@@ -39,6 +39,16 @@ func Open(dir string) (*DB, error) {
 	return conf.Open(dir)
 }
 
+// SetBlockRegistry updates the block registry used for chunk and scheduled update encoding/decoding.
+// It should be called before any columns are loaded or stored.
+func (db *DB) SetBlockRegistry(br world.BlockRegistry) {
+	if br == nil {
+		br = world.DefaultBlockRegistry
+	}
+	br.Finalize()
+	db.conf.Blocks = br
+}
+
 func (db *DB) LDB() *leveldb.DB {
 	return db.ldb
 }
