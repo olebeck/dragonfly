@@ -162,9 +162,10 @@ func decodeSubChunk(buf *bytes.Buffer, c *Chunk, index *byte, e Encoding, hashed
 			if hashedRids {
 				storage := sub.storages[i]
 				for i2, v := range storage.palette.values {
-					var ok bool
-					storage.palette.values[i2], ok = c.br.HashToRuntimeID(v)
-					if !ok {
+					rid, ok := c.br.HashToRuntimeID(v)
+					if ok {
+						storage.palette.values[i2] = rid
+					} else {
 						fmt.Println("rid hash not found, data sorting wrong.")
 					}
 				}
