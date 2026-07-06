@@ -571,6 +571,10 @@ func (l Leaves) Color() color.RGBA {
 		return color.RGBA{45, 65, 30, 255}
 	case CherryLeaves():
 		return color.RGBA{0xd6, 0xa2, 0xba, 0xff}
+	case AzaleaLeaves():
+		return color.RGBA{0x51, 0x67, 0x27, 0xff}
+	case FloweringAzaleaLeaves():
+		return color.RGBA{0x5f, 0x66, 0x45, 0xff}
 	}
 	return color.RGBA{255, 0, 255, 255}
 }
