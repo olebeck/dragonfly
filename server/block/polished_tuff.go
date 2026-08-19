@@ -10,7 +10,7 @@ type PolishedTuff struct {
 
 // BreakInfo ...
 func (t PolishedTuff) BreakInfo() BreakInfo {
-	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(t)).withBlastResistance(30)
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(t)).withBlastResistance(6)
 }
 
 // EncodeItem ...

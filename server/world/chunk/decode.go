@@ -24,17 +24,20 @@ func NetworkDecode(br BlockRegistry, data []byte, count int, r cube.Range, hashe
 // The sub chunk count passed must be that found in the LevelChunk packet.
 // noinspection GoUnusedExportedFunction
 func NetworkDecodeBuffer(br BlockRegistry, buf *bytes.Buffer, count int, r cube.Range, hashedRids bool) (*Chunk, []map[string]any, error) {
-	var (
-		c   = New(br, r)
-		err error
-	)
-
+	c := New(br, r)
+	if count < 0 || count > len(c.sub) {
+		return nil, nil, fmt.Errorf("invalid sub-chunk count %d: chunk range has %d sub-chunks", count, len(c.sub))
+	}
 	for i := 0; i < count; i++ {
 		index := uint8(i)
-		c.sub[index], err = decodeSubChunk(buf, c, &index, NetworkEncoding, hashedRids)
+		sub, err := decodeSubChunk(buf, c, &index, NetworkEncoding, hashedRids)
 		if err != nil {
 			return nil, nil, err
 		}
+		if int(index) >= len(c.sub) {
+			return nil, nil, fmt.Errorf("invalid sub-chunk index %d: chunk range has %d sub-chunks", index, len(c.sub))
+		}
+		c.sub[index] = sub
 	}
 
 	err = DecodeNetworkBiomes(c, buf)

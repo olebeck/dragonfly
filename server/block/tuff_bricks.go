@@ -13,7 +13,7 @@ type TuffBricks struct {
 
 // BreakInfo ...
 func (t TuffBricks) BreakInfo() BreakInfo {
-	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(t)).withBlastResistance(30)
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(t)).withBlastResistance(6)
 }
 
 // EncodeItem ...
