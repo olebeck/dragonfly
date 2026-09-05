@@ -1,8 +1,6 @@
 package block
 
 import (
-	"image/color"
-
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
@@ -300,8 +298,4 @@ func (b Bed) SafeSpawn(pos cube.Pos, tx *world.Tx) (cube.Pos, bool) {
 func supportedFromBelow(pos cube.Pos, tx *world.Tx) bool {
 	below := pos.Side(cube.FaceDown)
 	return tx.Block(below).Model().FaceSolid(below, cube.FaceUp, tx)
-}
-
-func (b Bed) Color() color.RGBA {
-	return b.Colour.RGBA()
 }

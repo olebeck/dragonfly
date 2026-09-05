@@ -40,40 +40,40 @@ type BlockState struct {
 	Version    int32          `nbt:"version"`
 }
 
-// unknownBlock represents a block that has not yet been implemented. It is used for registering block
+// UnknownBlock represents a block that has not yet been implemented. It is used for registering block
 // states that haven't yet been added.
-type unknownBlock struct {
+type UnknownBlock struct {
 	BlockState
 	data map[string]any
 }
 
 // EncodeBlock ...
-func (b unknownBlock) EncodeBlock() (string, map[string]any) {
+func (b UnknownBlock) EncodeBlock() (string, map[string]any) {
 	return b.Name, b.Properties
 }
 
 // Model ...
-func (unknownBlock) Model() BlockModel {
+func (UnknownBlock) Model() BlockModel {
 	return unknownModel{}
 }
 
 // Hash ...
-func (b unknownBlock) Hash() (uint64, uint64) {
+func (b UnknownBlock) Hash() (uint64, uint64) {
 	return 0, math.MaxUint64
 }
 
 // EncodeNBT ...
-func (b unknownBlock) EncodeNBT() map[string]any {
+func (b UnknownBlock) EncodeNBT() map[string]any {
 	return maps.Clone(b.data)
 }
 
 // DecodeNBT ...
-func (b unknownBlock) DecodeNBT(data map[string]any) any {
+func (b UnknownBlock) DecodeNBT(data map[string]any) any {
 	b.data = maps.Clone(data)
 	return b
 }
 
-func (b unknownBlock) Color() color.RGBA {
+func (b UnknownBlock) Color() color.RGBA {
 	return color.RGBA{}
 }
 

@@ -1,8 +1,6 @@
 package block
 
 import (
-	"math/rand"
-
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
@@ -14,84 +12,8 @@ type Sapling struct {
 	empty
 	transparent
 
-	Wood WoodType
-
+	Wood   WoodType
 	AgeBit bool
-}
-
-// findSaplings finds the same sapling type in a 2x2 area, returns the lowest xz coordinates.
-func (s Sapling) findSaplings(pos cube.Pos, tx *world.Tx) (*cube.Pos, bool) {
-	validPositions := [][]cube.Pos{
-		{pos, pos.Add(cube.Pos{1, 0, 0}), pos.Add(cube.Pos{0, 0, 1}), pos.Add(cube.Pos{1, 0, 1})},
-		{pos, pos.Add(cube.Pos{-1, 0, 0}), pos.Add(cube.Pos{0, 0, -1}), pos.Add(cube.Pos{-1, 0, -1})},
-		{pos, pos.Add(cube.Pos{1, 0, 0}), pos.Add(cube.Pos{0, 0, -1}), pos.Add(cube.Pos{1, 0, -1})},
-		{pos, pos.Add(cube.Pos{-1, 0, 0}), pos.Add(cube.Pos{-1, 0, 0}), pos.Add(cube.Pos{-1, 0, 1})},
-	}
-	for _, v := range validPositions {
-		correct := true
-		for _, p := range v {
-			if sapling, ok := tx.Block(p).(Sapling); ok {
-				if sapling.Wood != s.Wood {
-					correct = false
-				}
-			} else {
-				correct = false
-			}
-		}
-		if correct {
-			lowestX := 0
-			lowestZ := 0
-			first := true
-			for _, p := range v {
-				if p.X() < lowestX || first {
-					lowestX = p.X()
-				}
-				if p.Z() < lowestZ || first {
-					lowestZ = p.Z()
-				}
-				first = false
-			}
-			return &cube.Pos{lowestX, pos.Y(), lowestZ}, true
-		}
-	}
-	return nil, false
-}
-
-// Grow grows this sapling into a tree
-func (s Sapling) Grow(pos cube.Pos, tx *world.Tx) (success bool) {
-	var tree world.Feature
-	pos2, correct := s.findSaplings(pos, tx)
-	if correct { // if a large version of this tree exists grow that
-		tree = world.GetFeature("minecraft:large_" + s.Wood.String() + "_tree")
-		if tree != nil {
-			pos = *pos2
-		}
-	}
-
-	if tree == nil {
-		tree = world.GetFeature("minecraft:" + s.Wood.String() + "_tree")
-	}
-
-	// check that this tree type exists and can be placed
-	if tree != nil && tree.CanPlace(pos, tx) {
-		tree.Place(pos, tx)
-		return true
-	}
-	return false
-}
-
-// RandomTick ...
-func (s Sapling) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
-	if rand.Intn(16) == 1 && tx.Light(pos) < 9 {
-		return
-	}
-	s.Grow(pos, tx)
-}
-
-// BoneMeal ...
-func (s Sapling) BoneMeal(pos cube.Pos, tx *world.Tx) (success bool) {
-	s.Grow(pos, tx)
-	return true
 }
 
 // UseOnBlock ...

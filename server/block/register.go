@@ -67,7 +67,6 @@ func init() {
 	world.RegisterBlock(Granite{})
 	world.RegisterBlock(Grass{})
 	world.RegisterBlock(Gravel{})
-	world.RegisterBlock(HangingRoots{})
 	world.RegisterBlock(Honeycomb{})
 	world.RegisterBlock(InfestedStone{})
 	world.RegisterBlock(InfestedCobblestone{})
@@ -85,7 +84,6 @@ func init() {
 	world.RegisterBlock(LilyPad{})
 	world.RegisterBlock(Magma{})
 	world.RegisterBlock(Melon{})
-	world.RegisterBlock(Moss{})
 	world.RegisterBlock(MossCarpet{})
 	world.RegisterBlock(MudBricks{})
 	world.RegisterBlock(Mud{})
@@ -116,7 +114,6 @@ func init() {
 	world.RegisterBlock(ResinBricks{Chiseled: true})
 	world.RegisterBlock(ResinBricks{})
 	world.RegisterBlock(Resin{})
-	world.RegisterBlock(RootedDirt{})
 	world.RegisterBlock(Sand{Red: true})
 	world.RegisterBlock(Sand{})
 	world.RegisterBlock(SeaLantern{})
@@ -160,7 +157,6 @@ func init() {
 	}
 
 	registerAll(allAnvils())
-	registerAll(allAzalea())
 	registerAll(allBambooBlocks())
 	registerAll(allBamboos())
 	registerAll(allBambooSaplings())
@@ -176,7 +172,6 @@ func init() {
 	registerAll(allCactus())
 	registerAll(allCake())
 	registerAll(allCampfires())
-	registerAll(allCandle())
 	registerAll(allCandles())
 	registerAll(allCarpet())
 	registerAll(allCarrots())
@@ -188,7 +183,6 @@ func init() {
 	registerAll(allConcretePowder())
 	registerAll(allCoral())
 	registerAll(allCoralBlocks())
-	//registerAll(allCoralFan())
 	registerAll(allDeepslate())
 	registerAll(allDoors())
 	registerAll(allDoubleFlowers())
@@ -220,8 +214,6 @@ func init() {
 	registerAll(allLooms())
 	registerAll(allMelonStems())
 	registerAll(allMuddyMangroveRoots())
-	registerAll(allMushroom())
-	registerAll(allMushroomBlock())
 	registerAll(allNetherBricks())
 	registerAll(allNetherWart())
 	registerAll(allPinkPetals())
@@ -235,14 +227,11 @@ func init() {
 	registerAll(allRedstoneTorches())
 	registerAll(allRedstoneWires())
 	registerAll(allSandstones())
-	//registerAll(allSapling())
 	registerAll(allSeaPickles())
-	registerAll(allSeagrass())
 	registerAll(allSigns())
 	registerAll(allSkulls())
 	registerAll(allSlabs())
 	registerAll(allSmokers())
-	registerAll(allSnowLayers())
 	registerAll(allStainedGlass())
 	registerAll(allStainedGlassPane())
 	registerAll(allStainedTerracotta())
@@ -269,8 +258,8 @@ func init() {
 	registerAll(allCopperLanterns())
 	registerAll(allCopperTorches())
 	registerAll(allCopperTrapdoors())
-	world.DefaultBlockRegistry.Finalize()
 	registerAll(allShulkerBoxes())
+	world.DefaultBlockRegistry.Finalize()
 }
 
 func init() {
@@ -279,8 +268,6 @@ func init() {
 	world.RegisterItem(AncientDebris{})
 	world.RegisterItem(Andesite{Polished: true})
 	world.RegisterItem(Andesite{})
-	world.RegisterItem(Azalea{})
-	world.RegisterItem(Azalea{Flowering: true})
 	world.RegisterItem(Bamboo{})
 	world.RegisterItem(BambooBlock{})
 	world.RegisterItem(BambooBlock{Stripped: true})
@@ -351,7 +338,6 @@ func init() {
 	world.RegisterItem(Grass{})
 	world.RegisterItem(Gravel{})
 	world.RegisterItem(Grindstone{})
-	world.RegisterItem(HangingRoots{})
 	world.RegisterItem(HayBale{})
 	world.RegisterItem(Honeycomb{})
 	world.RegisterItem(Hopper{})
@@ -378,7 +364,6 @@ func init() {
 	world.RegisterItem(Loom{})
 	world.RegisterItem(MelonSeeds{})
 	world.RegisterItem(Melon{})
-	world.RegisterItem(Moss{})
 	world.RegisterItem(MossCarpet{})
 	world.RegisterItem(MudBricks{})
 	world.RegisterItem(MuddyMangroveRoots{})
@@ -421,7 +406,6 @@ func init() {
 	world.RegisterItem(ResinBricks{Chiseled: true})
 	world.RegisterItem(ResinBricks{})
 	world.RegisterItem(Resin{})
-	world.RegisterItem(RootedDirt{})
 	world.RegisterItem(Sand{Red: true})
 	world.RegisterItem(Sand{})
 	world.RegisterItem(SeaLantern{})
@@ -472,9 +456,6 @@ func init() {
 	for _, c := range allCoralBlocks() {
 		world.RegisterItem(c.(world.Item))
 	}
-	for _, c := range allCoralFan() {
-		world.RegisterItem(c.(world.Item))
-	}
 	for _, t := range SandstoneTypes() {
 		world.RegisterItem(Sandstone{Type: t, Red: true})
 		world.RegisterItem(Sandstone{Type: t})
@@ -513,7 +494,6 @@ func init() {
 		world.RegisterItem(WoodFenceGate{Wood: w})
 		world.RegisterItem(WoodFence{Wood: w})
 		world.RegisterItem(WoodTrapdoor{Wood: w})
-		world.RegisterItem(Sapling{Wood: w})
 	}
 	world.RegisterItem(Leaves{Type: AzaleaLeaves(), Persistent: true})
 	world.RegisterItem(Leaves{Type: FloweringAzaleaLeaves(), Persistent: true})
@@ -571,10 +551,6 @@ func init() {
 	for _, t := range DeepslateTypes() {
 		world.RegisterItem(Deepslate{Type: t})
 	}
-	for _, t := range MushroomTypes() {
-		world.RegisterItem(MushroomBlock{Type: t})
-		world.RegisterItem(Mushroom{Type: t})
-	}
 	for _, o := range OxidationTypes() {
 		world.RegisterItem(CopperBars{Oxidation: o})
 		world.RegisterItem(CopperBars{Oxidation: o, Waxed: true})
@@ -596,10 +572,6 @@ func init() {
 			world.RegisterItem(Copper{Type: c, Oxidation: o, Waxed: true})
 		}
 	}
-	world.RegisterItem(Candle{Dyed: false})
-	for _, c := range item.Colours() {
-		world.RegisterItem(Candle{Colour: c, Dyed: true})
-	}
 
 	for _, c := range item.OptionalColours() {
 		world.RegisterItem(ShulkerBox{Colour: c})
@@ -608,6 +580,6 @@ func init() {
 
 func registerAll(blocks []world.Block) {
 	for _, b := range blocks {
-		world.DefaultBlockRegistry.RegisterBlock(b)
+		world.RegisterBlock(b)
 	}
 }

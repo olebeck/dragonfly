@@ -10,8 +10,6 @@ const (
 	hashAncientDebris
 	hashAndesite
 	hashAnvil
-	hashAzalea
-	hashAzaleaLeaves
 	hashBamboo
 	hashBambooBlock
 	hashBambooMosaic
@@ -63,7 +61,6 @@ const (
 	hashCopperTrapdoor
 	hashCoral
 	hashCoralBlock
-	hashCoralFan
 	hashCraftingTable
 	hashDeadBush
 	hashDecoratedPot
@@ -106,7 +103,6 @@ const (
 	hashGrass
 	hashGravel
 	hashGrindstone
-	hashHangingRoots
 	hashHayBale
 	hashHoneycomb
 	hashHopper
@@ -138,13 +134,10 @@ const (
 	hashMagma
 	hashMelon
 	hashMelonSeeds
-	hashMoss
 	hashMossCarpet
 	hashMud
 	hashMudBricks
 	hashMuddyMangroveRoots
-	hashMushroom
-	hashMushroomBlock
 	hashNetherBrickFence
 	hashNetherBricks
 	hashNetherGoldOre
@@ -185,13 +178,11 @@ const (
 	hashReinforcedDeepslate
 	hashResin
 	hashResinBricks
-	hashRootedDirt
 	hashSand
 	hashSandstone
 	hashSapling
 	hashSeaLantern
 	hashSeaPickle
-	hashSeagrass
 	hashShortGrass
 	hashShroomlight
 	hashShulkerBox
@@ -203,7 +194,6 @@ const (
 	hashSmoker
 	hashSmoothBasalt
 	hashSnow
-	hashSnowLayer
 	hashSoulSand
 	hashSoulSoil
 	hashSponge
@@ -265,10 +255,6 @@ func (a Andesite) Hash() (uint64, uint64) {
 
 func (a Anvil) Hash() (uint64, uint64) {
 	return hashAnvil, uint64(a.Type.Uint8()) | uint64(a.Facing)<<2
-}
-
-func (a Azalea) Hash() (uint64, uint64) {
-	return hashAzalea, uint64(boolByte(a.Flowering))
 }
 
 func (b Bamboo) Hash() (uint64, uint64) {
@@ -361,10 +347,6 @@ func (Calcite) Hash() (uint64, uint64) {
 
 func (c Campfire) Hash() (uint64, uint64) {
 	return hashCampfire, uint64(c.Facing) | uint64(boolByte(c.Extinguished))<<2 | uint64(c.Type.Uint8())<<3
-}
-
-func (c Candle) Hash() (uint64, uint64) {
-	return hashCandle, uint64(c.AdditionalCount) | uint64(boolByte(c.Lit))<<8 | uint64(boolByte(c.Dyed))<<9 | uint64(c.Colour.Uint8())<<10
 }
 
 func (c Candle) Hash() (uint64, uint64) {
@@ -477,10 +459,6 @@ func (c Coral) Hash() (uint64, uint64) {
 
 func (c CoralBlock) Hash() (uint64, uint64) {
 	return hashCoralBlock, uint64(c.Type.Uint8()) | uint64(boolByte(c.Dead))<<3
-}
-
-func (c CoralFan) Hash() (uint64, uint64) {
-	return hashCoralFan, uint64(c.Type.Uint8()) | uint64(boolByte(c.Dead))<<3 | uint64(boolByte(c.Hanging))<<4 | uint64(c.Facing)<<5
 }
 
 func (CraftingTable) Hash() (uint64, uint64) {
@@ -651,10 +629,6 @@ func (g Grindstone) Hash() (uint64, uint64) {
 	return hashGrindstone, uint64(g.Attach.Uint8()) | uint64(g.Facing)<<2
 }
 
-func (HangingRoots) Hash() (uint64, uint64) {
-	return hashHangingRoots, 0
-}
-
 func (h HayBale) Hash() (uint64, uint64) {
 	return hashHayBale, uint64(h.Axis)
 }
@@ -779,10 +753,6 @@ func (m MelonSeeds) Hash() (uint64, uint64) {
 	return hashMelonSeeds, uint64(m.Growth) | uint64(m.Direction)<<8
 }
 
-func (Moss) Hash() (uint64, uint64) {
-	return hashMoss, 0
-}
-
 func (MossCarpet) Hash() (uint64, uint64) {
 	return hashMossCarpet, 0
 }
@@ -797,14 +767,6 @@ func (MudBricks) Hash() (uint64, uint64) {
 
 func (m MuddyMangroveRoots) Hash() (uint64, uint64) {
 	return hashMuddyMangroveRoots, uint64(m.Axis)
-}
-
-func (m Mushroom) Hash() (uint64, uint64) {
-	return hashMushroom, uint64(m.Type.Uint8())
-}
-
-func (m MushroomBlock) Hash() (uint64, uint64) {
-	return hashMushroomBlock, uint64(m.Type.Uint8()) | uint64(m.HugeBits)<<4
 }
 
 func (NetherBrickFence) Hash() (uint64, uint64) {
@@ -967,10 +929,6 @@ func (r ResinBricks) Hash() (uint64, uint64) {
 	return hashResinBricks, uint64(boolByte(r.Chiseled))
 }
 
-func (RootedDirt) Hash() (uint64, uint64) {
-	return hashRootedDirt, 0
-}
-
 func (s Sand) Hash() (uint64, uint64) {
 	return hashSand, uint64(boolByte(s.Red))
 }
@@ -989,10 +947,6 @@ func (SeaLantern) Hash() (uint64, uint64) {
 
 func (s SeaPickle) Hash() (uint64, uint64) {
 	return hashSeaPickle, uint64(s.AdditionalCount) | uint64(boolByte(s.Dead))<<8
-}
-
-func (s Seagrass) Hash() (uint64, uint64) {
-	return hashSeagrass, uint64(s.Type.Uint8())
 }
 
 func (ShortGrass) Hash() (uint64, uint64) {
@@ -1037,10 +991,6 @@ func (SmoothBasalt) Hash() (uint64, uint64) {
 
 func (Snow) Hash() (uint64, uint64) {
 	return hashSnow, 0
-}
-
-func (s SnowLayer) Hash() (uint64, uint64) {
-	return hashSnowLayer, uint64(s.Height) | uint64(boolByte(s.Covered))<<8
 }
 
 func (SoulSand) Hash() (uint64, uint64) {

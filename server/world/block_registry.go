@@ -293,7 +293,7 @@ func (br *BasicBlockRegistry) RegisterBlock(b Block) {
 		// this done through registering of all states present in the block_states.nbt file.
 		panic(fmt.Sprintf("block state returned is not registered (%v {%#v})", name, properties))
 	}
-	if _, ok := br.blocks[rid].(unknownBlock); !ok {
+	if _, ok := br.blocks[rid].(UnknownBlock); !ok {
 		panic(fmt.Sprintf("block with name and properties %v {%#v} already registered", name, properties))
 	}
 	br.blocks[rid] = b
@@ -325,7 +325,7 @@ func (br *BasicBlockRegistry) registerBlockStateLocked(s BlockState) {
 		br.blockProperties[s.Name] = s.Properties
 	}
 	rid := uint32(len(br.blocks))
-	br.blocks = append(br.blocks, unknownBlock{BlockState: s})
+	br.blocks = append(br.blocks, UnknownBlock{BlockState: s})
 	br.stateRuntimeIDs[h] = rid
 }
 
@@ -342,13 +342,13 @@ func (br *BasicBlockRegistry) Finalize() {
 	br.bitSize = bits.Len64(uint64(len(br.blocks)))
 	sort.SliceStable(br.blocks, func(i, j int) bool {
 		var nameOne string
-		if b1, ok := br.blocks[i].(unknownBlock); ok {
+		if b1, ok := br.blocks[i].(UnknownBlock); ok {
 			nameOne = b1.Name
 		} else {
 			nameOne, _ = br.blocks[i].EncodeBlock()
 		}
 		var nameTwo string
-		if b2, ok := br.blocks[j].(unknownBlock); ok {
+		if b2, ok := br.blocks[j].(UnknownBlock); ok {
 			nameTwo = b2.Name
 		} else {
 			nameTwo, _ = br.blocks[j].EncodeBlock()

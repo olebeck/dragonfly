@@ -41,6 +41,7 @@ func (conf Config) Open(dir string) (*DB, error) {
 	if conf.LDBOptions.BlockSize == 0 {
 		conf.LDBOptions.BlockSize = 16 * opt.KiB
 	}
+
 	_ = os.MkdirAll(filepath.Join(dir, "db"), 0777)
 
 	db := &DB{conf: conf, dir: dir, ldat: &leveldat.Data{}}

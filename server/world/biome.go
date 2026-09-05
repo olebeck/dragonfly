@@ -1,6 +1,9 @@
 package world
 
-import "image/color"
+import (
+	"image/color"
+	"maps"
+)
 
 // Biome is a region in a world with distinct geographical features, flora, temperatures, humidity ratings,
 // and sky, water, grass and foliage colours.
@@ -38,12 +41,8 @@ func (br *BiomeRegistry) Clone() *BiomeRegistry {
 		make(map[int]Biome),
 		make(map[string]Biome),
 	}
-	for id, biome := range br.IDToBiome {
-		br2.IDToBiome[id] = biome
-	}
-	for name, biome := range br.NameToBiome {
-		br2.NameToBiome[name] = biome
-	}
+	maps.Copy(br2.IDToBiome, br.IDToBiome)
+	maps.Copy(br2.NameToBiome, br.NameToBiome)
 	return br2
 }
 

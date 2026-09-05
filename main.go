@@ -7,6 +7,7 @@ import (
 	"log/slog"
 
 	"github.com/df-mc/dragonfly/server"
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/chunk"
@@ -14,11 +15,18 @@ import (
 	"github.com/thomaso-mirodin/intmath/i32"
 )
 
-type debugGenerator struct{}
+type debugGenerator struct {
+	br world.BlockRegistry
+}
+
+// DefaultSpawn implements [world.Generator].
+func (d debugGenerator) DefaultSpawn(dim world.Dimension) cube.Pos {
+	return cube.Pos{0, dim.Range().Min() + 2, 0}
+}
 
 // GenerateChunk ...
-func (debugGenerator) GenerateChunk(cp world.ChunkPos, chunk *chunk.Chunk) {
-	blockCount := chunk.BlockRegistry.BlockCount()
+func (d debugGenerator) GenerateChunk(cp world.ChunkPos, chunk *chunk.Chunk) {
+	blockCount := d.br.BlockCount()
 	length := i32.Sqrt(int32(blockCount))
 
 	for x := uint8(0); x < 16; x++ {
@@ -55,7 +63,9 @@ func main() {
 	}
 
 	conf.Generator = func(dim world.Dimension) world.Generator {
-		return debugGenerator{}
+		return debugGenerator{
+			br: conf.Blocks,
+		}
 	}
 
 	srv := conf.New()

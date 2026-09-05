@@ -3,7 +3,6 @@ package world
 import (
 	"image"
 	"image/color"
-	"math"
 	"math/rand/v2"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -213,39 +212,4 @@ func replaceable(w *World, c *Column, pos cube.Pos, with Block) bool {
 // viewers in a world so that they can see these actions.
 type BlockAction interface {
 	BlockAction()
-}
-
-// UnknownBlock represents a block that has not yet been implemented. It is used for registering block
-// states that haven't yet been added.
-type UnknownBlock struct {
-	BlockState
-}
-
-// EncodeBlock ...
-func (b UnknownBlock) EncodeBlock() (string, map[string]any) {
-	return b.Name, b.Properties
-}
-
-// Model ...
-func (UnknownBlock) Model() BlockModel {
-	return unknownModel{}
-}
-
-// Hash ...
-func (b UnknownBlock) Hash() (uint64, uint64) {
-	return 0, math.MaxUint64
-}
-
-func (b UnknownBlock) Color() color.RGBA {
-	return color.RGBA{255, 0, 255, 255}
-}
-
-func (b UnknownBlock) DecodeNBT(data map[string]any) any {
-	b.Properties = data
-	return b
-}
-
-// EncodeNBT encodes the entity into a map which can then be encoded as NBT to be written.
-func (b UnknownBlock) EncodeNBT() map[string]any {
-	return b.Properties
 }

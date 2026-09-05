@@ -18,14 +18,6 @@ func (Anvil) Color() color.RGBA {
 	return color.RGBA{74, 74, 74, 255}
 }
 
-func (a Azalea) Color() color.RGBA {
-	if a.Flowering {
-		return color.RGBA{173, 91, 192, 255}
-	} else {
-		return color.RGBA{104, 136, 42, 255}
-	}
-}
-
 func (Banner) Color() color.RGBA {
 	return color.RGBA{184, 148, 95, 255}
 }
@@ -91,10 +83,11 @@ func (Calcite) Color() color.RGBA {
 }
 
 func (c Candle) Color() color.RGBA {
-	if !c.Dyed {
+	colour, dyed := c.Colour.Colour()
+	if !dyed {
 		return color.RGBA{254, 240, 179, 255}
 	}
-	switch c.Colour {
+	switch colour {
 	case item.ColourWhite():
 		return color.RGBA{224, 229, 229, 255}
 	case item.ColourOrange():
@@ -513,10 +506,6 @@ func (Gravel) Color() color.RGBA {
 	return color.RGBA{150, 142, 142, 255}
 }
 
-func (h HangingRoots) Color() color.RGBA {
-	return color.RGBA{185, 133, 101, 255}
-}
-
 func (HayBale) Color() color.RGBA {
 	return color.RGBA{148, 125, 16, 255}
 }
@@ -599,10 +588,6 @@ func (Melon) Color() color.RGBA {
 	return color.RGBA{82, 129, 28, 255}
 }
 
-func (m Moss) Color() color.RGBA {
-	return color.RGBA{100, 114, 45, 255}
-}
-
 func (MudBricks) Color() color.RGBA {
 	return color.RGBA{157, 120, 92, 255}
 }
@@ -613,16 +598,6 @@ func (Mud) Color() color.RGBA {
 
 func (MuddyMangroveRoots) Color() color.RGBA {
 	return color.RGBA{60, 53, 54, 255}
-}
-
-func (m MushroomBlock) Color() color.RGBA {
-	switch m.Type {
-	case Red():
-		return color.RGBA{201, 43, 41, 255}
-	case Brown():
-		return color.RGBA{151, 114, 82, 255}
-	}
-	return color.RGBA{255, 0, 255, 255}
 }
 
 func (NetherBricks) Color() color.RGBA {
@@ -767,10 +742,6 @@ func (RedstoneOre) Color() color.RGBA {
 	return color.RGBA{222, 40, 27, 255}
 }
 
-func (RootedDirt) Color() color.RGBA {
-	return color.RGBA{121, 87, 64, 255}
-}
-
 func (Resin) Color() color.RGBA {
 	return color.RGBA{121, 87, 64, 255}
 }
@@ -819,10 +790,6 @@ func (s Sapling) Color() color.RGBA {
 	return color.RGBA{255, 0, 255, 255}
 }
 
-func (s Seagrass) Color() color.RGBA {
-	return color.RGBA{20, 46, 4, 255}
-}
-
 func (Shroomlight) Color() color.RGBA {
 	return color.RGBA{254, 172, 109, 255}
 }
@@ -840,10 +807,6 @@ func (Smoker) Color() color.RGBA {
 }
 
 func (Snow) Color() color.RGBA {
-	return color.RGBA{0xf9, 0xfe, 0xfe, 0xff}
-}
-
-func (SnowLayer) Color() color.RGBA {
 	return color.RGBA{0xf9, 0xfe, 0xfe, 0xff}
 }
 
@@ -1080,4 +1043,56 @@ func (DecoratedPot) Color() color.RGBA {
 
 func (w Wall) Color() color.RGBA {
 	return w.Block.Color()
+}
+
+func (s SmoothBasalt) Color() color.RGBA {
+	return color.RGBA{R: 0x1e, G: 0x1d, B: 0x24, A: 0xff}
+}
+
+func (t TuffBricks) Color() color.RGBA {
+	return color.RGBA{93, 93, 82, 255}
+}
+
+func (b BambooBlock) Color() color.RGBA {
+	return color.RGBA{0x93, 0x8d, 0x3f, 255}
+}
+
+func (e EndPortalFrame) Color() color.RGBA {
+	return color.RGBA{0x42, 0x73, 0x67, 255}
+}
+
+func (b BambooMosaic) Color() color.RGBA {
+	return color.RGBA{0xca, 0xb5, 0x58, 255}
+}
+
+func (b Cinnabar) Color() color.RGBA {
+	return color.RGBA{0xaa, 0x55, 0x53, 255}
+}
+
+func (b CinnabarBricks) Color() color.RGBA {
+	return color.RGBA{0xaa, 0x55, 0x53, 255}
+}
+
+func (b PolishedCinnabar) Color() color.RGBA {
+	return color.RGBA{0xaa, 0x55, 0x53, 255}
+}
+
+func (b PolishedSulfur) Color() color.RGBA {
+	return color.RGBA{0xee, 0xe3, 0x7c, 255}
+}
+
+func (b PolishedTuff) Color() color.RGBA {
+	return color.RGBA{93, 93, 82, 255}
+}
+
+func (b Sulfur) Color() color.RGBA {
+	return color.RGBA{0xee, 0xe3, 0x7c, 255}
+}
+
+func (b SulfurBricks) Color() color.RGBA {
+	return color.RGBA{0xee, 0xe3, 0x7c, 255}
+}
+
+func (b TintedGlass) Color() color.RGBA {
+	return color.RGBA{0, 0, 0, 128}
 }
