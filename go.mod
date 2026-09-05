@@ -10,18 +10,27 @@ require (
 	github.com/go-gl/mathgl v1.2.0
 	github.com/google/uuid v1.6.0
 	github.com/pelletier/go-toml v1.9.5
-	github.com/sandertv/gophertunnel v1.57.0
+	github.com/sandertv/gophertunnel v1.61.0
 	github.com/segmentio/fasthash v1.0.3
 	github.com/thomaso-mirodin/intmath v0.0.0-20160323211736-5dc6d854e46e
 	github.com/zaataylor/cartesian v0.0.0-20221028053253-3b3244d82727
 	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0
 	golang.org/x/text v0.24.0
 	golang.org/x/tools v0.32.0
+	golang.org/x/exp v0.0.0-20250103183323-7d7fa50e5329
+	golang.org/x/mod v0.32.0
+	golang.org/x/text v0.34.0
+	golang.org/x/tools v0.41.0
 )
 
 require (
+	github.com/coder/websocket v1.8.14 // indirect
+	github.com/coreos/go-oidc/v3 v3.17.0 // indirect
+	github.com/df-mc/go-nethernet v1.0.20 // indirect
+	github.com/df-mc/go-playfab/v2 v2.0.2 // indirect
+	github.com/df-mc/go-xsapi/v2 v2.0.3 // indirect
 	github.com/df-mc/jsonc v1.0.5 // indirect
-	github.com/go-jose/go-jose/v4 v4.1.3 // indirect
+	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/klauspost/compress v1.18.4 // indirect
 	github.com/sandertv/go-raknet v1.15.1-0.20260112202637-beca0b10c217 // indirect

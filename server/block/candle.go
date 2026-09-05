@@ -4,52 +4,81 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// Candle is a light source,
-// which exists in an uncolored variant and 16 dyed ones.
-// Candles can be lit with flint and steel and extinguished by water or by right-clicking.
-// They can also be waterlogged, but cannot be lit while waterlogged.
+// Candle is a dyeable block that emits light when lit with a flint and steel.
+// Up to four of the same color of candle can be placed in one block space, which affects the amount of light produced.
 type Candle struct {
 	transparent
 	sourceWaterDisplacer
 
-	// AdditionalCount is the amount of additional candles clustered together.
-	AdditionalCount int
-	// Lit is if the candle is on.
-	Lit bool
-	// Dyed is if the candle has a color
-	Dyed bool
 	// Colour is the colour of the candle.
-	Colour item.Colour
+	Colour item.OptionalColour
+	// AdditionalCandles is the amount of additional candles placed in the same block space.
+	AdditionalCandles int
+	// Lit is whether the candles are lit.
+	Lit bool
 }
 
+// BreakInfo ...
+func (c Candle) BreakInfo() BreakInfo {
+	return newBreakInfo(0.1, alwaysHarvestable, nothingEffective, simpleDrops(item.NewStack(Candle{Colour: c.Colour}, c.AdditionalCandles+1)))
+}
+
+// Model ...
 func (c Candle) Model() world.BlockModel {
-	return model.Candle{Count: c.AdditionalCount + 1}
+	return model.Candle{Count: c.AdditionalCandles + 1}
+}
+
+// LightEmissionLevel ...
+func (c Candle) LightEmissionLevel() uint8 {
+	if !c.Lit {
+		return 0
+	}
+	return uint8((c.AdditionalCandles + 1) * 3)
+}
+
+// SideClosed ...
+func (Candle) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
+	return false
+}
+
+func (Candle) canSurvive(pos cube.Pos, tx *world.Tx) bool {
+	below := pos.Side(cube.FaceDown)
+	return tx.Block(below).Model().FaceSolid(below, cube.FaceUp, tx)
 }
 
 // UseOnBlock ...
-func (c Candle) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
-	if existing, ok := tx.Block(pos).(Candle); ok {
-		if existing.AdditionalCount >= 3 {
-			return false
+func (c Candle) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+	addCandle := func(checkPos cube.Pos) bool {
+		if existing, ok := tx.Block(checkPos).(Candle); ok {
+			if existing.Colour != c.Colour || existing.AdditionalCandles >= 3 {
+				return false
+			}
+			existing.AdditionalCandles++
+			place(tx, checkPos, existing, user, ctx)
+			return true
 		}
-		if c.Dyed != existing.Dyed {
-			return false
-		}
-		if c.Colour != existing.Colour {
-			return false
-		}
+		return false
+	}
 
-		existing.AdditionalCount++
-		place(tx, pos, existing, user, ctx)
+	if added := addCandle(pos); added {
 		return placed(ctx)
 	}
 
-	pos, _, used := firstReplaceable(tx, pos, face, c)
+	if face == cube.FaceUp && addCandle(pos.Side(cube.FaceUp)) {
+		return placed(ctx)
+	}
+
+	pos, _, used = firstReplaceable(tx, pos, face, c)
 	if !used {
+		return false
+	}
+	if !c.canSurvive(pos, tx) {
 		return false
 	}
 
@@ -57,92 +86,70 @@ func (c Candle) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 	return placed(ctx)
 }
 
-// Ignite ...
-func (c Candle) Ignite(pos cube.Pos, tx *world.Tx) bool {
-	if !c.Lit {
-		c.Lit = true
+// NeighbourUpdateTick ...
+func (c Candle) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	if !c.canSurvive(pos, tx) {
+		breakBlock(c, pos, tx)
+		return
+	}
+	liquid, _ := tx.Liquid(pos)
+	if _, ok := liquid.(Water); ok && c.Lit {
+		c.Lit = false
 		tx.SetBlock(pos, c, nil)
+		tx.PlaySound(pos.Vec3Centre(), sound.FireExtinguish{})
+	}
+}
+
+// Activate ...
+func (c Candle) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
+	held, _ := u.HeldItems()
+	if _, ok := held.Enchantment(enchantment.FireAspect); ok {
+		c.Ignite(pos, tx, nil)
+		ctx.DamageItem(1)
 		return true
 	}
 	return false
 }
 
-// HasLiquidDrops ...
-func (Candle) HasLiquidDrops() bool {
+// Ignite ...
+func (c Candle) Ignite(pos cube.Pos, tx *world.Tx, _ world.Entity) bool {
+	if _, ok := tx.Liquid(pos); ok || c.Lit {
+		return false
+	}
+
+	c.Lit = true
+	tx.SetBlock(pos, c, nil)
+	tx.PlaySound(pos.Vec3(), sound.Ignite{})
 	return true
 }
 
-// SideClosed ...
-func (Candle) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
-	return false
-}
-
-// LightEmissionLevel ...
-func (c Candle) LightEmissionLevel() uint8 {
-	return uint8(3 + c.AdditionalCount*3)
-}
-
-// BreakInfo ...
-func (c Candle) BreakInfo() BreakInfo {
-	return newBreakInfo(0.1, alwaysHarvestable, nothingEffective, simpleDrops(item.NewStack(c, c.AdditionalCount+1)))
-}
-
-// FlammabilityInfo ...
-func (Candle) FlammabilityInfo() FlammabilityInfo {
-	return newFlammabilityInfo(0, 0, false)
+// EntityInside ...
+func (c Candle) EntityInside(pos cube.Pos, tx *world.Tx, e world.Entity) {
+	if flammable, ok := e.(flammableEntity); ok {
+		if flammable.OnFireDuration() > 0 {
+			c.Ignite(pos, tx, e)
+		}
+	}
 }
 
 // EncodeItem ...
 func (c Candle) EncodeItem() (name string, meta int16) {
-	name = "minecraft:"
-	if c.Dyed {
-		if c.Colour == item.ColourLightGrey() {
-			name += "light_gray_"
-		} else {
-			name += c.Colour.String() + "_"
-		}
-	}
-	name += "candle"
-	return name, 0
+	return "minecraft:" + c.Colour.Prepend("candle"), 0
 }
 
 // EncodeBlock ...
-func (c Candle) EncodeBlock() (name string, data map[string]any) {
-	name = "minecraft:"
-	if c.Dyed {
-		if c.Colour == item.ColourLightGrey() {
-			name += "light_gray_"
-		} else {
-			name += c.Colour.String() + "_"
-		}
-	}
-	name += "candle"
-	return name, map[string]any{
-		"candles": int32(c.AdditionalCount),
-		"lit":     bool(c.Lit),
-	}
+func (c Candle) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:" + c.Colour.Prepend("candle"), map[string]any{"candles": int32(c.AdditionalCandles), "lit": c.Lit}
 }
 
-// allCandle ...
-func allCandle() (b []world.Block) {
-	f := func(lit bool) {
-		for i := 0; i <= 3; i++ {
-			for _, c := range item.Colours() {
-				b = append(b, Candle{
-					AdditionalCount: i,
-					Lit:             lit,
-					Dyed:            true,
-					Colour:          c,
-				})
-			}
-			b = append(b, Candle{
-				AdditionalCount: i,
-				Lit:             lit,
-				Dyed:            false,
-			})
+// allCandles returns candle blocks with all possible colours.
+func allCandles() []world.Block {
+	b := make([]world.Block, 0)
+	for i := 0; i <= 3; i++ {
+		for _, c := range item.OptionalColours() {
+			b = append(b, Candle{Colour: c, AdditionalCandles: i})
+			b = append(b, Candle{Colour: c, AdditionalCandles: i, Lit: true})
 		}
 	}
-	f(false)
-	f(true)
-	return
+	return b
 }
