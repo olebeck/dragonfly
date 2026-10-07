@@ -139,7 +139,7 @@ func decodeSubChunk(buf *bytes.Buffer, c *Chunk, index *byte, e Encoding, hashed
 		return nil, fmt.Errorf("unknown sub chunk version %v: can't decode", ver)
 	case 1:
 		// Version 1 only has one layer for each sub chunk, but uses the format with palettes.
-		storage, err := decodePalettedStorage(buf, e, BlockPaletteEncoding{Blocks: c.br})
+		storage, err := decodeBlockStorage(buf, e, c.br, hashedRids)
 		if err != nil {
 			return nil, err
 		}
@@ -162,25 +162,35 @@ func decodeSubChunk(buf *bytes.Buffer, c *Chunk, index *byte, e Encoding, hashed
 		sub.storages = make([]*PalettedStorage, storageCount)
 
 		for i := byte(0); i < storageCount; i++ {
-			sub.storages[i], err = decodePalettedStorage(buf, e, BlockPaletteEncoding{Blocks: c.br})
+			sub.storages[i], err = decodeBlockStorage(buf, e, c.br, hashedRids)
 			if err != nil {
 				return nil, err
 			}
 
-			if hashedRids {
-				storage := sub.storages[i]
-				for i2, v := range storage.palette.values {
-					rid, ok := c.br.HashToRuntimeID(v)
-					if ok {
-						storage.palette.values[i2] = rid
-					} else {
-						fmt.Println("rid hash not found, data sorting wrong.")
-					}
-				}
-			}
 		}
 	}
 	return sub, nil
+}
+
+func decodeBlockStorage(buf *bytes.Buffer, e Encoding, br BlockRegistry, hashed bool) (*PalettedStorage, error) {
+	numeric := e == NetworkEncoding && buf.Len() > 0 && buf.Bytes()[0]&1 == 1
+	storage, err := decodePalettedStorage(buf, e, BlockPaletteEncoding{Blocks: br})
+	if err != nil {
+		return nil, err
+	}
+	if storage == nil {
+		return nil, fmt.Errorf("block storage cannot inherit a previous palette")
+	}
+	if hashed && numeric {
+		for i, hash := range storage.palette.values {
+			rid, ok := br.HashToRuntimeID(hash)
+			if !ok {
+				return nil, fmt.Errorf("unknown network block hash %d (0x%08x): correct world export blocked; retain raw capture for replay", hash, hash)
+			}
+			storage.palette.values[i] = rid
+		}
+	}
+	return storage, nil
 }
 
 func DecodeSubChunk(buf *bytes.Buffer, br BlockRegistry, r cube.Range, index *byte, e Encoding, hashedRids bool) (*SubChunk, error) {
