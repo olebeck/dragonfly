@@ -399,11 +399,11 @@ func (srv *Server) makeBlockEntries() {
 	custom := slices.Collect(maps.Values(srv.conf.Blocks.CustomBlocks()))
 	srv.customBlocks = make([]protocol.BlockEntry, len(custom))
 
-	for _, b := range custom {
+	for i, b := range custom {
 		name, _ := b.EncodeBlock()
 		srv.customBlocks = append(srv.customBlocks, protocol.BlockEntry{
 			Name:       name,
-			Properties: blockinternal.Components(name, b, 10000+int32(len(srv.customBlocks))),
+			Properties: blockinternal.Components(name, b, 10000+int32(i)),
 		})
 	}
 }
@@ -441,7 +441,8 @@ func (srv *Server) makeDimensionData() {
 		r := registration.Dimension.Range()
 		srv.customDimensions = append(srv.customDimensions, protocol.DimensionDefinition{
 			Name:          registration.Name,
-			Range:         [2]int32{int32(r.Max() + 1), int32(r.Min())},
+			MinimumY:      int32(r.Min()),
+			HeightRange:   int32(r.Max() - r.Min()),
 			Generator:     protocol.GeneratorVoid,
 			DimensionType: int32(registration.ID),
 		})
