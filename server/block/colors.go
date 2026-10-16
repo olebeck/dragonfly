@@ -765,7 +765,7 @@ func (s Sandstone) Color() color.RGBA {
 }
 
 func (s Sapling) Color() color.RGBA {
-	switch s.Wood {
+	switch s.Type.Wood() {
 	case OakWood():
 		return color.RGBA{76, 82, 25, 255}
 	case SpruceWood():
